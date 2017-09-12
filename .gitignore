@@ -1,2 +1,14 @@
-*.class
-*.log
+target/
+project/project/
+
+# Scala-IDE specific
+.scala_dependencies
+.worksheet
+.settings
+.classpath
+.project
+.idea
+.idea_modules
+.history
+*.swp
+tags
