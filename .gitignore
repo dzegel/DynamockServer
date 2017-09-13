@@ -1,5 +1,6 @@
 target/
 project/project/
+*.sc
 
 # Scala-IDE specific
 .scala_dependencies
