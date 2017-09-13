@@ -1,7 +1,9 @@
 package com.dzegel.DynamockServer.controller
 
+import com.dzegel.DynamockServer.Registry.{Expectation, Response}
 import com.dzegel.DynamockServer.contract.SetupExpectationPostRequest
 import com.dzegel.DynamockServer.service.SetupService
+import com.twitter.finagle.http.{Response => TwitterResponse}
 import com.twitter.finatra.http.routing.HttpRouter
 import com.twitter.finatra.http.{EmbeddedHttpServer, HttpServer}
 import com.twitter.inject.server.FeatureTest
@@ -22,21 +24,38 @@ class SetupControllerTests extends FeatureTest with MockFactory with Matchers {
     }
   )
 
-  test("POST /setup/expectation should call register expectation with SetupService and return 204 on success") {
-    setupSetupServiceRegisterExpectation(SetupExpectationPostRequest(), Success(()))
+  private val expectation = Expectation("", "", "")
+  private val response = Response()
+  private val setupExpectationPostRequest = SetupExpectationPostRequest(expectation, response)
+  private val setupExpectationPostRequestJson =
+    """
+{
+  "expectation": {
+    "path": "",
+    "method": "",
+    "content": ""
+  },
+  "response": {}
+}"""
 
-    server.httpPost(path = "/setup/expectation", postBody = "{}").statusCode should be(204)
+  test("POST /setup/expectation should call register expectation with SetupService and return 204 on success") {
+    setupSetupServiceRegisterExpectation(setupExpectationPostRequest, Success(()))
+
+    server.httpPost(path = "/setup/expectation", postBody = setupExpectationPostRequestJson).statusCode should be(204)
   }
 
   test("POST /setup/expectation should call register expectation with SetupService and return 400 on failure") {
-    setupSetupServiceRegisterExpectation(SetupExpectationPostRequest(), Failure(new Exception))
+    setupSetupServiceRegisterExpectation(setupExpectationPostRequest, Failure(new Exception))
 
-    server.httpPost(path = "/setup/expectation", postBody = "{}").statusCode should be(400)
+    server.httpPost(path = "/setup/expectation", postBody = setupExpectationPostRequestJson).statusCode should be(400)
   }
 
-  private def setupSetupServiceRegisterExpectation(expectation: SetupExpectationPostRequest, returnValue: Try[Unit]) = {
+  private def setupSetupServiceRegisterExpectation(
+    setupExpectationPostRequest: SetupExpectationPostRequest,
+    returnValue: Try[Unit]
+  ) = {
     (mockSetupService.registerExpectation _)
-      .expects(expectation)
+      .expects(setupExpectationPostRequest)
       .returning(returnValue)
   }
 }
