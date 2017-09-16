@@ -4,7 +4,8 @@ import com.dzegel.DynamockServer.contract.Response
 
 import scala.collection.concurrent.TrieMap
 import scala.collection.mutable
-object RegistryExtensions {
+
+private[registry] object RegistryExtensions {
 
   implicit class PathRegistryExtensions(pathRegistry: PathRegistry) {
     def getMethodRegistry(path: Path): MethodRegistry =

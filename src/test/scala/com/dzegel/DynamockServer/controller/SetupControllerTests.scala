@@ -43,10 +43,10 @@ class SetupControllerTests extends FeatureTest with MockFactory with Matchers {
     server.httpPost(path = "/setup/expectation", postBody = setupExpectationPostRequestJson).statusCode should be(204)
   }
 
-  test("POST /setup/expectation should call register expectation with SetupService and return 400 on failure") {
+  test("POST /setup/expectation should call register expectation with SetupService and return 500 on failure") {
     setupSetupServiceRegisterExpectation(setupExpectationPostRequest, Failure(new Exception))
 
-    server.httpPost(path = "/setup/expectation", postBody = setupExpectationPostRequestJson).statusCode should be(400)
+    server.httpPost(path = "/setup/expectation", postBody = setupExpectationPostRequestJson).statusCode should be(500)
   }
 
   private def setupSetupServiceRegisterExpectation(

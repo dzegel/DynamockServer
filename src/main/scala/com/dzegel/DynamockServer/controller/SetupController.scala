@@ -14,7 +14,7 @@ class SetupController @Inject()(setupService: SetupService) extends Controller {
 
       setupService.registerExpectation(request) match {
         case Success(()) => response.noContent
-        case Failure(exception) => response.badRequest(exception)
+        case Failure(exception) => response.internalServerError(exception)
       }
   }
 }
