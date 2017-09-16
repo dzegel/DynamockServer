@@ -2,7 +2,7 @@ package com.dzegel.DynamockServer.controller
 
 import com.dzegel.DynamockServer.contract.{Expectation, Response, SetupExpectationPostRequest}
 import com.dzegel.DynamockServer.service.SetupService
-import com.twitter.finagle.http.{Response => TwitterResponse}
+import com.twitter.finagle.http.{Status, Response => TwitterResponse}
 import com.twitter.finatra.http.routing.HttpRouter
 import com.twitter.finatra.http.{EmbeddedHttpServer, HttpServer}
 import com.twitter.inject.server.FeatureTest
@@ -32,7 +32,7 @@ class SetupControllerTests extends FeatureTest with MockFactory with Matchers {
   "expectation": {
     "path": "",
     "method": "",
-    "content": ""
+    "string_content": ""
   },
   "response": {}
 }"""
@@ -40,13 +40,19 @@ class SetupControllerTests extends FeatureTest with MockFactory with Matchers {
   test("POST /setup/expectation should call register expectation with SetupService and return 204 on success") {
     setupSetupServiceRegisterExpectation(setupExpectationPostRequest, Success(()))
 
-    server.httpPost(path = "/setup/expectation", postBody = setupExpectationPostRequestJson).statusCode should be(204)
+    server.httpPost(
+      path = "/setup/expectation",
+      postBody = setupExpectationPostRequestJson,
+      andExpect = Status.NoContent)
   }
 
   test("POST /setup/expectation should call register expectation with SetupService and return 500 on failure") {
     setupSetupServiceRegisterExpectation(setupExpectationPostRequest, Failure(new Exception))
 
-    server.httpPost(path = "/setup/expectation", postBody = setupExpectationPostRequestJson).statusCode should be(500)
+    server.httpPost(
+      path = "/setup/expectation",
+      postBody = setupExpectationPostRequestJson,
+      andExpect = Status.InternalServerError)
   }
 
   private def setupSetupServiceRegisterExpectation(
