@@ -1,6 +1,6 @@
 package com.dzegel.DynamockServer.service
 
-import com.dzegel.DynamockServer.Registry.{Expectation, Response, SetupRegistry}
+import com.dzegel.DynamockServer.registry.{Expectation, Response, SetupRegistry}
 import com.dzegel.DynamockServer.contract.SetupExpectationPostRequest
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.{FunSuite, Matchers}

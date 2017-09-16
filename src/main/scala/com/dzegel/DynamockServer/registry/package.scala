@@ -3,7 +3,7 @@ package com.dzegel.DynamockServer
 import scala.collection.mutable
 import scala.collection.concurrent
 
-package object Registry {
+package object registry {
   type Path = String
   type Method = String
   type StringContent = String

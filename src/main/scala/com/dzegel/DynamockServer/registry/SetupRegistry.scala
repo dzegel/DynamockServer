@@ -1,6 +1,6 @@
-package com.dzegel.DynamockServer.Registry
+package com.dzegel.DynamockServer.registry
 
-import com.dzegel.DynamockServer.Registry.RegistryExtensions._
+import com.dzegel.DynamockServer.registry.RegistryExtensions._
 import com.google.inject.{ImplementedBy, Singleton}
 
 import scala.collection.mutable

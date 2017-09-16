@@ -1,6 +1,6 @@
 package com.dzegel.DynamockServer.service
 
-import com.dzegel.DynamockServer.Registry.SetupRegistry
+import com.dzegel.DynamockServer.registry.SetupRegistry
 import com.dzegel.DynamockServer.contract.SetupExpectationPostRequest
 import com.google.inject.{ImplementedBy, Inject}
 

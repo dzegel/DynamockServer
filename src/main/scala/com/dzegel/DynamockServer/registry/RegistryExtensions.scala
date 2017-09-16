@@ -1,4 +1,4 @@
-package com.dzegel.DynamockServer.Registry
+package com.dzegel.DynamockServer.registry
 
 import scala.collection.concurrent.TrieMap
 import scala.collection.mutable
