@@ -1,5 +1,6 @@
 package com.dzegel.DynamockServer.registry
 
+import com.dzegel.DynamockServer.contract.{Expectation, Response}
 import com.dzegel.DynamockServer.registry.RegistryExtensions._
 import com.google.inject.{ImplementedBy, Singleton}
 

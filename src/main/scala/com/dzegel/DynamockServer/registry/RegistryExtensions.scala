@@ -1,5 +1,7 @@
 package com.dzegel.DynamockServer.registry
 
+import com.dzegel.DynamockServer.contract.Response
+
 import scala.collection.concurrent.TrieMap
 import scala.collection.mutable
 object RegistryExtensions {

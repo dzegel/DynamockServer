@@ -1,7 +1,6 @@
 package com.dzegel.DynamockServer.controller
 
-import com.dzegel.DynamockServer.registry.{Expectation, Response}
-import com.dzegel.DynamockServer.contract.SetupExpectationPostRequest
+import com.dzegel.DynamockServer.contract.{Expectation, Response, SetupExpectationPostRequest}
 import com.dzegel.DynamockServer.service.SetupService
 import com.twitter.finagle.http.{Response => TwitterResponse}
 import com.twitter.finatra.http.routing.HttpRouter
