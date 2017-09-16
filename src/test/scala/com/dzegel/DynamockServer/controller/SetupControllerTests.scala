@@ -7,8 +7,8 @@ import com.twitter.finagle.http.{Response => TwitterResponse}
 import com.twitter.finatra.http.routing.HttpRouter
 import com.twitter.finatra.http.{EmbeddedHttpServer, HttpServer}
 import com.twitter.inject.server.FeatureTest
-import org.scalamock.matchers.Matchers
 import org.scalamock.scalatest.MockFactory
+import org.scalatest.Matchers
 
 import scala.util.{Failure, Success, Try}
 
