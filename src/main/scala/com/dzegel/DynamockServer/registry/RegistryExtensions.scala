@@ -7,14 +7,14 @@ import scala.collection.mutable
 
 private[registry] object RegistryExtensions {
 
-  implicit class PathRegistryExtensions(pathRegistry: PathRegistry) {
-    def getMethodRegistry(path: Path): MethodRegistry =
-      getFromRegistry(path, pathRegistry, mutable.Map.empty[Method, ContentRegistry])
+  implicit class MethodRegistryExtensions(methodRegistry: MethodRegistry) {
+    def getPathRegistry(method: Method): PathRegistry =
+      getFromRegistry(method, methodRegistry, mutable.Map.empty[Path, ContentRegistry])
   }
 
-  implicit class MethodRegistryExtensions(methodRegistry: MethodRegistry) {
-    def getContentRegistry(method: Method): ContentRegistry =
-      getFromRegistry(method, methodRegistry, TrieMap.empty[StringContent, Response])
+  implicit class PathRegistryExtensions(pathRegistry: PathRegistry) {
+    def getContentRegistry(path: Path): ContentRegistry =
+      getFromRegistry(path, pathRegistry, TrieMap.empty[StringContent, Response])
   }
 
   private def getFromRegistry[TKey, TValue <: mutable.Map[_, _]]
