@@ -1,3 +1,3 @@
 package com.dzegel.DynamockServer.contract
 
-case class Expectation(path: String, method: String, stringContent: String)
+case class Expectation(method: String, path: String, stringContent: String)

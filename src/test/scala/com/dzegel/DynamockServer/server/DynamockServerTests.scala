@@ -11,7 +11,7 @@ class DynamockServerTests extends FeatureTest {
 
   private val expectation = Expectation("somePath", "get", "someContent")
   private val response = Response()
-  private val setupExpectationPostRequestJson =
+  private val expectationSetupPostRequestJson =
     s"""
 {
   "expectation": {
@@ -22,10 +22,10 @@ class DynamockServerTests extends FeatureTest {
   "response": {}
 }"""
 
-  test("POST /setup/expectation should return 204 on success") {
+  test("POST /expectation/setup should return 204 on success") {
     server.httpPost(
-      path = "/setup/expectation",
-      postBody = setupExpectationPostRequestJson,
+      path = "/expectation/setup",
+      postBody = expectationSetupPostRequestJson,
       andExpect = Status.NoContent)
   }
 }

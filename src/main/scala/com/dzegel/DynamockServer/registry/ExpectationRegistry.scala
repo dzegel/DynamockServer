@@ -6,14 +6,14 @@ import com.google.inject.ImplementedBy
 
 import scala.collection.mutable
 
-@ImplementedBy(classOf[DefaultSetupRegistry])
-trait SetupRegistry {
+@ImplementedBy(classOf[DefaultExpectationRegistry])
+trait ExpectationRegistry {
   def registerExpectationWithResponse(expectation: Expectation, response: Response): Unit
 
   def getResponse(expectation: Expectation): Option[Response]
 }
 
-class DefaultSetupRegistry extends SetupRegistry {
+class DefaultExpectationRegistry extends ExpectationRegistry {
 
   private val pathRegistry = mutable.Map.empty[Path, MethodRegistry]
 

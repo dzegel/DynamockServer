@@ -3,11 +3,11 @@ package com.dzegel.DynamockServer.registry
 import com.dzegel.DynamockServer.contract.{Expectation, Response}
 import org.scalatest.{BeforeAndAfterAll, FunSuite, Matchers}
 
-class SetupRegistryTests extends FunSuite with Matchers with BeforeAndAfterAll {
-  private var setupRegistry: SetupRegistry = _
+class ExpectaionRegistryTests extends FunSuite with Matchers with BeforeAndAfterAll {
+  private var expectationRegistry: ExpectationRegistry = _
 
   override protected def beforeAll(): Unit = {
-    setupRegistry = new DefaultSetupRegistry()
+    expectationRegistry = new DefaultExpectationRegistry()
   }
 
   test("registerExpectationWithResponse and getResponse works for paths") {
@@ -37,18 +37,18 @@ class SetupRegistryTests extends FunSuite with Matchers with BeforeAndAfterAll {
     val response2 = Response()
     val response3 = Response()
 
-    setupRegistry.registerExpectationWithResponse(expectation1, response1)
-    setupRegistry.registerExpectationWithResponse(expectation2, response2)
+    expectationRegistry.registerExpectationWithResponse(expectation1, response1)
+    expectationRegistry.registerExpectationWithResponse(expectation2, response2)
 
-    setupRegistry.getResponse(expectation1).get eq response1 shouldBe true
-    setupRegistry.getResponse(expectation2).get eq response2 shouldBe true
-    setupRegistry.getResponse(expectation1).get eq response1 shouldBe true
+    expectationRegistry.getResponse(expectation1).get eq response1 shouldBe true
+    expectationRegistry.getResponse(expectation2).get eq response2 shouldBe true
+    expectationRegistry.getResponse(expectation1).get eq response1 shouldBe true
 
-    setupRegistry.registerExpectationWithResponse(expectation1, response3)
+    expectationRegistry.registerExpectationWithResponse(expectation1, response3)
 
-    setupRegistry.getResponse(expectation1).get ne response1 shouldBe true
-    setupRegistry.getResponse(expectation1).get eq response3 shouldBe true
-    setupRegistry.getResponse(expectation2).get eq response2 shouldBe true
+    expectationRegistry.getResponse(expectation1).get ne response1 shouldBe true
+    expectationRegistry.getResponse(expectation1).get eq response3 shouldBe true
+    expectationRegistry.getResponse(expectation2).get eq response2 shouldBe true
   }
 
   private def getExpectation(path: Path = "", method: Method = "", stringContent: StringContent = ""): Expectation = {
