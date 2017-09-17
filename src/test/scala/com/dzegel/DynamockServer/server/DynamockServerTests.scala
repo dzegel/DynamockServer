@@ -9,8 +9,8 @@ class DynamockServerTests extends FeatureTest {
 
   override protected val server: EmbeddedHttpServer = new EmbeddedHttpServer(new DynamockServer())
 
-  private val expectation = Expectation("somePath", "get", "someContent")
-  private val response = Response()
+  private val expectation = Expectation("get", "somePath", "someContent")
+  private val response = Response(200)
   private val expectationSetupPostRequestJson =
     s"""
 {
@@ -19,7 +19,9 @@ class DynamockServerTests extends FeatureTest {
     "method": "${expectation.method}",
     "string_content": "${expectation.stringContent}"
   },
-  "response": {}
+  "response": {
+    "status": ${response.status}
+  }
 }"""
 
   test("POST /expectation/setup should return 204 on success") {

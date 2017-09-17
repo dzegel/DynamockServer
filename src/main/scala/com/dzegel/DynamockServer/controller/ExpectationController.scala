@@ -16,4 +16,19 @@ class ExpectationController @Inject()(expectationService: ExpectationService) ex
       case Failure(exception) => response.internalServerError(exception.getMessage)
     }
   }
+
+  any(":*") { request: Request =>
+    val expectation = Expectation(request.method.name, request.path, request.contentString)
+    expectationService.getResponse(expectation) match {
+      case Success(Some(res)) =>
+        response
+          .status(res.status)
+          .body(res.content)
+          .headers(res.headerMap)
+      case Success(None) =>
+        response.status(550).body("Dynamock Error: The provided expectation was not setup.")
+      case Failure(ex) =>
+        response.status(551).body(s"Unexpected Dynamock Error: ${ex.getMessage}")
+    }
+  }
 }
