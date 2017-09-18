@@ -9,10 +9,15 @@ import scala.util.Try
 @ImplementedBy(classOf[DefaultExpectationService])
 trait ExpectationService {
   def registerExpectation(expectationSetupPostRequest: ExpectationSetupPostRequest): Try[Unit]
+
+  def getResponse(expectation: Expectation): Try[Option[Response]]
 }
 
 class DefaultExpectationService @Inject()(expectationRegistry: ExpectationRegistry) extends ExpectationService {
   override def registerExpectation(expectationSetupPostRequest: ExpectationSetupPostRequest): Try[Unit] =
     Try(expectationRegistry
       .registerExpectationWithResponse(expectationSetupPostRequest.expectation, expectationSetupPostRequest.response))
+
+  override def getResponse(expectation: Expectation): Try[Option[Response]] =
+    Try(expectationRegistry.getResponse(expectation))
 }

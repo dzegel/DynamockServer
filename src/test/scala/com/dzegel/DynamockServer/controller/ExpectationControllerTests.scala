@@ -23,36 +23,93 @@ class ExpectationControllerTests extends FeatureTest with MockFactory with Match
     }
   )
 
-  private val expectation = Expectation("", "", "")
-  private val response = Response()
-  private val expectationExpectationPostRequest = ExpectationSetupPostRequest(expectation, response)
-  private val expectationSetupPostRequestJson =
-    """
+  private def expectationSetupPostRequestJson(expectation: Expectation, response: Response) =
+    s"""
 {
   "expectation": {
-    "path": "",
-    "method": "",
-    "string_content": ""
+    "path": "${expectation.path}",
+    "method": "${expectation.method}",
+    "string_content": "${expectation.stringContent}"
   },
-  "response": {}
+  "response": {
+    "status": ${response.status}
+  }
 }"""
 
-  test("POST /expectation/setup should call register expectation with ExpectationService and return 204 on success") {
-    setup_ExpectationService_RegisterExpectation(expectationExpectationPostRequest, Success(()))
+  {// expectation setup tests
+    val expectation = Expectation("", "", "")
+    val response = Response(200)
+    val expectationExpectationPostRequest = ExpectationSetupPostRequest(expectation, response)
 
-    server.httpPost(
-      path = "/expectation/setup",
-      postBody = expectationSetupPostRequestJson,
-      andExpect = Status.NoContent)
+    test("POST /expectation/setup should call register expectation with ExpectationService and return 204 on success") {
+      setup_ExpectationService_RegisterExpectation(expectationExpectationPostRequest, Success(()))
+
+      server.httpPost(
+        path = "/expectation/setup",
+        postBody = expectationSetupPostRequestJson(expectation, response),
+        andExpect = Status.NoContent)
+    }
+
+    test("POST /expectation/setup should call register expectation with ExpectationService and return 500 on failure") {
+      setup_ExpectationService_RegisterExpectation(expectationExpectationPostRequest, Failure(new Exception))
+
+      server.httpPost(
+        path = "/expectation/setup",
+        postBody = expectationSetupPostRequestJson(expectation, response),
+        andExpect = Status.InternalServerError)
+    }
   }
 
-  test("POST /expectation/setup should call register expectation with ExpectationService and return 500 on failure") {
-    setup_ExpectationService_RegisterExpectation(expectationExpectationPostRequest, Failure(new Exception))
+  {// mocked expectation tests
+    val response = Response(300, "SomeContent", Map("SomeKey" -> "SomeValue"))
 
-    server.httpPost(
-      path = "/expectation/setup",
-      postBody = expectationSetupPostRequestJson,
-      andExpect = Status.InternalServerError)
+    test("GET /somePath should call get response the response") {
+      val expectation = Expectation("GET", "/somePath", "")
+      setup_ExpectationService_GetResponse(expectation, Success(Some(response)))
+
+      val result = server.httpGet(
+        path = "/somePath",
+        andExpect = Status(response.status),
+        withBody = response.content)
+
+      result.headerMap should contain allElementsOf response.headerMap
+    }
+
+    test("POST / should call get response the response") {
+      val expectation = Expectation("POST", "/", "Some Stuff")
+      setup_ExpectationService_GetResponse(expectation, Success(Some(response)))
+
+      val result = server.httpPost(
+        path = "/",
+        postBody = expectation.stringContent,
+        andExpect = Status(response.status),
+        withBody = response.content)
+
+      result.headerMap should contain allElementsOf response.headerMap
+    }
+
+    test("POST / should return 550 when expectation is not setup"){
+      val expectation = Expectation("POST", "/", "Some Stuff")
+      setup_ExpectationService_GetResponse(expectation, Success(None))
+
+      server.httpPost(
+        path = "/",
+        postBody = expectation.stringContent,
+        andExpect = Status(550),
+        withBody = "Dynamock Error: The provided expectation was not setup.")
+    }
+
+    test("PUT / should return 5510 when there is an internal error"){
+      val expectation = Expectation("PUT", "/", "Some Stuff")
+      val errorMessage = "Some Error Message"
+      setup_ExpectationService_GetResponse(expectation, Failure(new Exception(errorMessage)))
+
+      server.httpPut(
+        path = "/",
+        putBody = expectation.stringContent,
+        andExpect = Status(551),
+        withBody = s"Unexpected Dynamock Error: $errorMessage")
+    }
   }
 
   private def setup_ExpectationService_RegisterExpectation(
@@ -61,6 +118,12 @@ class ExpectationControllerTests extends FeatureTest with MockFactory with Match
   ) = {
     (mockExpectationService.registerExpectation _)
       .expects(expectationSetupPostRequest)
+      .returning(returnValue)
+  }
+
+  private def setup_ExpectationService_GetResponse(expectation: Expectation, returnValue: Try[Option[Response]]) = {
+    (mockExpectationService.getResponse _)
+      .expects(expectation)
       .returning(returnValue)
   }
 }
