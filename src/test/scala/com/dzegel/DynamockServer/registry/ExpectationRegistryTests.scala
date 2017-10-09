@@ -1,6 +1,6 @@
 package com.dzegel.DynamockServer.registry
 
-import com.dzegel.DynamockServer.contract.{Expectation, Response}
+import com.dzegel.DynamockServer.types.{Expectation, Response}
 import org.scalatest.{BeforeAndAfterAll, FunSuite, Matchers}
 
 class ExpectationRegistryTests extends FunSuite with Matchers with BeforeAndAfterAll {

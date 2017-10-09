@@ -1,8 +1,8 @@
 package com.dzegel.DynamockServer.controller
 
-import com.dzegel.DynamockServer.contract.{Expectation, Response, ExpectationSetupPostRequest}
 import com.dzegel.DynamockServer.service.ExpectationService
-import com.twitter.finagle.http.{Status, Response => TwitterResponse}
+import com.dzegel.DynamockServer.types.{Expectation, Response}
+import com.twitter.finagle.http.Status
 import com.twitter.finatra.http.routing.HttpRouter
 import com.twitter.finatra.http.{EmbeddedHttpServer, HttpServer}
 import com.twitter.inject.server.FeatureTest
@@ -39,10 +39,9 @@ class ExpectationControllerTests extends FeatureTest with MockFactory with Match
   {// expectation setup tests
     val expectation = Expectation("", "", "")
     val response = Response(200)
-    val expectationExpectationPostRequest = ExpectationSetupPostRequest(expectation, response)
 
     test("POST /expectation/setup should call register expectation with ExpectationService and return 204 on success") {
-      setup_ExpectationService_RegisterExpectation(expectationExpectationPostRequest, Success(()))
+      setup_ExpectationService_RegisterExpectation(expectation, response, Success(()))
 
       server.httpPost(
         path = "/expectation/setup",
@@ -51,7 +50,7 @@ class ExpectationControllerTests extends FeatureTest with MockFactory with Match
     }
 
     test("POST /expectation/setup should call register expectation with ExpectationService and return 500 on failure") {
-      setup_ExpectationService_RegisterExpectation(expectationExpectationPostRequest, Failure(new Exception))
+      setup_ExpectationService_RegisterExpectation(expectation, response, Failure(new Exception))
 
       server.httpPost(
         path = "/expectation/setup",
@@ -88,7 +87,7 @@ class ExpectationControllerTests extends FeatureTest with MockFactory with Match
       result.headerMap should contain allElementsOf response.headerMap
     }
 
-    test("POST / should return 550 when expectation is not setup"){
+    test("POST / should return 550 when expectation is not setup") {
       val expectation = Expectation("POST", "/", "Some Stuff")
       setup_ExpectationService_GetResponse(expectation, Success(None))
 
@@ -99,7 +98,7 @@ class ExpectationControllerTests extends FeatureTest with MockFactory with Match
         withBody = "Dynamock Error: The provided expectation was not setup.")
     }
 
-    test("PUT / should return 5510 when there is an internal error"){
+    test("PUT / should return 5510 when there is an internal error") {
       val expectation = Expectation("PUT", "/", "Some Stuff")
       val errorMessage = "Some Error Message"
       setup_ExpectationService_GetResponse(expectation, Failure(new Exception(errorMessage)))
@@ -113,11 +112,12 @@ class ExpectationControllerTests extends FeatureTest with MockFactory with Match
   }
 
   private def setup_ExpectationService_RegisterExpectation(
-    expectationSetupPostRequest: ExpectationSetupPostRequest,
+    expectation: Expectation,
+    response: Response,
     returnValue: Try[Unit]
   ) = {
     (mockExpectationService.registerExpectation _)
-      .expects(expectationSetupPostRequest)
+      .expects(expectation, response)
       .returning(returnValue)
   }
 

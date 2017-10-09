@@ -1,6 +1,6 @@
 package com.dzegel.DynamockServer
 
-import com.dzegel.DynamockServer.contract.Response
+import com.dzegel.DynamockServer.types.Response
 
 import scala.collection.mutable
 import scala.collection.concurrent

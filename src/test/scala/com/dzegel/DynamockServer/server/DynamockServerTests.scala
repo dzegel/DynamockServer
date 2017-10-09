@@ -1,6 +1,6 @@
 package com.dzegel.DynamockServer.server
 
-import com.dzegel.DynamockServer.contract.{Expectation, Response}
+import com.dzegel.DynamockServer.types.{Expectation, Response}
 import com.twitter.finagle.http.Status
 import com.twitter.finatra.http.EmbeddedHttpServer
 import com.twitter.inject.server.FeatureTest

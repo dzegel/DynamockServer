@@ -1,6 +1,6 @@
 package com.dzegel.DynamockServer.registry
 
-import com.dzegel.DynamockServer.contract.Response
+import com.dzegel.DynamockServer.types.Response
 
 import scala.collection.concurrent.TrieMap
 import scala.collection.mutable
