@@ -2,7 +2,7 @@ package com.dzegel.DynamockServer.registry
 
 import com.dzegel.DynamockServer.types.{Expectation, Response}
 import com.dzegel.DynamockServer.registry.RegistryExtensions._
-import com.google.inject.ImplementedBy
+import com.google.inject.{ImplementedBy, Singleton}
 
 import scala.collection.mutable
 
@@ -13,6 +13,7 @@ trait ExpectationRegistry {
   def getResponse(expectation: Expectation): Option[Response]
 }
 
+@Singleton
 class DefaultExpectationRegistry extends ExpectationRegistry {
 
   private val methodRegistry = mutable.Map.empty[Method, PathRegistry]
