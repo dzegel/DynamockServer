@@ -11,13 +11,13 @@ import org.scalatest.Matchers
 
 import scala.util.{Failure, Success, Try}
 
-class MockedControllerTests  extends FeatureTest with MockFactory with Matchers {
+class MockControllerTests  extends FeatureTest with MockFactory with Matchers {
   private val mockExpectationService = mock[ExpectationService]
 
   override protected val server: EmbeddedHttpServer = new EmbeddedHttpServer(
     new HttpServer {
       override protected def configureHttp(router: HttpRouter): Unit = {
-        router.add(new MockedController(mockExpectationService))
+        router.add(new MockController(mockExpectationService))
       }
     }
   )

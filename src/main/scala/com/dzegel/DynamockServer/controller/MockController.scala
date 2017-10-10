@@ -8,7 +8,7 @@ import com.twitter.finatra.http.Controller
 
 import scala.util.{Failure, Success}
 
-class MockedController @Inject()(expectationService: ExpectationService)  extends Controller {
+class MockController @Inject()(expectationService: ExpectationService)  extends Controller {
 
   any(":*") { request: Request =>
     val expectation = Expectation(request.method.name, request.path, request.contentString)
