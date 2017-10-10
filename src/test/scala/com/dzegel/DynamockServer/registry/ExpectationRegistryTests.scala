@@ -33,9 +33,9 @@ class ExpectationRegistryTests extends FunSuite with Matchers with BeforeAndAfte
 
   private def testMultipleRegistrationsWork(expectation1: Expectation, expectation2: Expectation) {
 
-    val response1 = Response(100)
-    val response2 = Response(200)
-    val response3 = Response(300)
+    val response1 = Response(100, "", Map.empty)
+    val response2 = Response(200, "", Map.empty)
+    val response3 = Response(300, "", Map.empty)
 
     expectationRegistry.registerExpectationWithResponse(expectation1, response1)
     expectationRegistry.registerExpectationWithResponse(expectation2, response2)
