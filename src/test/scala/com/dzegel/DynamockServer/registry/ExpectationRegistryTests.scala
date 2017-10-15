@@ -1,6 +1,6 @@
 package com.dzegel.DynamockServer.registry
 
-import com.dzegel.DynamockServer.types.{Expectation, Response}
+import com.dzegel.DynamockServer.types.{Content, Expectation, Response}
 import org.scalatest.{BeforeAndAfterAll, FunSuite, Matchers}
 
 class ExpectationRegistryTests extends FunSuite with Matchers with BeforeAndAfterAll {
@@ -25,8 +25,8 @@ class ExpectationRegistryTests extends FunSuite with Matchers with BeforeAndAfte
   }
 
   test("registerExpectationWithResponse and getResponse works for stringContent") {
-    val expectation1 = getExpectation(stringContent = "stringContent1")
-    val expectation2 = getExpectation(stringContent = "stringContent2")
+    val expectation1 = getExpectation(content = Content("stringContent1"))
+    val expectation2 = getExpectation(content = Content("stringContent2"))
 
     testMultipleRegistrationsWork(expectation1, expectation2)
   }
@@ -51,7 +51,7 @@ class ExpectationRegistryTests extends FunSuite with Matchers with BeforeAndAfte
     expectationRegistry.getResponse(expectation2) should contain(response2)
   }
 
-  private def getExpectation(path: Path = "", method: Method = "", stringContent: StringContent = ""): Expectation = {
-    Expectation(method, path, stringContent)
+  private def getExpectation(path: Path = "", method: Method = "", content: Content = Content("")): Expectation = {
+    Expectation(method, path, content)
   }
 }

@@ -1,6 +1,6 @@
 package com.dzegel.DynamockServer.registry
 
-import com.dzegel.DynamockServer.types.Response
+import com.dzegel.DynamockServer.types.{Content, Response}
 
 import scala.collection.concurrent.TrieMap
 import scala.collection.mutable
@@ -14,7 +14,7 @@ private[registry] object RegistryExtensions {
 
   implicit class PathRegistryExtensions(pathRegistry: PathRegistry) {
     def getContentRegistry(path: Path): ContentRegistry =
-      getFromRegistry(path, pathRegistry, TrieMap.empty[StringContent, Response])
+      getFromRegistry(path, pathRegistry, TrieMap.empty[Content, Response])
   }
 
   private def getFromRegistry[TKey, TValue <: mutable.Map[_, _]]

@@ -1,7 +1,7 @@
 package com.dzegel.DynamockServer.service
 
 import com.dzegel.DynamockServer.registry.ExpectationRegistry
-import com.dzegel.DynamockServer.types.{Expectation, Response}
+import com.dzegel.DynamockServer.types.{Content, Expectation, Response}
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.{FunSuite, Matchers}
 
@@ -12,7 +12,7 @@ class ExpectationServiceTests extends FunSuite with MockFactory with Matchers {
   private val mockExpectationRegistry = mock[ExpectationRegistry]
   private val expectationService = new DefaultExpectationService(mockExpectationRegistry)
 
-  private val expectation = Expectation("", "", "")
+  private val expectation = Expectation("", "", Content(""))
   private val response = Response(200, "", Map.empty)
 
   test("registerExpectation returns Success when no Exception is thrown") {

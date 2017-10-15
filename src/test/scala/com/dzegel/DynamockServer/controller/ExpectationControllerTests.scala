@@ -1,7 +1,7 @@
 package com.dzegel.DynamockServer.controller
 
 import com.dzegel.DynamockServer.service.ExpectationService
-import com.dzegel.DynamockServer.types.{Expectation, Response}
+import com.dzegel.DynamockServer.types.{Content, Expectation, Response}
 import com.twitter.finagle.http.Status
 import com.twitter.finatra.http.routing.HttpRouter
 import com.twitter.finatra.http.{EmbeddedHttpServer, HttpServer}
@@ -29,14 +29,14 @@ class ExpectationControllerTests extends FeatureTest with MockFactory with Match
   "expectation": {
     "path": "${expectation.path}",
     "method": "${expectation.method}",
-    "string_content": "${expectation.stringContent}"
+    "string_content": "${expectation.content.stringValue}"
   },
   "response": {
     "status": ${response.status}
   }
 }"""
 
-  val expectation = Expectation("", "", "")
+  val expectation = Expectation("", "", Content(""))
   val response = Response(200, "", Map.empty)
 
   test("POST /expectation/setup should call register expectation with ExpectationService and return 204 on success") {

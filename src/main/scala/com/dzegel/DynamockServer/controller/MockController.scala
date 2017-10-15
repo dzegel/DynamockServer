@@ -1,7 +1,7 @@
 package com.dzegel.DynamockServer.controller
 
 import com.dzegel.DynamockServer.service.ExpectationService
-import com.dzegel.DynamockServer.types.Expectation
+import com.dzegel.DynamockServer.types.{Content, Expectation}
 import com.google.inject.Inject
 import com.twitter.finagle.http.Request
 import com.twitter.finatra.http.Controller
@@ -11,7 +11,7 @@ import scala.util.{Failure, Success}
 class MockController @Inject()(expectationService: ExpectationService)  extends Controller {
 
   any(":*") { request: Request =>
-    val expectation = Expectation(request.method.name, request.path, request.contentString)
+    val expectation = Expectation(request.method.name, request.path, Content(request.contentString))
     expectationService.getResponse(expectation) match {
       case Success(Some(res)) =>
         response

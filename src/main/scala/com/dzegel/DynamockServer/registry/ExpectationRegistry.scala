@@ -19,10 +19,10 @@ class DefaultExpectationRegistry extends ExpectationRegistry {
   private val methodRegistry = mutable.Map.empty[Method, PathRegistry]
 
   override def registerExpectationWithResponse(expectation: Expectation, response: Response): Unit =
-    getContentRegistry(expectation).put(expectation.stringContent, response)
+    getContentRegistry(expectation).put(expectation.content, response)
 
   override def getResponse(expectation: Expectation): Option[Response] =
-    getContentRegistry(expectation).get(expectation.stringContent)
+    getContentRegistry(expectation).get(expectation.content)
 
   private def getContentRegistry(expectation: Expectation): ContentRegistry = {
     val pathRegistry = methodRegistry.getPathRegistry(expectation.method)
