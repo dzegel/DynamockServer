@@ -23,13 +23,21 @@ class ExpectationControllerTests extends FeatureTest with MockFactory with Match
     }
   )
 
-  private def expectationSetupPostRequestJson(expectation: Expectation, response: Response) =
+  private def expectationSetupPostRequestJson(
+    expectationPath: String,
+    expectationMethod: String,
+    expectationContent: Option[String],
+    response: Response) =
     s"""
 {
   "expectation": {
-    "path": "${expectation.path}",
-    "method": "${expectation.method}",
-    "string_content": "${expectation.content.stringValue}"
+    "path": "$expectationPath",
+    "method": "$expectationMethod"${
+      expectationContent match {
+        case Some(content) => s""","content": "$content""""
+        case None => ""
+      }
+    }
   },
   "response": {
     "status": ${response.status}
@@ -40,11 +48,25 @@ class ExpectationControllerTests extends FeatureTest with MockFactory with Match
   val response = Response(200, "", Map.empty)
 
   test("POST /expectation/setup should call register expectation with ExpectationService and return 204 on success") {
-    setup_ExpectationService_RegisterExpectation(expectation, response, Success(()))
+    expectationSetupShouldSucceed("some-path", "POST", Some("Content"))
+    expectationSetupShouldSucceed("some-path", "POST", None)
+  }
+
+  private def expectationSetupShouldSucceed(
+    expectationPath: String,
+    expectationMethod: String,
+    expectationContent: Option[String]
+  ): Unit = {
+    setup_ExpectationService_RegisterExpectation(
+      Expectation(expectationMethod, expectationPath, Content(expectationContent.getOrElse(""))), response, Success(()))
 
     server.httpPost(
       path = "/expectation/setup",
-      postBody = expectationSetupPostRequestJson(expectation, response),
+      postBody = expectationSetupPostRequestJson(
+        expectationPath,
+        expectationMethod,
+        expectationContent,
+        response),
       andExpect = Status.NoContent)
   }
 
@@ -53,7 +75,11 @@ class ExpectationControllerTests extends FeatureTest with MockFactory with Match
 
     server.httpPost(
       path = "/expectation/setup",
-      postBody = expectationSetupPostRequestJson(expectation, response),
+      postBody = expectationSetupPostRequestJson(
+        expectation.path,
+        expectation.method,
+        Some(expectation.content.stringValue),
+        response),
       andExpect = Status.InternalServerError)
   }
 

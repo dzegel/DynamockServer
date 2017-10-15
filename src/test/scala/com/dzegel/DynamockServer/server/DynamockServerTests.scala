@@ -17,7 +17,7 @@ class DynamockServerTests extends FeatureTest {
   "expectation": {
     "path": "${expectation.path}",
     "method": "${expectation.method}",
-    "string_content": "${expectation.content.stringValue}"
+    "content": "${expectation.content.stringValue}"
   },
   "response": {
     "status": ${response.status},
