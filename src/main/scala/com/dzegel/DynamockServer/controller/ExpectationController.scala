@@ -1,10 +1,9 @@
 package com.dzegel.DynamockServer.controller
 
 import com.dzegel.DynamockServer.controller.ExpectationController.ExpectationSetupPostRequest
-import com.dzegel.DynamockServer.types.{Expectation, Response}
 import com.dzegel.DynamockServer.service.ExpectationService
+import com.dzegel.DynamockServer.types.{Content, Expectation, Response}
 import com.google.inject.Inject
-import com.twitter.finagle.http.Request
 import com.twitter.finatra.http.Controller
 
 import scala.language.implicitConversions
@@ -12,14 +11,14 @@ import scala.util.{Failure, Success}
 
 object ExpectationController {
 
-  private case class ExpectationDto(method: String, path: String, stringContent: String)
+  private case class ExpectationDto(method: String, path: String, content: Option[String])
 
   private case class ResponseDto(status: Int, content: Option[String], headerMap: Option[Map[String, String]])
 
   private case class ExpectationSetupPostRequest(expectation: ExpectationDto, response: ResponseDto)
 
   private implicit def dtoToExpectation(dto: ExpectationDto): Expectation =
-    Expectation(dto.method, dto.path, dto.stringContent)
+    Expectation(dto.method, dto.path, Content(dto.content.getOrElse("")))
 
   private implicit def dtoToResponse(dto: ResponseDto): Response =
     Response(dto.status, dto.content.getOrElse(""), dto.headerMap.getOrElse(Map.empty))
@@ -31,21 +30,6 @@ class ExpectationController @Inject()(expectationService: ExpectationService) ex
     expectationService.registerExpectation(request.expectation, request.response) match {
       case Success(()) => response.noContent
       case Failure(exception) => response.internalServerError(exception.getMessage)
-    }
-  }
-
-  any(":*") { request: Request =>
-    val expectation = Expectation(request.method.name, request.path, request.contentString)
-    expectationService.getResponse(expectation) match {
-      case Success(Some(res)) =>
-        response
-          .status(res.status)
-          .body(res.content)
-          .headers(res.headerMap)
-      case Success(None) =>
-        response.status(550).body("Dynamock Error: The provided expectation was not setup.")
-      case Failure(exception) =>
-        response.status(551).body(s"Unexpected Dynamock Error: ${exception.getMessage}")
     }
   }
 }
