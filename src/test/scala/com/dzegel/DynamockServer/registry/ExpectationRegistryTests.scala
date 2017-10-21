@@ -38,6 +38,14 @@ class ExpectationRegistryTests extends FunSuite with Matchers with BeforeAndAfte
     testMultipleRegistrationsWork(expectation1, expectation2)
   }
 
+  //TODO more extensive testing on header params
+  test("registerExpectationWithResponse and getResponse works for header params") {
+    val expectation1 = getExpectation(includedHeaders = Map("key1" -> "value1"))
+    val expectation2 = getExpectation(includedHeaders = Map("key2" -> "value2", "key3" -> "value3"))
+
+    testMultipleRegistrationsWork(expectation1, expectation2)
+  }
+
   private def testMultipleRegistrationsWork(expectation1: Expectation, expectation2: Expectation) {
 
     val response1 = Response(100, "", Map.empty)

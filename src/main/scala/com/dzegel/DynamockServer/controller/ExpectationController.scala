@@ -11,6 +11,7 @@ import scala.util.{Failure, Success}
 
 object ExpectationController {
 
+  //TODO add 'excludedHeaderParameters'
   private case class ExpectationDto(
     method: String,
     path: String,
