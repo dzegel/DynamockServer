@@ -12,7 +12,7 @@ class ExpectationServiceTests extends FunSuite with MockFactory with Matchers {
   private val mockExpectationRegistry = mock[ExpectationRegistry]
   private val expectationService = new DefaultExpectationService(mockExpectationRegistry)
 
-  private val expectation = Expectation("", "", Content(""))
+  private val expectation = Expectation("POST", "somePath", Map.empty, Map.empty, Content(""))
   private val response = Response(200, "", Map.empty)
 
   test("registerExpectation returns Success when no Exception is thrown") {

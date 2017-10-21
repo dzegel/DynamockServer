@@ -15,8 +15,7 @@ trait ExpectationService {
 
 class DefaultExpectationService @Inject()(expectationRegistry: ExpectationRegistry) extends ExpectationService {
   override def registerExpectation(expectation: Expectation, response: Response): Try[Unit] =
-    Try(expectationRegistry
-      .registerExpectationWithResponse(expectation, response))
+    Try(expectationRegistry.registerExpectationWithResponse(expectation, response))
 
   override def getResponse(expectation: Expectation): Try[Option[Response]] =
     Try(expectationRegistry.getResponse(expectation))

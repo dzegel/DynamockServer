@@ -6,6 +6,7 @@ import com.twitter.finagle.http.Status
 import com.twitter.finatra.http.routing.HttpRouter
 import com.twitter.finatra.http.{EmbeddedHttpServer, HttpServer}
 import com.twitter.inject.server.FeatureTest
+import org.scalamock.function.FunctionAdapter1
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.Matchers
 
@@ -24,8 +25,8 @@ class MockControllerTests  extends FeatureTest with MockFactory with Matchers {
 
   val response = Response(300, "SomeContent", Map("SomeKey" -> "SomeValue"))
 
-  test("GET /somePath should call get response the response") {
-    val expectation = Expectation("GET", "/somePath", Content(""))
+  test("GET /somePath should call getResponse and return the response") {
+    val expectation = Expectation("GET", "/somePath", Map(), Map(), Content(""))
     setup_ExpectationService_GetResponse(expectation, Success(Some(response)))
 
     val result = server.httpGet(
@@ -36,12 +37,15 @@ class MockControllerTests  extends FeatureTest with MockFactory with Matchers {
     result.headerMap should contain allElementsOf response.headerMap
   }
 
-  test("POST / should call get response the response") {
-    val expectation = Expectation("POST", "/", Content("Some Stuff"))
+  test("POST / should call getResponse and return the response") {
+    val headers = Map("SomeHeader" -> "SomeValue", "SomeOtherHeader" -> "SomeOtherValue")
+    val queryParams = Map("QueryParam" -> "Value", "OtherQueryParam" -> "OtherValue")
+    val expectation = Expectation("POST", "/", queryParams, headers, Content("Some Stuff"))
     setup_ExpectationService_GetResponse(expectation, Success(Some(response)))
 
     val result = server.httpPost(
-      path = "/",
+      path = "/?" + queryParams.map(param =>s"""${param._1}=${param._2}""").mkString("&"),
+      headers = headers,
       postBody = expectation.content.stringValue,
       andExpect = Status(response.status),
       withBody = response.content)
@@ -49,32 +53,35 @@ class MockControllerTests  extends FeatureTest with MockFactory with Matchers {
     result.headerMap should contain allElementsOf response.headerMap
   }
 
-  test("POST / should return 550 when expectation is not setup") {
-    val expectation = Expectation("POST", "/", Content("Some Stuff"))
+  test("POST / should return 551 when expectation is not setup") {
+    val expectation = Expectation("POST", "/", Map.empty, Map.empty, Content("Some Stuff"))
     setup_ExpectationService_GetResponse(expectation, Success(None))
 
     server.httpPost(
       path = "/",
       postBody = expectation.content.stringValue,
-      andExpect = Status(550),
+      andExpect = Status(551),
       withBody = "Dynamock Error: The provided expectation was not setup.")
   }
 
-  test("PUT / should return 5510 when there is an internal error") {
-    val expectation = Expectation("PUT", "/", Content("Some Stuff"))
+  test("PUT / should return 500 when there is an internal error") {
+    val expectation = Expectation("PUT", "/", Map.empty, Map.empty, Content("Some Stuff"))
     val errorMessage = "Some Error Message"
     setup_ExpectationService_GetResponse(expectation, Failure(new Exception(errorMessage)))
 
     server.httpPut(
       path = "/",
       putBody = expectation.content.stringValue,
-      andExpect = Status(551),
+      andExpect = Status(550),
       withBody = s"Unexpected Dynamock Error: $errorMessage")
   }
 
   private def setup_ExpectationService_GetResponse(expectation: Expectation, returnValue: Try[Option[Response]]) = {
+    val includedHeaders = expectation.includedHeaderParameters
     (mockExpectationService.getResponse _)
-      .expects(expectation)
+      .expects(new FunctionAdapter1[Expectation, Boolean](exp =>
+        includedHeaders.toSet.subsetOf(exp.includedHeaderParameters.toSet) &&
+          exp.copy(includedHeaderParameters = includedHeaders) == expectation))
       .returning(returnValue)
   }
 }

@@ -2,13 +2,14 @@ package com.dzegel.DynamockServer
 
 import com.dzegel.DynamockServer.types.{Content, Response}
 
-import scala.collection.mutable
-import scala.collection.concurrent
+import scala.collection.concurrent.TrieMap
 
 package object registry {
   type Path = String
   type Method = String
-  type MethodRegistry = mutable.Map[Method, PathRegistry]
-  type PathRegistry = mutable.Map[Path, ContentRegistry]
-  type ContentRegistry = concurrent.Map[Content, Response]
+  type QueryParams = Map[String, String]
+  type MethodRegistry = TrieMap[Method, PathRegistry]
+  type PathRegistry = TrieMap[Path, QueryParamRegistry]
+  type QueryParamRegistry = TrieMap[QueryParams, ContentRegistry]
+  type ContentRegistry = TrieMap[Content, Response]
 }

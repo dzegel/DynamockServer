@@ -9,9 +9,9 @@ class DynamockServerTests extends FeatureTest {
 
   override protected val server: EmbeddedHttpServer = new EmbeddedHttpServer(new DynamockServer())
 
-  private val expectation = Expectation("PUT", "/some/path", Content("someContent"))
+  private val expectation = Expectation("PUT", "/some/path", Map.empty, Map.empty, Content("someContent"))
   private val response = Response(201, "SomeOtherContent", Map("SomeKey" -> "SomeValue"))
-  private val expectationSetupPostRequestJson =
+  private val expectationPutRequestJson =
     s"""
 {
   "expectation": {
@@ -28,10 +28,10 @@ class DynamockServerTests extends FeatureTest {
   }
 }"""
 
-  test("POST /expectation/setup returns 204 and the mocked expectation returns the expected response") {
-    server.httpPost(
-      path = "/expectation/setup",
-      postBody = expectationSetupPostRequestJson,
+  test("PUT /expectation returns 204 and the mocked expectation returns the expected response") {
+    server.httpPut(
+      path = "/expectation",
+      putBody = expectationPutRequestJson,
       andExpect = Status.NoContent)
 
     val result = server.httpPut(

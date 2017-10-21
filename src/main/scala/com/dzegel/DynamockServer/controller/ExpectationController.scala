@@ -11,14 +11,24 @@ import scala.util.{Failure, Success}
 
 object ExpectationController {
 
-  private case class ExpectationDto(method: String, path: String, content: Option[String])
+  private case class ExpectationDto(
+    method: String,
+    path: String,
+    queryParameters: Option[Map[String, String]],
+    includedHeaderParameters: Option[Map[String, String]],
+    content: Option[String])
 
   private case class ResponseDto(status: Int, content: Option[String], headerMap: Option[Map[String, String]])
 
   private case class ExpectationSetupPostRequest(expectation: ExpectationDto, response: ResponseDto)
 
   private implicit def dtoToExpectation(dto: ExpectationDto): Expectation =
-    Expectation(dto.method, dto.path, Content(dto.content.getOrElse("")))
+    Expectation(
+      dto.method,
+      dto.path,
+      dto.queryParameters.getOrElse(Map.empty),
+      dto.includedHeaderParameters.getOrElse(Map.empty),
+      Content(dto.content.getOrElse("")))
 
   private implicit def dtoToResponse(dto: ResponseDto): Response =
     Response(dto.status, dto.content.getOrElse(""), dto.headerMap.getOrElse(Map.empty))
@@ -26,7 +36,7 @@ object ExpectationController {
 
 class ExpectationController @Inject()(expectationService: ExpectationService) extends Controller {
 
-  post("/expectation/setup") { request: ExpectationSetupPostRequest =>
+  put("/expectation") { request: ExpectationSetupPostRequest =>
     expectationService.registerExpectation(request.expectation, request.response) match {
       case Success(()) => response.noContent
       case Failure(exception) => response.internalServerError(exception.getMessage)

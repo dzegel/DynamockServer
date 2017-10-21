@@ -4,8 +4,6 @@ import com.dzegel.DynamockServer.controller.{ExpectationController, MockControll
 import com.twitter.finatra.http.HttpServer
 import com.twitter.finatra.http.routing.HttpRouter
 
-object DynamockServerMain extends DynamockServer
-
 class DynamockServer extends HttpServer {
   override val defaultFinatraHttpPort: String = ":8080"
   override val disableAdminHttpServer = true

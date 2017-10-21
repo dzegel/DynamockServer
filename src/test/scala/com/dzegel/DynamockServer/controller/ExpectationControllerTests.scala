@@ -23,10 +23,12 @@ class ExpectationControllerTests extends FeatureTest with MockFactory with Match
     }
   )
 
-  private def expectationSetupPostRequestJson(
+  private def expectationPutRequestJson(
     expectationPath: String,
     expectationMethod: String,
     expectationContent: Option[String],
+    queryParams: Option[Map[String, String]],
+    includedHeaderParams: Option[Map[String, String]],
     response: Response) =
     s"""
 {
@@ -34,51 +36,82 @@ class ExpectationControllerTests extends FeatureTest with MockFactory with Match
     "path": "$expectationPath",
     "method": "$expectationMethod"${
       expectationContent match {
-        case Some(content) => s""","content": "$content""""
+        case Some(content) =>
+          s""",
+    "content": "$content""""
         case None => ""
       }
-    }
-  },
+    }${
+      queryParams match {
+        case Some(params) =>
+          s""",
+    "query_parameters":{${params.map(param => s""""${param._1}":"${param._2}"""").mkString(",")}}"""
+        case None => ""
+      }
+    }${
+      includedHeaderParams match {
+        case Some(params) =>
+          s""",
+    "included_header_parameters":{${params.map(param => s""""${param._1}":"${param._2}"""").mkString(",")}}"""
+        case None => ""
+      }
+    }},
   "response": {
     "status": ${response.status}
   }
 }"""
 
-  val expectation = Expectation("", "", Content(""))
   val response = Response(200, "", Map.empty)
 
-  test("POST /expectation/setup should call register expectation with ExpectationService and return 204 on success") {
-    expectationSetupShouldSucceed("some-path", "POST", Some("Content"))
-    expectationSetupShouldSucceed("some-path", "POST", None)
+  test("PUT /expectation should call register expectation with ExpectationService and return 204 on success") {
+    expectationSetupShouldSucceed("some-path", "POST", Some(Map("query" -> "param")), Some(Map("header" -> "param")), Some("Content"))
+    expectationSetupShouldSucceed("some-path", "POST", Some(Map("query" -> "param")), Some(Map("header" -> "param")), None)
+    expectationSetupShouldSucceed("some-path", "POST", Some(Map("query" -> "param")), None, Some("Content"))
+    expectationSetupShouldSucceed("some-path", "POST", None, Some(Map("header" -> "param")), Some("Content"))
+    expectationSetupShouldSucceed("some-path", "POST", None, None, None)
   }
 
   private def expectationSetupShouldSucceed(
     expectationPath: String,
     expectationMethod: String,
+    expectationQueryParams: Option[Map[String, String]],
+    expectationIncludedHeaderParams: Option[Map[String, String]],
     expectationContent: Option[String]
   ): Unit = {
     setup_ExpectationService_RegisterExpectation(
-      Expectation(expectationMethod, expectationPath, Content(expectationContent.getOrElse(""))), response, Success(()))
+      Expectation(
+        expectationMethod,
+        expectationPath,
+        expectationQueryParams.getOrElse(Map.empty),
+        expectationIncludedHeaderParams.getOrElse(Map.empty),
+        Content(expectationContent.getOrElse(""))),
+      response,
+      Success(()))
 
-    server.httpPost(
-      path = "/expectation/setup",
-      postBody = expectationSetupPostRequestJson(
+    server.httpPut(
+      path = "/expectation",
+      putBody = expectationPutRequestJson(
         expectationPath,
         expectationMethod,
         expectationContent,
+        expectationQueryParams,
+        expectationIncludedHeaderParams,
         response),
       andExpect = Status.NoContent)
   }
 
-  test("POST /expectation/setup should call register expectation with ExpectationService and return 500 on failure") {
+  test("PUT /expectation should call register expectation with ExpectationService and return 500 on failure") {
+    val expectation = Expectation("POST", "some-path", Map("query" -> "param"), Map("header" -> "param"), Content(""))
     setup_ExpectationService_RegisterExpectation(expectation, response, Failure(new Exception))
 
-    server.httpPost(
-      path = "/expectation/setup",
-      postBody = expectationSetupPostRequestJson(
+    server.httpPut(
+      path = "/expectation",
+      putBody = expectationPutRequestJson(
         expectation.path,
         expectation.method,
         Some(expectation.content.stringValue),
+        Some(expectation.queryParams),
+        Some(expectation.includedHeaderParameters),
         response),
       andExpect = Status.InternalServerError)
   }

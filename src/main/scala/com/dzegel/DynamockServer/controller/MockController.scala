@@ -11,7 +11,12 @@ import scala.util.{Failure, Success}
 class MockController @Inject()(expectationService: ExpectationService)  extends Controller {
 
   any(":*") { request: Request =>
-    val expectation = Expectation(request.method.name, request.path, Content(request.contentString))
+    val expectation = Expectation(
+      request.method.name,
+      request.path,
+      request.params.filterKeys(key => key != "*"), // * maps to the request path
+      request.headerMap.toMap,
+      Content(request.contentString))
     expectationService.getResponse(expectation) match {
       case Success(Some(res)) =>
         response
@@ -19,9 +24,9 @@ class MockController @Inject()(expectationService: ExpectationService)  extends 
           .body(res.content)
           .headers(res.headerMap)
       case Success(None) =>
-        response.status(550).body("Dynamock Error: The provided expectation was not setup.")
+        response.status(551).body("Dynamock Error: The provided expectation was not setup.")
       case Failure(exception) =>
-        response.status(551).body(s"Unexpected Dynamock Error: ${exception.getMessage}")
+        response.status(550).body(s"Unexpected Dynamock Error: ${exception.getMessage}")
     }
   }
 }

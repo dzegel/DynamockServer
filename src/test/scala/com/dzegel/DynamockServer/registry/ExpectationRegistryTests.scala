@@ -24,6 +24,13 @@ class ExpectationRegistryTests extends FunSuite with Matchers with BeforeAndAfte
     testMultipleRegistrationsWork(expectation1, expectation2)
   }
 
+  test("registerExpectationWithResponse and getResponse works for query params") {
+    val expectation1 = getExpectation(queryParams = Map("key1" -> "value1"))
+    val expectation2 = getExpectation(queryParams = Map("key2" -> "value2", "key3" -> "value3"))
+
+    testMultipleRegistrationsWork(expectation1, expectation2)
+  }
+
   test("registerExpectationWithResponse and getResponse works for stringContent") {
     val expectation1 = getExpectation(content = Content("stringContent1"))
     val expectation2 = getExpectation(content = Content("stringContent2"))
@@ -51,7 +58,12 @@ class ExpectationRegistryTests extends FunSuite with Matchers with BeforeAndAfte
     expectationRegistry.getResponse(expectation2) should contain(response2)
   }
 
-  private def getExpectation(path: Path = "", method: Method = "", content: Content = Content("")): Expectation = {
-    Expectation(method, path, content)
+  private def getExpectation(
+    path: Path = "",
+    method: Method = "",
+    queryParams: Map[String, String] = Map.empty,
+    includedHeaders: Map[String, String] = Map.empty,
+    content: Content = Content("")): Expectation = {
+    Expectation(method, path, queryParams, includedHeaders, content)
   }
 }
