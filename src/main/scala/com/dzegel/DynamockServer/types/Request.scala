@@ -1,11 +1,11 @@
 package com.dzegel.DynamockServer.types
 
-import com.dzegel.DynamockServer.registry.{Method, Path, QueryParams}
+import com.dzegel.DynamockServer.registry.{HeaderSet, Method, Path, QueryParams}
 
-case class Expectation(
+case class Request(
   method: Method,
   path: Path,
   queryParams: QueryParams,
-  headerParameters: HeaderParameters,
+  headers: HeaderSet,
   content: Content
 ) extends RegistryParameters

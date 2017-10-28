@@ -1,6 +1,6 @@
 package com.dzegel.DynamockServer.registry
 
-import com.dzegel.DynamockServer.types.{Expectation, Response}
+import com.dzegel.DynamockServer.types._
 import com.google.inject.{ImplementedBy, Singleton}
 
 import scala.collection.concurrent.TrieMap
@@ -9,32 +9,43 @@ import scala.collection.concurrent.TrieMap
 trait ExpectationRegistry {
   def registerExpectationWithResponse(expectation: Expectation, response: Response): Unit
 
-  def getResponse(expectation: Expectation): Option[Response]
+  def getResponse(request: Request): Option[Response]
 }
 
 @Singleton
 class DefaultExpectationRegistry extends ExpectationRegistry {
 
-  private val methodRegistry = TrieMap.empty[Method, PathRegistry]
+  private val methodRegistry: MethodRegistry = TrieMap.empty[Method, PathRegistry]
 
   override def registerExpectationWithResponse(expectation: Expectation, response: Response): Unit =
-    getHeaderParamRegistry(expectation).put(expectation.includedHeaderParameters, response)
+    getHeaderParamRegistry(expectation).put(expectation.headerParameters, response)
 
-  override def getResponse(expectation: Expectation): Option[Response] = {
-    getHeaderParamRegistry(expectation)
-      .filter { case (headers, response) => headers.toSet.subsetOf(expectation.includedHeaderParameters.toSet) } //find valid options
-      .reduceOption[(HeaderParams, Response)] {
-        case (left, right) if left._1.size == right._1.size => //if they have the same number of headers pick one deterministically
-          if (left._1.hashCode() <= right._1.hashCode()) left else right
-        case (left, right) => if (left._1.size > right._1.size) left else right //find the option with the most headers
-      }.map { case (headers, response) => response }
+  override def getResponse(request: Request): Option[Response] = {
+    getHeaderParamRegistry(request).filter { // find valid options
+      case (HeaderParameters(included, excluded), _) =>
+        included.subsetOf(request.headers) && excluded.intersect(request.headers).isEmpty
+    }.reduceOption[(HeaderParameters, Response)] {
+      case (left, right) =>
+        val (leftHeaderParameters, _) = left
+        val HeaderParameters(leftIncluded, leftExcluded) = leftHeaderParameters
+        val (rightHeaderParameters, _) = right
+        val HeaderParameters(rightIncluded, rightExcluded) = rightHeaderParameters
+
+        val leftConstraintSize = leftIncluded.size + leftExcluded.size
+        val rightConstraintSize = rightIncluded.size + rightExcluded.size
+
+        if (leftConstraintSize == rightConstraintSize) //if they have the same number of constraints pick one deterministically
+          if (leftHeaderParameters.hashCode() <= rightHeaderParameters.hashCode()) left else right
+        else
+          if (leftConstraintSize > rightConstraintSize) left else right //find the option with the most constraints
+    }.map { case (_, response) => response }
   }
 
-  private def getHeaderParamRegistry(expectation: Expectation): HeaderParamRegistry = {
-    val pathRegistry = methodRegistry.getOrElseUpdate(expectation.method, TrieMap.empty)
-    val queryParamRegistry = pathRegistry.getOrElseUpdate(expectation.path, TrieMap.empty)
-    val contentRegistry = queryParamRegistry.getOrElseUpdate(expectation.queryParams, TrieMap.empty)
-    val headerParamRegistry = contentRegistry.getOrElseUpdate(expectation.content, TrieMap.empty)
+  private def getHeaderParamRegistry(registryParameters: RegistryParameters): HeaderParamRegistry = {
+    val pathRegistry = methodRegistry.getOrElseUpdate(registryParameters.method, TrieMap.empty)
+    val queryParamRegistry = pathRegistry.getOrElseUpdate(registryParameters.path, TrieMap.empty)
+    val contentRegistry = queryParamRegistry.getOrElseUpdate(registryParameters.queryParams, TrieMap.empty)
+    val headerParamRegistry = contentRegistry.getOrElseUpdate(registryParameters.content, TrieMap.empty)
     headerParamRegistry
   }
 }

@@ -1,6 +1,6 @@
 package com.dzegel.DynamockServer.server
 
-import com.dzegel.DynamockServer.types.{Content, Expectation, Response}
+import com.dzegel.DynamockServer.types.{Content, Expectation, HeaderParameters, Response}
 import com.twitter.finagle.http.Status
 import com.twitter.finatra.http.EmbeddedHttpServer
 import com.twitter.inject.server.FeatureTest
@@ -9,7 +9,7 @@ class DynamockServerTests extends FeatureTest {
 
   override protected val server: EmbeddedHttpServer = new EmbeddedHttpServer(new DynamockServer())
 
-  private val expectation = Expectation("PUT", "/some/path", Map.empty, Map.empty, Content("someContent"))
+  private val expectation = Expectation("PUT", "/some/path", Map.empty, HeaderParameters(Set.empty, Set.empty), Content("someContent"))
   private val response = Response(201, "SomeOtherContent", Map("SomeKey" -> "SomeValue"))
   private val expectationPutRequestJson =
     s"""

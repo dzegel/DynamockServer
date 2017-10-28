@@ -1,7 +1,7 @@
 package com.dzegel.DynamockServer.controller
 
 import com.dzegel.DynamockServer.service.ExpectationService
-import com.dzegel.DynamockServer.types.{Content, Expectation, Response}
+import com.dzegel.DynamockServer.types._
 import com.twitter.finagle.http.Status
 import com.twitter.finatra.http.routing.HttpRouter
 import com.twitter.finatra.http.{EmbeddedHttpServer, HttpServer}
@@ -12,7 +12,7 @@ import org.scalatest.Matchers
 
 import scala.util.{Failure, Success, Try}
 
-class MockControllerTests  extends FeatureTest with MockFactory with Matchers {
+class MockControllerTests extends FeatureTest with MockFactory with Matchers {
   private val mockExpectationService = mock[ExpectationService]
 
   override protected val server: EmbeddedHttpServer = new EmbeddedHttpServer(
@@ -26,7 +26,7 @@ class MockControllerTests  extends FeatureTest with MockFactory with Matchers {
   val response = Response(300, "SomeContent", Map("SomeKey" -> "SomeValue"))
 
   test("GET /somePath should call getResponse and return the response") {
-    val expectation = Expectation("GET", "/somePath", Map(), Map(), Content(""))
+    val expectation = Expectation("GET", "/somePath", Map(), HeaderParameters(Set(), Set()), Content(""))
     setup_ExpectationService_GetResponse(expectation, Success(Some(response)))
 
     val result = server.httpGet(
@@ -38,9 +38,11 @@ class MockControllerTests  extends FeatureTest with MockFactory with Matchers {
   }
 
   test("POST / should call getResponse and return the response") {
-    val headers = Map("SomeHeader" -> "SomeValue", "SomeOtherHeader" -> "SomeOtherValue")
+    val includedHeaders = Set("IncluedHeader" -> "IncluedHeader")
+    val excludedHeaders = Set("ExcludedHeader" -> "ExcludedValue")
+    val headers = includedHeaders.toMap + ("SomeOtherHeader" -> "SomeOtherValue")
     val queryParams = Map("QueryParam" -> "Value", "OtherQueryParam" -> "OtherValue")
-    val expectation = Expectation("POST", "/", queryParams, headers, Content("Some Stuff"))
+    val expectation = Expectation("POST", "/", queryParams, HeaderParameters(includedHeaders, excludedHeaders), Content("Some Stuff"))
     setup_ExpectationService_GetResponse(expectation, Success(Some(response)))
 
     val result = server.httpPost(
@@ -54,7 +56,7 @@ class MockControllerTests  extends FeatureTest with MockFactory with Matchers {
   }
 
   test("POST / should return 551 when expectation is not setup") {
-    val expectation = Expectation("POST", "/", Map.empty, Map.empty, Content("Some Stuff"))
+    val expectation = Expectation("POST", "/", Map.empty, HeaderParameters(Set.empty, Set.empty), Content("Some Stuff"))
     setup_ExpectationService_GetResponse(expectation, Success(None))
 
     server.httpPost(
@@ -65,7 +67,7 @@ class MockControllerTests  extends FeatureTest with MockFactory with Matchers {
   }
 
   test("PUT / should return 500 when there is an internal error") {
-    val expectation = Expectation("PUT", "/", Map.empty, Map.empty, Content("Some Stuff"))
+    val expectation = Expectation("PUT", "/", Map.empty, HeaderParameters(Set.empty, Set.empty), Content("Some Stuff"))
     val errorMessage = "Some Error Message"
     setup_ExpectationService_GetResponse(expectation, Failure(new Exception(errorMessage)))
 
@@ -77,11 +79,19 @@ class MockControllerTests  extends FeatureTest with MockFactory with Matchers {
   }
 
   private def setup_ExpectationService_GetResponse(expectation: Expectation, returnValue: Try[Option[Response]]) = {
-    val includedHeaders = expectation.includedHeaderParameters
+    val includedHeaders = expectation.headerParameters.included
+    val excludedHeaders = expectation.headerParameters.excluded
     (mockExpectationService.getResponse _)
-      .expects(new FunctionAdapter1[Expectation, Boolean](exp =>
-        includedHeaders.toSet.subsetOf(exp.includedHeaderParameters.toSet) &&
-          exp.copy(includedHeaderParameters = includedHeaders) == expectation))
+      .expects(new FunctionAdapter1[Request, Boolean](req =>
+        compareRegistryParameters(expectation, req) &&
+          includedHeaders.subsetOf(req.headers) &&
+          excludedHeaders.intersect(req.headers).isEmpty))
       .returning(returnValue)
   }
+
+  private def compareRegistryParameters(left: RegistryParameters, right: RegistryParameters) =
+    left.path == right.path &&
+      left.method == right.method &&
+      left.queryParams == right.queryParams &&
+      left.content == right.content
 }

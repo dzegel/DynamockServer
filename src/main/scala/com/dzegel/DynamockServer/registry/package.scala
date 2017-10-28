@@ -1,6 +1,6 @@
 package com.dzegel.DynamockServer
 
-import com.dzegel.DynamockServer.types.{Content, Response}
+import com.dzegel.DynamockServer.types.{Content, HeaderParameters, Response}
 
 import scala.collection.concurrent.TrieMap
 
@@ -8,11 +8,11 @@ package object registry {
   type Path = String
   type Method = String
   type QueryParams = Map[String, String]
-  type HeaderParams = Map[String, String]
+  type HeaderSet = Set[(String, String)]
 
   type MethodRegistry = TrieMap[Method, PathRegistry]
   type PathRegistry = TrieMap[Path, QueryParamRegistry]
   type QueryParamRegistry = TrieMap[QueryParams, ContentRegistry]
   type ContentRegistry = TrieMap[Content, HeaderParamRegistry]
-  type HeaderParamRegistry = TrieMap[HeaderParams, Response]
+  type HeaderParamRegistry = TrieMap[HeaderParameters, Response]
 }

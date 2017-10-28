@@ -1,7 +1,7 @@
 package com.dzegel.DynamockServer.service
 
 import com.dzegel.DynamockServer.registry.ExpectationRegistry
-import com.dzegel.DynamockServer.types.{Content, Expectation, Response}
+import com.dzegel.DynamockServer.types._
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.{FunSuite, Matchers}
 
@@ -12,7 +12,8 @@ class ExpectationServiceTests extends FunSuite with MockFactory with Matchers {
   private val mockExpectationRegistry = mock[ExpectationRegistry]
   private val expectationService = new DefaultExpectationService(mockExpectationRegistry)
 
-  private val expectation = Expectation("POST", "somePath", Map.empty, Map.empty, Content(""))
+  private val expectation = Expectation("POST", "somePath", Map.empty, HeaderParameters(Set.empty, Set.empty), Content(""))
+  private val request = Request(expectation.method, expectation.path, expectation.queryParams, expectation.headerParameters.included, expectation.content)
   private val response = Response(200, "", Map.empty)
 
   test("registerExpectation returns Success when no Exception is thrown") {
@@ -31,20 +32,20 @@ class ExpectationServiceTests extends FunSuite with MockFactory with Matchers {
   test("getResponse returns Success of response") {
     setup_ExpectationRegistry_GetResponse(expectation, response = Some(response))
 
-    expectationService.getResponse(expectation) should equal(Success(Some(response)))
+    expectationService.getResponse(request) should equal(Success(Some(response)))
   }
 
   test("getResponse returns Success of None") {
     setup_ExpectationRegistry_GetResponse(expectation, response = None)
 
-    expectationService.getResponse(expectation) should equal(Success(None))
+    expectationService.getResponse(request) should equal(Success(None))
   }
 
   test("getResponse returns Failure") {
     val exception = new Exception()
     setup_ExpectationRegistry_GetResponse(expectation, exception = Some(exception))
 
-    expectationService.getResponse(expectation) should equal(Failure(exception))
+    expectationService.getResponse(request) should equal(Failure(exception))
   }
 
   private def setup_ExpectationRegistry_RegisterExpectationWithResponse(
@@ -64,7 +65,7 @@ class ExpectationServiceTests extends FunSuite with MockFactory with Matchers {
     response: Option[Response] = None,
     exception: Option[Exception] = None
   ): Unit = {
-    val callHandler = (mockExpectationRegistry.getResponse _).expects(expectation)
+    val callHandler = (mockExpectationRegistry.getResponse _).expects(request)
     exception match {
       case None => callHandler.returning(response)
       case Some(ex) => callHandler.throwing(ex)
