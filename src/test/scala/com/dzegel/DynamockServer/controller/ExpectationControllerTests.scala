@@ -143,10 +143,12 @@ class ExpectationControllerTests extends FeatureTest with MockFactory with Match
   }
 
   test("DELETE /expectations should call clear all expectations with ExpectationService and return 500 on failure"){
-    setup_ExpectationService_ClearAllExpectations(Failure(new Exception))
+    val errorMessage = "Some Error Message"
+    setup_ExpectationService_ClearAllExpectations(Failure(new Exception(errorMessage)))
 
     server.httpDelete(
       path = "/expectations",
+      withBody = errorMessage,
       andExpect = Status.InternalServerError
     )
   }
