@@ -1,6 +1,6 @@
 package com.dzegel.DynamockServer.controller
 
-import com.dzegel.DynamockServer.controller.ExpectationController.ExpectationSetupPostRequest
+import com.dzegel.DynamockServer.controller.ExpectationController.ExpectationPutRequest
 import com.dzegel.DynamockServer.service.ExpectationService
 import com.dzegel.DynamockServer.types.{Content, Expectation, HeaderParameters, Response}
 import com.google.inject.Inject
@@ -21,7 +21,7 @@ object ExpectationController {
 
   private case class ResponseDto(status: Int, content: Option[String], headerMap: Option[Map[String, String]])
 
-  private case class ExpectationSetupPostRequest(expectation: ExpectationDto, response: ResponseDto)
+  private case class ExpectationPutRequest(expectation: ExpectationDto, response: ResponseDto)
 
   private implicit def dtoToExpectation(dto: ExpectationDto): Expectation =
     Expectation(
@@ -39,7 +39,7 @@ object ExpectationController {
 
 class ExpectationController @Inject()(expectationService: ExpectationService) extends Controller {
 
-  put("/expectation") { request: ExpectationSetupPostRequest =>
+  put("/expectation") { request: ExpectationPutRequest =>
     expectationService.registerExpectation(request.expectation, request.response) match {
       case Success(()) => response.noContent
       case Failure(exception) => response.internalServerError(exception.getMessage)
