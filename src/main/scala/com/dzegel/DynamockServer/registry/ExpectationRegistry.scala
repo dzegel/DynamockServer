@@ -10,6 +10,8 @@ trait ExpectationRegistry {
   def registerExpectationWithResponse(expectation: Expectation, response: Response): Unit
 
   def getResponse(request: Request): Option[Response]
+
+  def clearAllExpectations(): Unit
 }
 
 @Singleton
@@ -48,4 +50,6 @@ class DefaultExpectationRegistry extends ExpectationRegistry {
     val headerParamRegistry = contentRegistry.getOrElseUpdate(registryParameters.content, TrieMap.empty)
     headerParamRegistry
   }
+
+  override def clearAllExpectations(): Unit = methodRegistry.clear()
 }

@@ -11,6 +11,8 @@ trait ExpectationService {
   def registerExpectation(expectation: Expectation, response: Response): Try[Unit]
 
   def getResponse(request: Request): Try[Option[Response]]
+
+  def clearAllExpectations(): Try[Unit]
 }
 
 class DefaultExpectationService @Inject()(expectationRegistry: ExpectationRegistry) extends ExpectationService {
@@ -19,4 +21,6 @@ class DefaultExpectationService @Inject()(expectationRegistry: ExpectationRegist
 
   override def getResponse(request: Request): Try[Option[Response]] =
     Try(expectationRegistry.getResponse(request))
+
+  override def clearAllExpectations(): Try[Unit] = Try(expectationRegistry.clearAllExpectations())
 }
