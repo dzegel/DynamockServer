@@ -88,12 +88,12 @@ class ContentTests extends FunSuite with Matchers {
     content1.isJson shouldBe true
   }
 
-  test("""Content(" [{ "thing" : 2 }  ,    {"otherThing":      "Some String"}     ]") not equals Content("[{"otherThing":"Some String"},{"thing":2}]")""") {
+  test("""Content(" [{ "thing" : 2 }  ,    {"otherThing":      "Some String"}     ]") equals Content("[{"otherThing":"Some String"},{"thing":2}]")""") {
     val content1 = Content(""" [{ "thing" : 2 }  ,    {"otherThing":      "Some String"}     ]""")
     val content2 = Content("""[{"otherThing":"Some String"},{"thing":2}]""")
 
-    content1 should not equal content2
-    content1.hashCode should not equal content2.hashCode
+    content1 should equal(content2)
+    content1.hashCode should equal(content2.hashCode)
     content1.isJson shouldBe true
     content2.isJson shouldBe true
   }

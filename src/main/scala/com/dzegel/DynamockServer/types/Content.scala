@@ -1,10 +1,12 @@
 package com.dzegel.DynamockServer.types
 
+import com.dzegel.DynamockServer.util.JsonUtil
+import org.json4s.JValue
 import org.json4s.native.JsonParser.parseOpt
 
 class Content(val stringValue: String) {
 
-  private val json = parseOpt(stringValue)
+  private val json: Option[JValue] = parseOpt(stringValue).map(JsonUtil.convertJArraysToJSets)
 
   def isJson: Boolean = json.isDefined
 
