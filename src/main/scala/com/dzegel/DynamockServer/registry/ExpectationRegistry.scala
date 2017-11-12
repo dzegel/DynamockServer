@@ -51,5 +51,11 @@ class DefaultExpectationRegistry extends ExpectationRegistry {
     headerParamRegistry
   }
 
-  override def getAllExpectations: Set[(Expectation, Response)] = ???
+  override def getAllExpectations: Set[(Expectation, Response)] = for {
+    (method, pathRegistry) <- methodRegistry.toSet
+    (path, queryParamRegistry) <- pathRegistry
+    (queryParams, contentRegistry) <- queryParamRegistry
+    (content, headerParamsRegistry) <- contentRegistry
+    (headerParams, response) <- headerParamsRegistry
+  } yield (Expectation(method, path, queryParams, headerParams, content), response)
 }
