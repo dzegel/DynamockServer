@@ -40,5 +40,8 @@ libraryDependencies ++= Seq(
   "org.mockito" % "mockito-core" % "1.10.19" % "test",
   "com.google.inject.extensions" % "guice-testlib" % "4.1.0" % "test",
 
-  "org.json4s" %% "json4s-native" % versions.json4s
+  "org.json4s" %% "json4s-native" % versions.json4s,
+  "org.json4s" %% "json4s-core" % versions.json4s,
+  "org.json4s" %% "json4s-ext" % versions.json4s,
+  "org.json4s" %% "json4s-jackson" % versions.json4s
 )
