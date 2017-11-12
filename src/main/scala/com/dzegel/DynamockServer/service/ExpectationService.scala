@@ -19,8 +19,7 @@ class DefaultExpectationService @Inject()(expectationRegistry: ExpectationRegist
   override def registerExpectation(expectation: Expectation, response: Response): Try[Unit] =
     Try(expectationRegistry.registerExpectationWithResponse(expectation, response))
 
-  override def getResponse(request: Request): Try[Option[Response]] =
-    Try(expectationRegistry.getResponse(request))
+  override def getResponse(request: Request): Try[Option[Response]] = Try(expectationRegistry.getResponse(request))
 
-  override def getAllExpectations = ???
+  override def getAllExpectations: Try[Set[(Expectation, Response)]] = Try(expectationRegistry.getAllExpectations)
 }

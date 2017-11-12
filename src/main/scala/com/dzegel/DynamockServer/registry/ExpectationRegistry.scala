@@ -7,6 +7,8 @@ import scala.collection.concurrent.TrieMap
 
 @ImplementedBy(classOf[DefaultExpectationRegistry])
 trait ExpectationRegistry {
+  def getAllExpectations: Set[(Expectation, Response)]
+
   def registerExpectationWithResponse(expectation: Expectation, response: Response): Unit
 
   def getResponse(request: Request): Option[Response]
@@ -48,4 +50,6 @@ class DefaultExpectationRegistry extends ExpectationRegistry {
     val headerParamRegistry = contentRegistry.getOrElseUpdate(registryParameters.content, TrieMap.empty)
     headerParamRegistry
   }
+
+  override def getAllExpectations: Set[(Expectation, Response)] = ???
 }
