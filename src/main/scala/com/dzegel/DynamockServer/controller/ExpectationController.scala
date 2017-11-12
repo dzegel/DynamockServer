@@ -25,7 +25,7 @@ object ExpectationController {
 
   private implicit def dtoToExpectation(dto: ExpectationDto): Expectation =
     Expectation(
-      dto.method,
+      dto.method.toUpperCase(),
       dto.path,
       dto.queryParameters.getOrElse(Map.empty),
       HeaderParameters(
