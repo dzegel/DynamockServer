@@ -22,7 +22,7 @@ object ExpectationController {
 
   private case class ResponseDto(status: Int, content: Option[String], headerMap: Option[Map[String, String]])
 
-  private case class ExpectationSetupPostRequest(expectation: ExpectationDto, response: ResponseDto)
+  private case class ExpectationPutRequest(expectation: ExpectationDto, response: ResponseDto)
 
   private case class ExpectationsAndResponsePairDto(expectation: ExpectationDto, response: ResponseDto)
 
@@ -50,7 +50,7 @@ object ExpectationController {
 
   private implicit def dtoToExpectation(dto: ExpectationDto): Expectation =
     Expectation(
-      dto.method,
+      dto.method.toUpperCase(),
       dto.path,
       dto.queryParameters.getOrElse(Map.empty),
       HeaderParameters(
@@ -64,8 +64,15 @@ object ExpectationController {
 
 class ExpectationController @Inject()(expectationService: ExpectationService) extends Controller {
 
-  put("/expectation") { request: ExpectationSetupPostRequest =>
+  put("/expectation") { request: ExpectationPutRequest =>
     expectationService.registerExpectation(request.expectation, request.response) match {
+      case Success(()) => response.noContent
+      case Failure(exception) => response.internalServerError(exception.getMessage)
+    }
+  }
+
+  delete("/expectations") { request: Request =>
+    expectationService.clearAllExpectations() match {
       case Success(()) => response.noContent
       case Failure(exception) => response.internalServerError(exception.getMessage)
     }
