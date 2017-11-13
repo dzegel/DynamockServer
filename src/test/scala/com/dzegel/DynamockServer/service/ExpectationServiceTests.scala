@@ -48,6 +48,19 @@ class ExpectationServiceTests extends FunSuite with MockFactory with Matchers {
     expectationService.getResponse(request) should equal(Failure(exception))
   }
 
+  test("clearAllExpectations returns Success") {
+    setup_ExpectationRegistry_ClearAllExpectations()
+
+    expectationService.clearAllExpectations() should equal(Success(()))
+  }
+
+  test("clearAllExpectations returns Failure") {
+    val exception = new Exception()
+    setup_ExpectationRegistry_ClearAllExpectations(Some(exception))
+
+    expectationService.clearAllExpectations() should equal(Failure(exception))
+  }
+
   private def setup_ExpectationRegistry_RegisterExpectationWithResponse(
     expectation: Expectation,
     response: Response,
@@ -68,6 +81,14 @@ class ExpectationServiceTests extends FunSuite with MockFactory with Matchers {
     val callHandler = (mockExpectationRegistry.getResponse _).expects(request)
     exception match {
       case None => callHandler.returning(response)
+      case Some(ex) => callHandler.throwing(ex)
+    }
+  }
+
+  private def setup_ExpectationRegistry_ClearAllExpectations(exception: Option[Exception] = None): Unit = {
+    val callHandler = (mockExpectationRegistry.clearAllExpectations _).expects()
+    exception match {
+      case None => callHandler.returning(Unit)
       case Some(ex) => callHandler.throwing(ex)
     }
   }

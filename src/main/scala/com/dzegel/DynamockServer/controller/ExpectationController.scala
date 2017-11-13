@@ -4,6 +4,7 @@ import com.dzegel.DynamockServer.controller.ExpectationController.ExpectationPut
 import com.dzegel.DynamockServer.service.ExpectationService
 import com.dzegel.DynamockServer.types.{Content, Expectation, HeaderParameters, Response}
 import com.google.inject.Inject
+import com.twitter.finagle.http.Request
 import com.twitter.finatra.http.Controller
 
 import scala.language.implicitConversions
@@ -41,6 +42,13 @@ class ExpectationController @Inject()(expectationService: ExpectationService) ex
 
   put("/expectation") { request: ExpectationPutRequest =>
     expectationService.registerExpectation(request.expectation, request.response) match {
+      case Success(()) => response.noContent
+      case Failure(exception) => response.internalServerError(exception.getMessage)
+    }
+  }
+
+  delete("/expectations") { request: Request =>
+    expectationService.clearAllExpectations() match {
       case Success(()) => response.noContent
       case Failure(exception) => response.internalServerError(exception.getMessage)
     }
