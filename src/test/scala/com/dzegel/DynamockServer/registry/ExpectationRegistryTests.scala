@@ -128,6 +128,22 @@ class ExpectationRegistryTests extends FunSuite with Matchers with BeforeAndAfte
     responseFromMultipleValidReversedExpectations shouldNot be(responseFromMultipleValidExpectations)
   }
 
+  test("getAllExpectations returns registered expectations and responses") {
+    val expectation = Expectation(
+      "GET",
+      "/some/path",
+      Map("QueryParam" -> "QueryValue"),
+      HeaderParameters(Set("IncludedHeader" -> "IncludedValue"), Set("ExcludedHeader" -> "ExcludedValue")),
+      Content("Some Content"))
+    val response = Response(200, "Response Content", Map("ResponseHeaderParam" -> "ResponseHeaderValue"))
+
+    expectationRegistry.getAllExpectations shouldBe empty
+
+    expectationRegistry.registerExpectationWithResponse(expectation, response)
+
+    expectationRegistry.getAllExpectations shouldBe Set(expectation -> response)
+  }
+
   test("clearAllExpectations clears all expectations") {
     val expectation1 = getExpectation(path = "path1", method = "GET")
     val request1 = getRequest(path = expectation1.path, method = expectation1.method)

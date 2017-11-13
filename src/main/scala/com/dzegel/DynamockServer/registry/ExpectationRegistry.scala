@@ -12,6 +12,8 @@ trait ExpectationRegistry {
   def getResponse(request: Request): Option[Response]
 
   def clearAllExpectations(): Unit
+
+  def getAllExpectations: Set[(Expectation, Response)]
 }
 
 @Singleton
@@ -52,4 +54,12 @@ class DefaultExpectationRegistry extends ExpectationRegistry {
   }
 
   override def clearAllExpectations(): Unit = methodRegistry.clear()
+
+  override def getAllExpectations: Set[(Expectation, Response)] = for {
+    (method, pathRegistry) <- methodRegistry.toSet
+    (path, queryParamRegistry) <- pathRegistry
+    (queryParams, contentRegistry) <- queryParamRegistry
+    (content, headerParamsRegistry) <- contentRegistry
+    (headerParams, response) <- headerParamsRegistry
+  } yield (Expectation(method, path, queryParams, headerParams, content), response)
 }

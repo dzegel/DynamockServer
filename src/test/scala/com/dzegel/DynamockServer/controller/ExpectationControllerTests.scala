@@ -117,7 +117,7 @@ class ExpectationControllerTests extends FeatureTest with MockFactory with Match
   }
 
   test("PUT /expectation should call register expectation with ExpectationService and return 500 on failure") {
-    val expectation = Expectation("POST", "some-path", Map("query" -> "param"), HeaderParameters(Set("included" -> "includedValue"), Set("excluded"-> "excludedValue")), Content(""))
+    val expectation = Expectation("POST", "some-path", Map("query" -> "param"), HeaderParameters(Set("included" -> "includedValue"), Set("excluded" -> "excludedValue")), Content(""))
     setup_ExpectationService_RegisterExpectation(expectation, response, Failure(new Exception))
 
     server.httpPut(
@@ -133,7 +133,7 @@ class ExpectationControllerTests extends FeatureTest with MockFactory with Match
       andExpect = Status.InternalServerError)
   }
 
-  test("DELETE /expectations should call clear all expectations with ExpectationService and return 204 on success"){
+  test("DELETE /expectations should call clear all expectations with ExpectationService and return 204 on success") {
     setup_ExpectationService_ClearAllExpectations(Success(()))
 
     server.httpDelete(
@@ -142,11 +142,73 @@ class ExpectationControllerTests extends FeatureTest with MockFactory with Match
     )
   }
 
-  test("DELETE /expectations should call clear all expectations with ExpectationService and return 500 on failure"){
+  test("DELETE /expectations should call clear all expectations with ExpectationService and return 500 on failure") {
     val errorMessage = "Some Error Message"
     setup_ExpectationService_ClearAllExpectations(Failure(new Exception(errorMessage)))
 
     server.httpDelete(
+      path = "/expectations",
+      withBody = errorMessage,
+      andExpect = Status.InternalServerError
+    )
+  }
+
+  test("GET /expectations should call get all expectations with ExpectationService and return 200 on success") {
+    val expectation = Expectation(
+      "POST",
+      "some-path",
+      Map("query" -> "param"),
+      HeaderParameters(
+        Set("included1" -> "includedValue1", "included2" -> "includedValue2"),
+        Set("excluded1" -> "excludedValue1", "excluded2" -> "excludedValue2")),
+      Content("Some Expectation Content")
+    )
+
+    val response = Response(200, "Some Response Content", Map("responseParam" -> "value"))
+    setup_ExpectationService_GetAllExpectations(Success(Set(expectation -> response)))
+
+    var jsonResponse =
+      """{
+         |  "expectation_and_response_pairs" : [
+         |    {
+         |      "expectation" : {
+         |        "method" : "POST",
+         |        "path" : "some-path",
+         |        "query_parameters" : {
+         |          "query" : "param"
+         |        },
+         |        "included_header_parameters" : {
+         |          "included1" : "includedValue1",
+         |          "included2" : "includedValue2"
+         |        },
+         |        "excluded_header_parameters" : {
+         |          "excluded1" : "excludedValue1",
+         |          "excluded2" : "excludedValue2"
+         |        },
+         |        "content" : "Some Expectation Content"
+         |      },
+         |      "response" : {
+         |        "status" : 200,
+         |        "content" : "Some Response Content",
+         |        "header_map" : {
+         |          "responseParam" : "value"
+         |        }
+         |      }
+         |    }
+         |  ]
+         |}""".stripMargin
+
+    server.httpGet(
+      path = "/expectations",
+      withJsonBody = jsonResponse,
+      andExpect = Status.Ok)
+  }
+
+  test("GET /expectations should call get all expectations with ExpectationService and return 500 on failure") {
+    val errorMessage = "Some Error Message"
+    setup_ExpectationService_GetAllExpectations(Failure(new Exception(errorMessage)))
+
+    server.httpGet(
       path = "/expectations",
       withBody = errorMessage,
       andExpect = Status.InternalServerError
@@ -160,6 +222,12 @@ class ExpectationControllerTests extends FeatureTest with MockFactory with Match
   ) = {
     (mockExpectationService.registerExpectation _)
       .expects(expectation, response)
+      .returning(returnValue)
+  }
+
+  private def setup_ExpectationService_GetAllExpectations(returnValue: Try[Set[(Expectation, Response)]]) = {
+    (mockExpectationService.getAllExpectations _)
+      .expects()
       .returning(returnValue)
   }
 
