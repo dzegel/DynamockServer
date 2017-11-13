@@ -12,7 +12,6 @@ scalaVersion := "2.12.3"
 
 lazy val versions = new {
   val finatra = "2.9.0"
-  val json4s = "3.6.0-M1"
 }
 
 libraryDependencies ++= Seq(
@@ -20,6 +19,8 @@ libraryDependencies ++= Seq(
   "com.twitter" %% "finatra-http" % versions.finatra,
   "com.twitter" %% "finatra-httpclient" % versions.finatra,
   "com.twitter" %% "inject-request-scope" % versions.finatra,
+
+  "org.json4s" %% "json4s-native" % "3.6.0-M1",
 
   "com.twitter" %% "finatra-http" % versions.finatra % "test" classifier "tests",
   "com.twitter" %% "finatra-jackson" % versions.finatra % "test" classifier "tests",
@@ -38,10 +39,5 @@ libraryDependencies ++= Seq(
   "org.scalatest" %% "scalatest" % "3.0.4" % "test",
   "org.scalamock" %% "scalamock-scalatest-support" % "3.6.0" % "test",
   "org.mockito" % "mockito-core" % "1.10.19" % "test",
-  "com.google.inject.extensions" % "guice-testlib" % "4.1.0" % "test",
-
-  "org.json4s" %% "json4s-native" % versions.json4s,
-  "org.json4s" %% "json4s-core" % versions.json4s,
-  "org.json4s" %% "json4s-ext" % versions.json4s,
-  "org.json4s" %% "json4s-jackson" % versions.json4s
+  "com.google.inject.extensions" % "guice-testlib" % "4.1.0" % "test"
 )
