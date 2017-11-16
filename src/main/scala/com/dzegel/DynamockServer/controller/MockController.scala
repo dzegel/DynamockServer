@@ -12,7 +12,7 @@ class MockController @Inject()(expectationService: ExpectationService) extends C
 
   any(":*") { request: FinagleRequest =>
     val expectation = DynamockRequest(
-      request.method.name,
+      request.method.name.toUpperCase(),
       request.path,
       request.params.filterKeys(key => key != "*"), // * maps to the request path
       request.headerMap.toSet,

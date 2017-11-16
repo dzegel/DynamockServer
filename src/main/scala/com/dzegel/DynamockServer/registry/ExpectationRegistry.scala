@@ -10,6 +10,10 @@ trait ExpectationRegistry {
   def registerExpectationWithResponse(expectation: Expectation, response: Response): Unit
 
   def getResponse(request: Request): Option[Response]
+
+  def clearAllExpectations(): Unit
+
+  def getAllExpectations: Set[(Expectation, Response)]
 }
 
 @Singleton
@@ -48,4 +52,14 @@ class DefaultExpectationRegistry extends ExpectationRegistry {
     val headerParamRegistry = contentRegistry.getOrElseUpdate(registryParameters.content, TrieMap.empty)
     headerParamRegistry
   }
+
+  override def clearAllExpectations(): Unit = methodRegistry.clear()
+
+  override def getAllExpectations: Set[(Expectation, Response)] = for {
+    (method, pathRegistry) <- methodRegistry.toSet
+    (path, queryParamRegistry) <- pathRegistry
+    (queryParams, contentRegistry) <- queryParamRegistry
+    (content, headerParamsRegistry) <- contentRegistry
+    (headerParams, response) <- headerParamsRegistry
+  } yield (Expectation(method, path, queryParams, headerParams, content), response)
 }

@@ -20,6 +20,8 @@ libraryDependencies ++= Seq(
   "com.twitter" %% "finatra-httpclient" % versions.finatra,
   "com.twitter" %% "inject-request-scope" % versions.finatra,
 
+  "org.json4s" %% "json4s-native" % "3.6.0-M1",
+
   "com.twitter" %% "finatra-http" % versions.finatra % "test" classifier "tests",
   "com.twitter" %% "finatra-jackson" % versions.finatra % "test" classifier "tests",
   "com.twitter" %% "inject-server" % versions.finatra % "test" classifier "tests",
