@@ -6,9 +6,10 @@ import com.dzegel.DynamockServer.types.{Content, Expectation, HeaderParameters, 
 import com.google.inject.Inject
 import com.twitter.finagle.http.Request
 import com.twitter.finatra.http.Controller
+import com.twitter.finatra.request.QueryParam
 
 import scala.language.implicitConversions
-import scala.util.{Failure, Success}
+import scala.util.{Failure, Success, Try}
 
 object ExpectationController {
 
@@ -27,6 +28,10 @@ object ExpectationController {
   private case class ExpectationsAndResponsePairDto(expectation: ExpectationDto, response: ResponseDto)
 
   private case class ExpectationsGetResponse(expectationAndResponsePairs: Set[ExpectationsAndResponsePairDto])
+
+  private case class ExpectationsStorePostRequest(@QueryParam suiteName: String)
+
+  private case class ExpectationsLoadPostRequest(@QueryParam suiteName: String)
 
   private def expectationsAndResponsePairToDto(expectationsAndResponsePair: (Expectation, Response))
   : ExpectationsAndResponsePairDto = expectationsAndResponsePair match {
@@ -65,17 +70,11 @@ object ExpectationController {
 class ExpectationController @Inject()(expectationService: ExpectationService) extends Controller {
 
   put("/expectation") { request: ExpectationPutRequest =>
-    expectationService.registerExpectation(request.expectation, request.response) match {
-      case Success(()) => response.noContent
-      case Failure(exception) => response.internalServerError(exception.getMessage)
-    }
+    makeNoContentResponse(expectationService.registerExpectation(request.expectation, request.response))
   }
 
   delete("/expectations") { request: Request =>
-    expectationService.clearAllExpectations() match {
-      case Success(()) => response.noContent
-      case Failure(exception) => response.internalServerError(exception.getMessage)
-    }
+    makeNoContentResponse(expectationService.clearAllExpectations())
   }
 
   get("/expectations") { _: Request =>
@@ -84,5 +83,18 @@ class ExpectationController @Inject()(expectationService: ExpectationService) ex
         response.ok(body = ExpectationsGetResponse(expectationAndResponsePairs.map(expectationsAndResponsePairToDto)))
       case Failure(exception) => response.internalServerError(exception.getMessage)
     }
+  }
+
+  post("/expectations/store") { request: ExpectationsStorePostRequest => //TODO is this the correct http method?
+    makeNoContentResponse(expectationService.storeExpectations(request.suiteName))
+  }
+
+  post("/expectations/load") { request: ExpectationsLoadPostRequest => //TODO is this the correct http method?
+    makeNoContentResponse(expectationService.loadExpectations(request.suiteName))
+  }
+
+  private def makeNoContentResponse(`try`: Try[Unit]) = `try` match {
+    case Success(()) => response.noContent
+    case Failure(exception) => response.internalServerError(exception.getMessage)
   }
 }
