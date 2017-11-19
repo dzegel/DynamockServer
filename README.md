@@ -1,9 +1,17 @@
-# DynamockServer
+# Dynamock Server
+A mock-server designed to replicate classic unit-test mocking experience. Setup an API expectation and response and receive the registered response when an API call matching the registered expectation is made. 
+
+###### Usage
+When designing automated tests for a service with external web dependencies simply:
+1. Spin-up a Dynamock Server instance.
+1. Configure the hosts and ports for the dependent services on the service under test, to point to the Dynamock Server.
+1. Setup the expected API calls along with desired responses.
+1. Optionally tear-down the setup expectations when done testing.
 
 ## Dynamock API
 
 ### PUT /expectation
-Mock an API response by registering an expectation to match on, along with the response to return when the expectation is positively matched. 
+Setup a mocked response by registering an expectation and the response to return when the expectation is positively matched. 
 
 **Content-Type:** application/json
 
@@ -11,12 +19,39 @@ Mock an API response by registering an expectation to match on, along with the r
 - expectation: Expectation Object
 - response: Response Object
 
-**Example:**
+###### Example Body:
 
     {
-        "expectation": {},
-        "response": {}
+        "expectation": {
+            "method": "POST",
+            "path": "/some/url/path",
+            "query_parameters": {
+                "some_query_parm": "SomeValue"
+            },
+            "included_header_parameters": {
+                "some_included_header_param": "SomeValue"
+            },
+            "excluded_header_parameters": {
+                "some_excluded_header_param": "SomeValue"
+            },
+            "content": "Some Content (Possibly Json wrapped in a string)"
+        },
+        "response": {
+            "status": 200,
+            "content": "Some Content",
+            "header_map": {
+                "some_header_param": "SomeValue"
+            }
+        }
     }
+
+### DELETE /expectations
+Clear all registered mock setups.
+
+### GET /expectations
+List all registered mock setups. 
+
+----------------------------------------------
 
 ### Definitions
 Expectation Object:
@@ -25,44 +60,44 @@ Expectation Object:
         - type: string
         - description: The HTTP method of the expected request (i.e. GET, PUT, POST, ect.).
         - required: true
-        - matching rule: Exact match with the incoming request. 
+        - matching rule: Exact case-insensitive match with the incoming request. 
     - path:
         - type: string
-        - description: The url stub of the expected request.
+        - description: The url path of the expected request.
         - required: true
-        - matching rule: Exact case-sensitive string match.
+        - matching rule: Exact case-sensitive match.
     - queryParameters:
-        - type: Map of string to string
-        - description: The url query parameters of the expected request.
+        - type: map of string to string
+        - description: The url/query parameters of the expected request.
         - required: false, when not specified it is treated as if an empty map is provided.
         - matching rule: Exact case-sensitive match on all key-value pairs.
     - includedHeaderParameters:
-        - type: Map of string to string
+        - type: map of string to string
         - description: Header parameters expected to be included in the request.
         - required: false, when not specified it is treated as if an empty map is provided.
-        - matching rule: Exact case-sensitive match on all included key-value pairs. A positive match occures when all of the specified key-value pairs are found in the requests header map.
+        - matching rule: Exact case-sensitive match on all key-value pairs. A positive match occurs when all of the specified key-value pairs are found in the request's header map.
     - excludedHeaderParameters:
-        - type: Map of string to string
+        - type: map of string to string
         - description: Header parameters expected to be excluded from the request.
         - required: false, when not specified it is treated as if an empty map is provided.
-        - matching rule: Exact case-sensitive match on all included key-value pairs. A positive match occures when none of the specified key-value pairs are found in the requests header map.
+        - matching rule: Exact case-sensitive match on all key-value pairs. A positive match occurs when none of the specified key-value pairs are found in the request's header map.
     - content:
         - type: string
-        - description: The request's string content.
+        - description: The string content expected to be included in the request.
         - required: false, when not specified it is treated as if an empty string is provided.
-        - matching rule: If the string is valid Json then a positive match occures with a request with equivilant Json. Json property names are matched case-sensitive. When the specified content is not valid Json then a positive match occures on exact case-sensitive string match.
+        - matching rule: If the string is valid Json then a positive match occurs on a request with equivalent Json, Json property names are matched case-sensitive. When the specified content is not valid Json then a positive match occurs on exact case-sensitive match.
         
 Response Object:
 - properties:
     - status:
         - type: integer
-        - description: The http status code of the response. 
+        - description: The Http status code of the response. 
         - required: true
     - content:
         - type: string
         - description: The body of the response.
         - required: false, when not specified it is treated as if an empty string is provided.
     - headerMap:
-        - type: Map of string to string
-        - description: header parameters to be included in the response's header map.
+        - type: map of string to string
+        - description: Header parameters to be included in the response's header map.
         - required: false, when not specified it is treated as if an empty map is provided.

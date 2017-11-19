@@ -71,7 +71,7 @@ class ExpectationController @Inject()(expectationService: ExpectationService) ex
     }
   }
 
-  delete("/expectations") { request: Request =>
+  delete("/expectations") { _: Request =>
     expectationService.clearAllExpectations() match {
       case Success(()) => response.noContent
       case Failure(exception) => response.internalServerError(exception.getMessage)
