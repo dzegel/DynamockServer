@@ -73,7 +73,7 @@ class ExpectationController @Inject()(expectationService: ExpectationService) ex
     makeNoContentResponse(expectationService.registerExpectation(request.expectation, request.response))
   }
 
-  delete("/expectations") { request: Request =>
+  delete("/expectations") { _: Request =>
     makeNoContentResponse(expectationService.clearAllExpectations())
   }
 
