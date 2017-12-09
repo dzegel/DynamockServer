@@ -10,8 +10,8 @@ import scala.util.{Failure, Success}
 class ExpectationServiceTests extends FunSuite with MockFactory with Matchers {
 
   private val mockExpectationRegistry = mock[ExpectationRegistry]
-  private val mockFileService = mock[FileService]
-  private val expectationService = new DefaultExpectationService(mockExpectationRegistry, mockFileService)
+  private val mockExpectationsFileService = mock[ExpectationsFileService]
+  private val expectationService = new DefaultExpectationService(mockExpectationRegistry, mockExpectationsFileService)
 
   private val expectation = Expectation("POST", "somePath", Map.empty, HeaderParameters(Set.empty, Set.empty), Content(""))
   private val request = Request(expectation.method, expectation.path, expectation.queryParams, expectation.headerParameters.included, expectation.content)
@@ -85,7 +85,7 @@ class ExpectationServiceTests extends FunSuite with MockFactory with Matchers {
     val suiteName = "SomeName"
 
     setup_ExpectationRegistry_GetAllExpectations(Some(pairs))
-    setup_FileService_StoreObjectAsJson(s"$suiteName.expectations", pairs)
+    setup_ExpectationsFileService_StoreExpectationsAsJson(s"$suiteName.expectations", pairs)
 
     expectationService.storeExpectations(suiteName) should equal(Success(()))
   }
@@ -107,7 +107,7 @@ class ExpectationServiceTests extends FunSuite with MockFactory with Matchers {
     val suiteName = "SomeName"
 
     setup_ExpectationRegistry_GetAllExpectations(Some(pairs))
-    setup_FileService_StoreObjectAsJson(s"$suiteName.expectations", pairs, Some(exception))
+    setup_ExpectationsFileService_StoreExpectationsAsJson(s"$suiteName.expectations", pairs, Some(exception))
 
     expectationService.storeExpectations(suiteName) should equal(Failure(exception))
   }
@@ -120,7 +120,7 @@ class ExpectationServiceTests extends FunSuite with MockFactory with Matchers {
     val pairs = Set(expectation1 -> response1, expectation2 -> response2)
     val suiteName = "SomeName"
 
-    setup_FileService_LoadObjectFromJson[Set[(Expectation, Response)]](s"$suiteName.expectations", pairs)
+    setup_ExpectationsFileService_LoadExpectationsFromJson(s"$suiteName.expectations", pairs)
     setup_ExpectationRegistry_RegisterExpectationWithResponse(expectation1, response1, None)
     setup_ExpectationRegistry_RegisterExpectationWithResponse(expectation2, response2, None)
 
@@ -136,7 +136,7 @@ class ExpectationServiceTests extends FunSuite with MockFactory with Matchers {
     val pairs = Set(expectation1 -> response1, expectation2 -> response2)
     val suiteName = "SomeName"
 
-    setup_FileService_LoadObjectFromJson[Set[(Expectation, Response)]](s"$suiteName.expectations", pairs, Some(exception))
+    setup_ExpectationsFileService_LoadExpectationsFromJson(s"$suiteName.expectations", pairs, Some(exception))
 
     expectationService.loadExpectations(suiteName) should equal(Failure(exception))
   }
@@ -150,7 +150,7 @@ class ExpectationServiceTests extends FunSuite with MockFactory with Matchers {
     val pairs = Set(expectation1 -> response1, expectation2 -> response2)
     val suiteName = "SomeName"
 
-    setup_FileService_LoadObjectFromJson[Set[(Expectation, Response)]](s"$suiteName.expectations", pairs)
+    setup_ExpectationsFileService_LoadExpectationsFromJson(s"$suiteName.expectations", pairs)
     setup_ExpectationRegistry_RegisterExpectationWithResponse(expectation1, response1, None)
     setup_ExpectationRegistry_RegisterExpectationWithResponse(expectation2, response2, Some(exception))
 
@@ -200,16 +200,16 @@ class ExpectationServiceTests extends FunSuite with MockFactory with Matchers {
     }
   }
 
-  private def setup_FileService_StoreObjectAsJson(fileName: String, obj: Object, exception: Option[Exception] = None): Unit = {
-    val callHandler = (mockFileService.storeObjectAsJson _).expects(fileName, obj)
+  private def setup_ExpectationsFileService_StoreExpectationsAsJson(fileName: String, obj: Set[(Expectation, Response)], exception: Option[Exception] = None): Unit = {
+    val callHandler = (mockExpectationsFileService.storeExpectationsAsJson _).expects(fileName, obj)
     exception match {
       case None => callHandler.returning(Unit)
       case Some(ex) => callHandler.throwing(ex)
     }
   }
 
-  private def setup_FileService_LoadObjectFromJson[T](fileName: String, returnValue: T = null, exception: Option[Exception] = None): Unit = {
-    val callHandler = (mockFileService.loadObjectFromJson[T] _).expects(fileName)
+  private def setup_ExpectationsFileService_LoadExpectationsFromJson(fileName: String, returnValue: Set[(Expectation, Response)] = null, exception: Option[Exception] = None): Unit = {
+    val callHandler = (mockExpectationsFileService.loadExpectationsFromJson _).expects(fileName)
     exception match {
       case None => callHandler.returning(returnValue)
       case Some(ex) => callHandler.throwing(ex)

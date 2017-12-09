@@ -49,7 +49,19 @@ Setup a mocked response by registering an expectation and the response to return
 Clear all registered mock setups.
 
 ### GET /expectations
-List all registered mock setups. 
+List all registered mock setups.
+
+### POST /expectations/store
+Save the state of registered expectations into an expectations-suite that can be restored at a later point in time.
+
+**Query Parameters:**
+- suite_name: Name of the expectations-suite.
+
+### POST /expectations/load
+Restore the state of registered expectations to a stored expectations-suite.
+
+**Query Parameters:**
+- suite_name: Name of the expectations-suite.
 
 ----------------------------------------------
 
