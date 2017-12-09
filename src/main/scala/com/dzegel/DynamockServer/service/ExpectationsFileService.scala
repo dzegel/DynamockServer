@@ -3,11 +3,9 @@ package com.dzegel.DynamockServer.service
 import java.io._
 
 import com.dzegel.DynamockServer.types.{Expectation, Response}
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.module.scala.DefaultScalaModule
-import org.json4s.jackson.Serialization.{read, write}
 import com.google.inject.ImplementedBy
 import org.json4s.DefaultFormats
+import org.json4s.jackson.Serialization.{read, write}
 
 import scala.io.Source
 

@@ -3,6 +3,8 @@ package com.dzegel.DynamockServer.service
 import com.dzegel.DynamockServer.types.{Content, Expectation, HeaderParameters, Response}
 import org.scalatest.{FunSuite, Matchers}
 
+import scala.util.Random
+
 class ExpectationsFileServiceTests extends FunSuite with Matchers {
   private val expectationsFileService = new DefaultExpectationsFileService
 
@@ -11,7 +13,7 @@ class ExpectationsFileServiceTests extends FunSuite with Matchers {
   private val response1 = Response(200, "stuff", Map())
   private val response2 = Response(300, "other stuff", Map())
   private val expectations = Set(expectation1 -> response1, expectation2 -> response2)
-  private val fileName = "testFile"
+  private val fileName = "testFile_" + Random.nextInt()
   test("storeExpectationsAsJson and loadExpectationsFromJson work") {
     expectationsFileService.storeExpectationsAsJson(fileName, expectations)
     val result = expectationsFileService.loadExpectationsFromJson(fileName)
