@@ -11,8 +11,7 @@ version := "1.0"
 scalaVersion := "2.12.3"
 
 lazy val versions = new {
-  val finatra = "2.9.0"
-  val json4s = "3.6.0-M1"
+  val finatra = "17.11.0"
 }
 
 libraryDependencies ++= Seq(
@@ -21,8 +20,7 @@ libraryDependencies ++= Seq(
   "com.twitter" %% "finatra-httpclient" % versions.finatra,
   "com.twitter" %% "inject-request-scope" % versions.finatra,
 
-  "org.json4s" %% "json4s-native" % versions.json4s,
-  "org.json4s" %% "json4s-jackson" % versions.json4s,
+  "org.json4s" %% "json4s-native" % "3.6.0-M2",
 
   "com.twitter" %% "finatra-http" % versions.finatra % "test" classifier "tests",
   "com.twitter" %% "finatra-jackson" % versions.finatra % "test" classifier "tests",

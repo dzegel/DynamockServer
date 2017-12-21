@@ -8,7 +8,7 @@ class Content(val stringValue: String) {
 
   private val json: Option[JValue] = parseOpt(stringValue).map(JsonUtil.convertJArraysToJSets)
 
-  def isJson: Boolean = json.isDefined
+  val isJson: Boolean = json.isDefined
 
   override def hashCode(): Int = json match {
     case Some(jValue) => jValue.hashCode
