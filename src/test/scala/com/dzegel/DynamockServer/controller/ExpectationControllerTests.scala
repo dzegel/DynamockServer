@@ -24,6 +24,8 @@ class ExpectationControllerTests extends FeatureTest with MockFactory with Match
     }
   )
 
+  val errorMessage = "Some Error Message"
+
   private def expectationPutRequestJson(
     expectationPath: String,
     expectationMethod: String,
@@ -143,7 +145,6 @@ class ExpectationControllerTests extends FeatureTest with MockFactory with Match
   }
 
   test("DELETE /expectations should call clear all expectations with ExpectationService and return 500 on failure") {
-    val errorMessage = "Some Error Message"
     setup_ExpectationService_ClearAllExpectations(Failure(new Exception(errorMessage)))
 
     server.httpDelete(
@@ -167,7 +168,7 @@ class ExpectationControllerTests extends FeatureTest with MockFactory with Match
     val response = Response(200, "Some Response Content", Map("responseParam" -> "value"))
     setup_ExpectationService_GetAllExpectations(Success(Set(expectation -> response)))
 
-    var jsonResponse =
+    val jsonResponse =
       """{
          |  "expectation_and_response_pairs" : [
          |    {
@@ -205,11 +206,56 @@ class ExpectationControllerTests extends FeatureTest with MockFactory with Match
   }
 
   test("GET /expectations should call get all expectations with ExpectationService and return 500 on failure") {
-    val errorMessage = "Some Error Message"
     setup_ExpectationService_GetAllExpectations(Failure(new Exception(errorMessage)))
 
     server.httpGet(
       path = "/expectations",
+      withBody = errorMessage,
+      andExpect = Status.InternalServerError
+    )
+  }
+
+  test("POST /expectations/store should call store expectation and return 204 on success") {
+    val suiteName = "SomeName"
+    setup_ExpectationService_StoreExpectations(suiteName, Success(()))
+
+    server.httpPost(
+      path = s"/expectations/store?suite_name=$suiteName",
+      postBody = "",
+      andExpect = Status.NoContent
+    )
+  }
+
+  test("POST /expectations/store should call store expectation and return 500 on failure") {
+    val suiteName = "SomeName"
+    setup_ExpectationService_StoreExpectations(suiteName, Failure(new Exception(errorMessage)))
+
+    server.httpPost(
+      path = s"/expectations/store?suite_name=$suiteName",
+      postBody = "",
+      withBody = errorMessage,
+      andExpect = Status.InternalServerError
+    )
+  }
+
+  test("POST /expectations/load should call store expectation and return 204 on success") {
+    val suiteName = "SomeName"
+    setup_ExpectationService_LoadExpectations(suiteName, Success(()))
+
+    server.httpPost(
+      path = s"/expectations/load?suite_name=$suiteName",
+      postBody = "",
+      andExpect = Status.NoContent
+    )
+  }
+
+  test("POST /expectations/load should call store expectation and return 500 on failure") {
+    val suiteName = "SomeName"
+    setup_ExpectationService_LoadExpectations(suiteName, Failure(new Exception(errorMessage)))
+
+    server.httpPost(
+      path = s"/expectations/load?suite_name=$suiteName",
+      postBody = "",
       withBody = errorMessage,
       andExpect = Status.InternalServerError
     )
@@ -234,6 +280,18 @@ class ExpectationControllerTests extends FeatureTest with MockFactory with Match
   private def setup_ExpectationService_ClearAllExpectations(returnValue: Try[Unit]) = {
     (mockExpectationService.clearAllExpectations _)
       .expects()
+      .returning(returnValue)
+  }
+
+  private def setup_ExpectationService_StoreExpectations(suiteName: String, returnValue: Try[Unit]) = {
+    (mockExpectationService.storeExpectations _)
+      .expects(suiteName)
+      .returning(returnValue)
+  }
+
+  private def setup_ExpectationService_LoadExpectations(suiteName: String, returnValue: Try[Unit]) = {
+    (mockExpectationService.loadExpectations _)
+      .expects(suiteName)
       .returning(returnValue)
   }
 }

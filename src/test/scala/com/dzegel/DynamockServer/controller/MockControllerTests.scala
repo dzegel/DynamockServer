@@ -38,7 +38,7 @@ class MockControllerTests extends FeatureTest with MockFactory with Matchers {
   }
 
   test("POST / should call getResponse and return the response") {
-    val includedHeaders = Set("IncluedHeader" -> "IncluedHeader")
+    val includedHeaders = Set("IncludedHeader" -> "IncludedHeader")
     val excludedHeaders = Set("ExcludedHeader" -> "ExcludedValue")
     val headers = includedHeaders.toMap + ("SomeOtherHeader" -> "SomeOtherValue")
     val queryParams = Map("QueryParam" -> "Value", "OtherQueryParam" -> "OtherValue")

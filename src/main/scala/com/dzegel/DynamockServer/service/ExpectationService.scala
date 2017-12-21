@@ -15,9 +15,13 @@ trait ExpectationService {
   def clearAllExpectations(): Try[Unit]
 
   def getAllExpectations: Try[Set[(Expectation, Response)]]
+
+  def storeExpectations(suiteName: String): Try[Unit]
+
+  def loadExpectations(suiteName: String): Try[Unit]
 }
 
-class DefaultExpectationService @Inject()(expectationRegistry: ExpectationRegistry) extends ExpectationService {
+class DefaultExpectationService @Inject()(expectationRegistry: ExpectationRegistry, fileService: ExpectationsFileService) extends ExpectationService {
   override def registerExpectation(expectation: Expectation, response: Response): Try[Unit] =
     Try(expectationRegistry.registerExpectationWithResponse(expectation, response))
 
@@ -26,4 +30,16 @@ class DefaultExpectationService @Inject()(expectationRegistry: ExpectationRegist
   override def getAllExpectations: Try[Set[(Expectation, Response)]] = Try(expectationRegistry.getAllExpectations)
 
   override def clearAllExpectations(): Try[Unit] = Try(expectationRegistry.clearAllExpectations())
+
+  override def storeExpectations(suiteName: String): Try[Unit] = Try {
+    val registeredExpectations = expectationRegistry.getAllExpectations
+    fileService.storeExpectationsAsJson(s"$suiteName.expectations", registeredExpectations)
+  }
+
+  override def loadExpectations(suiteName: String): Try[Unit] = Try {
+    val savedExpectations = fileService.loadExpectationsFromJson(s"$suiteName.expectations")
+    savedExpectations.foreach {
+      case (expectation, response) => expectationRegistry.registerExpectationWithResponse(expectation, response)
+    }
+  }
 }

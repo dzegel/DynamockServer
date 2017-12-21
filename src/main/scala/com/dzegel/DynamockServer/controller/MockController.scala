@@ -10,7 +10,7 @@ import scala.util.{Failure, Success}
 
 class MockController @Inject()(expectationService: ExpectationService) extends Controller {
 
-  any(":*") { request: FinagleRequest =>
+  any("/:*") { request: FinagleRequest =>
     val expectation = DynamockRequest(
       request.method.name.toUpperCase(),
       request.path,
