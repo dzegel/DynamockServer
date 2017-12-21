@@ -8,7 +8,13 @@ import org.scalatest.{BeforeAndAfterEach, FunSuite, Matchers}
 import scala.util.Random
 
 class ExpectationsFileServiceTests extends FunSuite with Matchers with BeforeAndAfterEach {
-  private val expectationsFileService = new DefaultExpectationsFileService
+  private val portNumberRegistry = new PortNumberRegistry {
+    override val portNumber: String = "1234"
+  }
+  private val fileRootRegistry = new FileRootRegistry {
+    override val fileRoot: String = s"${File.listRoots.head.getCanonicalPath}${File.separator}Dynamock${File.separator}test"
+  }
+  private val expectationsFileService = new DefaultExpectationsFileService(portNumberRegistry, fileRootRegistry)
 
   private val expectation1 = Expectation("GET", "/", Map(), HeaderParameters(Set(), Set()), Content("Some Stuff"))
   private val expectation2 = Expectation("PUT", "/uri", Map("query1" -> "query2"), HeaderParameters(Set("header1" -> "header2"), Set()), Content("{}"))
@@ -17,15 +23,17 @@ class ExpectationsFileServiceTests extends FunSuite with Matchers with BeforeAnd
   private val expectations = Set(expectation1 -> response1, expectation2 -> response2)
   private val fileName = "testFile_" + Random.nextInt()
 
-  override protected def afterEach: Unit = {
-    val fileRoot = s"${File.listRoots.head.getCanonicalPath}${File.separator}Dynamock${File.separator}Expectations"
-    new File(fileRoot, fileName + ".expectations.json").delete()
-  }
+  override protected def afterEach: Unit = getFile.delete()
 
   test("storeExpectationsAsJson and loadExpectationsFromJson work") {
+    getFile.exists() shouldBe false
+
     expectationsFileService.storeExpectationsAsJson(fileName, expectations)
     val result = expectationsFileService.loadExpectationsFromJson(fileName)
 
     result should equal(expectations)
+    getFile.exists() shouldBe true
   }
+
+  private def getFile: File = new File(s"${fileRootRegistry.fileRoot}${File.separator}Expectations", s"$fileName.expectations.json")
 }
