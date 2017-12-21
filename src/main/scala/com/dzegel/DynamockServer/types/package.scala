@@ -1,10 +1,8 @@
 package com.dzegel.DynamockServer
 
-import com.dzegel.DynamockServer.types.{Content, HeaderParameters, Response}
-
 import scala.collection.concurrent.TrieMap
 
-package object registry {
+package object types {
   type Path = String
   type Method = String
   type QueryParams = Map[String, String]

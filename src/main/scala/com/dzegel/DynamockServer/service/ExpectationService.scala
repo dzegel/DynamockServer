@@ -1,6 +1,5 @@
 package com.dzegel.DynamockServer.service
 
-import com.dzegel.DynamockServer.registry.ExpectationRegistry
 import com.dzegel.DynamockServer.types.{Expectation, Request, Response}
 import com.google.inject.{ImplementedBy, Inject, Singleton}
 

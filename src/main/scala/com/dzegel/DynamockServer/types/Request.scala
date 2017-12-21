@@ -1,7 +1,5 @@
 package com.dzegel.DynamockServer.types
 
-import com.dzegel.DynamockServer.registry.{HeaderSet, Method, Path, QueryParams}
-
 case class Request(
   method: Method,
   path: Path,

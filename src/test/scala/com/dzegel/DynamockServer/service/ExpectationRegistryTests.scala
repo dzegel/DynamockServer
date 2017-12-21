@@ -1,4 +1,4 @@
-package com.dzegel.DynamockServer.registry
+package com.dzegel.DynamockServer.service
 
 import com.dzegel.DynamockServer.types._
 import org.scalatest.{BeforeAndAfterEach, FunSuite, Matchers}

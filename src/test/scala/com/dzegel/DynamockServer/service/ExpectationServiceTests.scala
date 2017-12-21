@@ -1,6 +1,5 @@
 package com.dzegel.DynamockServer.service
 
-import com.dzegel.DynamockServer.registry.ExpectationRegistry
 import com.dzegel.DynamockServer.types._
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.{FunSuite, Matchers}

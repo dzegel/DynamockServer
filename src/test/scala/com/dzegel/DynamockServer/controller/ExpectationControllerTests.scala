@@ -1,8 +1,7 @@
 package com.dzegel.DynamockServer.controller
 
-import com.dzegel.DynamockServer.registry.{HeaderSet, QueryParams}
 import com.dzegel.DynamockServer.service.ExpectationService
-import com.dzegel.DynamockServer.types.{Content, Expectation, HeaderParameters, Response}
+import com.dzegel.DynamockServer.types._
 import com.twitter.finagle.http.Status
 import com.twitter.finatra.http.routing.HttpRouter
 import com.twitter.finatra.http.{EmbeddedHttpServer, HttpServer}
