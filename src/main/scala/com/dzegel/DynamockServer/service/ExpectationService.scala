@@ -2,7 +2,7 @@ package com.dzegel.DynamockServer.service
 
 import com.dzegel.DynamockServer.registry.ExpectationRegistry
 import com.dzegel.DynamockServer.types.{Expectation, Request, Response}
-import com.google.inject.{ImplementedBy, Inject}
+import com.google.inject.{ImplementedBy, Inject, Singleton}
 
 import scala.util.Try
 
@@ -21,6 +21,7 @@ trait ExpectationService {
   def loadExpectations(suiteName: String): Try[Unit]
 }
 
+@Singleton
 class DefaultExpectationService @Inject()(expectationRegistry: ExpectationRegistry, fileService: ExpectationsFileService) extends ExpectationService {
   override def registerExpectation(expectation: Expectation, response: Response): Try[Unit] =
     Try(expectationRegistry.registerExpectationWithResponse(expectation, response))
