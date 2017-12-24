@@ -1,6 +1,6 @@
 package com.dzegel.DynamockServer.controller
 
-import com.dzegel.DynamockServer.service.ExpectationService
+import com.dzegel.DynamockServer.service.{ExpectationService, ExpectationsUrlPathBaseRegistry}
 import com.dzegel.DynamockServer.types._
 import com.twitter.finagle.http.Status
 import com.twitter.finatra.http.routing.HttpRouter
@@ -14,11 +14,12 @@ import scala.util.{Failure, Success, Try}
 class ExpectationControllerTests extends FeatureTest with MockFactory with Matchers {
 
   private val mockExpectationService = mock[ExpectationService]
+  private val expectationsUrlPathBaseRegistry = new ExpectationsUrlPathBaseRegistry("/test")
 
   override protected val server: EmbeddedHttpServer = new EmbeddedHttpServer(
     new HttpServer {
       override protected def configureHttp(router: HttpRouter): Unit = {
-        router.add(new ExpectationController(mockExpectationService))
+        router.add(new ExpectationController(mockExpectationService, expectationsUrlPathBaseRegistry))
       }
     }
   )
@@ -105,7 +106,7 @@ class ExpectationControllerTests extends FeatureTest with MockFactory with Match
       Success(()))
 
     server.httpPut(
-      path = "/expectation",
+      path = "/test/expectation",
       putBody = expectationPutRequestJson(
         expectationPath,
         expectationMethod,
@@ -122,7 +123,7 @@ class ExpectationControllerTests extends FeatureTest with MockFactory with Match
     setup_ExpectationService_RegisterExpectation(expectation, response, Failure(new Exception))
 
     server.httpPut(
-      path = "/expectation",
+      path = "/test/expectation",
       putBody = expectationPutRequestJson(
         expectation.path,
         expectation.method,
@@ -138,7 +139,7 @@ class ExpectationControllerTests extends FeatureTest with MockFactory with Match
     setup_ExpectationService_ClearAllExpectations(Success(()))
 
     server.httpDelete(
-      path = "/expectations",
+      path = "/test/expectations",
       andExpect = Status.NoContent
     )
   }
@@ -147,7 +148,7 @@ class ExpectationControllerTests extends FeatureTest with MockFactory with Match
     setup_ExpectationService_ClearAllExpectations(Failure(new Exception(errorMessage)))
 
     server.httpDelete(
-      path = "/expectations",
+      path = "/test/expectations",
       withBody = errorMessage,
       andExpect = Status.InternalServerError
     )
@@ -169,37 +170,37 @@ class ExpectationControllerTests extends FeatureTest with MockFactory with Match
 
     val jsonResponse =
       """{
-         |  "expectation_and_response_pairs" : [
-         |    {
-         |      "expectation" : {
-         |        "method" : "POST",
-         |        "path" : "some-path",
-         |        "query_parameters" : {
-         |          "query" : "param"
-         |        },
-         |        "included_header_parameters" : {
-         |          "included1" : "includedValue1",
-         |          "included2" : "includedValue2"
-         |        },
-         |        "excluded_header_parameters" : {
-         |          "excluded1" : "excludedValue1",
-         |          "excluded2" : "excludedValue2"
-         |        },
-         |        "content" : "Some Expectation Content"
-         |      },
-         |      "response" : {
-         |        "status" : 200,
-         |        "content" : "Some Response Content",
-         |        "header_map" : {
-         |          "responseParam" : "value"
-         |        }
-         |      }
-         |    }
-         |  ]
-         |}""".stripMargin
+        |  "expectation_and_response_pairs" : [
+        |    {
+        |      "expectation" : {
+        |        "method" : "POST",
+        |        "path" : "some-path",
+        |        "query_parameters" : {
+        |          "query" : "param"
+        |        },
+        |        "included_header_parameters" : {
+        |          "included1" : "includedValue1",
+        |          "included2" : "includedValue2"
+        |        },
+        |        "excluded_header_parameters" : {
+        |          "excluded1" : "excludedValue1",
+        |          "excluded2" : "excludedValue2"
+        |        },
+        |        "content" : "Some Expectation Content"
+        |      },
+        |      "response" : {
+        |        "status" : 200,
+        |        "content" : "Some Response Content",
+        |        "header_map" : {
+        |          "responseParam" : "value"
+        |        }
+        |      }
+        |    }
+        |  ]
+        |}""".stripMargin
 
     server.httpGet(
-      path = "/expectations",
+      path = "/test/expectations",
       withJsonBody = jsonResponse,
       andExpect = Status.Ok)
   }
@@ -208,7 +209,7 @@ class ExpectationControllerTests extends FeatureTest with MockFactory with Match
     setup_ExpectationService_GetAllExpectations(Failure(new Exception(errorMessage)))
 
     server.httpGet(
-      path = "/expectations",
+      path = "/test/expectations",
       withBody = errorMessage,
       andExpect = Status.InternalServerError
     )
@@ -219,7 +220,7 @@ class ExpectationControllerTests extends FeatureTest with MockFactory with Match
     setup_ExpectationService_StoreExpectations(suiteName, Success(()))
 
     server.httpPost(
-      path = s"/expectations/store?suite_name=$suiteName",
+      path = s"/test/expectations/store?suite_name=$suiteName",
       postBody = "",
       andExpect = Status.NoContent
     )
@@ -230,7 +231,7 @@ class ExpectationControllerTests extends FeatureTest with MockFactory with Match
     setup_ExpectationService_StoreExpectations(suiteName, Failure(new Exception(errorMessage)))
 
     server.httpPost(
-      path = s"/expectations/store?suite_name=$suiteName",
+      path = s"/test/expectations/store?suite_name=$suiteName",
       postBody = "",
       withBody = errorMessage,
       andExpect = Status.InternalServerError
@@ -242,7 +243,7 @@ class ExpectationControllerTests extends FeatureTest with MockFactory with Match
     setup_ExpectationService_LoadExpectations(suiteName, Success(()))
 
     server.httpPost(
-      path = s"/expectations/load?suite_name=$suiteName",
+      path = s"/test/expectations/load?suite_name=$suiteName",
       postBody = "",
       andExpect = Status.NoContent
     )
@@ -253,7 +254,7 @@ class ExpectationControllerTests extends FeatureTest with MockFactory with Match
     setup_ExpectationService_LoadExpectations(suiteName, Failure(new Exception(errorMessage)))
 
     server.httpPost(
-      path = s"/expectations/load?suite_name=$suiteName",
+      path = s"/test/expectations/load?suite_name=$suiteName",
       postBody = "",
       withBody = errorMessage,
       andExpect = Status.InternalServerError

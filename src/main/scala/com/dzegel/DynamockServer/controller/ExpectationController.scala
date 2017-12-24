@@ -1,7 +1,7 @@
 package com.dzegel.DynamockServer.controller
 
 import com.dzegel.DynamockServer.controller.ExpectationController._
-import com.dzegel.DynamockServer.service.ExpectationService
+import com.dzegel.DynamockServer.service.{ExpectationsUrlPathBaseRegistry, ExpectationService}
 import com.dzegel.DynamockServer.types.{Content, Expectation, HeaderParameters, Response}
 import com.google.inject.Inject
 import com.twitter.finagle.http.Request
@@ -67,17 +67,21 @@ object ExpectationController {
     Response(dto.status, dto.content.getOrElse(""), dto.headerMap.getOrElse(Map.empty))
 }
 
-class ExpectationController @Inject()(expectationService: ExpectationService) extends Controller {
+class ExpectationController @Inject()(
+  expectationService: ExpectationService,
+  expectationsUrlPathBaseRegistry: ExpectationsUrlPathBaseRegistry
+) extends Controller {
+  private val pathBase = expectationsUrlPathBaseRegistry.pathBase
 
-  put("/expectation") { request: ExpectationPutRequest =>
+  put(s"$pathBase/expectation") { request: ExpectationPutRequest =>
     makeNoContentResponse(expectationService.registerExpectation(request.expectation, request.response))
   }
 
-  delete("/expectations") { _: Request =>
+  delete(s"$pathBase/expectations") { _: Request =>
     makeNoContentResponse(expectationService.clearAllExpectations())
   }
 
-  get("/expectations") { _: Request =>
+  get(s"$pathBase/expectations") { _: Request =>
     expectationService.getAllExpectations match {
       case Success(expectationAndResponsePairs) =>
         response.ok(body = ExpectationsGetResponse(expectationAndResponsePairs.map(expectationsAndResponsePairToDto)))
@@ -85,11 +89,11 @@ class ExpectationController @Inject()(expectationService: ExpectationService) ex
     }
   }
 
-  post("/expectations/store") { request: ExpectationsStorePostRequest => //TODO is this the correct http method?
+  post(s"$pathBase/expectations/store") { request: ExpectationsStorePostRequest => //TODO is this the correct http method?
     makeNoContentResponse(expectationService.storeExpectations(request.suiteName))
   }
 
-  post("/expectations/load") { request: ExpectationsLoadPostRequest => //TODO is this the correct http method?
+  post(s"$pathBase/expectations/load") { request: ExpectationsLoadPostRequest => //TODO is this the correct http method?
     makeNoContentResponse(expectationService.loadExpectations(request.suiteName))
   }
 

@@ -3,24 +3,28 @@ package com.dzegel.DynamockServer.server
 import java.io.File
 
 import com.dzegel.DynamockServer.controller.{ExpectationController, MockController}
-import com.dzegel.DynamockServer.service.{FileRootRegistry, PortNumberRegistry, ValueInjectionRegistry}
+import com.dzegel.DynamockServer.service.{ExpectationsUrlPathBaseRegistry, FileRootRegistry, PortNumberRegistry}
 import com.google.inject.{Provides, Singleton}
 import com.twitter.finatra.http.HttpServer
 import com.twitter.finatra.http.routing.HttpRouter
 import com.twitter.inject.TwitterModule
 
 class DynamockServer extends HttpServer {
-  private val portNumber = DynamockServer.tryGetPortFromArgs(args)
+  private val portNumber = DynamockServer.tryGetArgValue(args, "port", "8080", arg =>
+    if (arg.matches("""([\d]{4})""")) arg else throw new Exception("Dynamock Initialization Error: Argument 'port' must be a 4 digit value."))
   private val fileRoot = s"${File.listRoots.head.getCanonicalPath}${File.separator}Dynamock${File.separator}$portNumber"
+  private val expectationsUrlPathBase = DynamockServer.tryGetArgValue(args, "expectations-url-path-base", "", arg => s"/$arg")
   new File(fileRoot).mkdirs()
-  private val valueInjectionRegistry = new ValueInjectionRegistry(portNumber, fileRoot)
 
   private val runTimeInjectionModule = new TwitterModule {
     @Singleton
-    @Provides def portNumberRegistry: PortNumberRegistry = valueInjectionRegistry
+    @Provides def portNumberRegistry: PortNumberRegistry = new PortNumberRegistry(portNumber)
 
     @Singleton
-    @Provides def fileRootRegistry: FileRootRegistry = valueInjectionRegistry
+    @Provides def fileRootRegistry: FileRootRegistry = new FileRootRegistry(fileRoot)
+
+    @Singleton
+    @Provides def expectationsUrlPathBaseRegistry: ExpectationsUrlPathBaseRegistry = new ExpectationsUrlPathBaseRegistry(expectationsUrlPathBase)
   }
 
   override val modules = Seq(runTimeInjectionModule)
@@ -39,15 +43,14 @@ class DynamockServer extends HttpServer {
 }
 
 object DynamockServer {
-  private def tryGetPortFromArgs(args: Array[String]): String = args.collect {
-    case arg if arg.startsWith("port=") =>
-      if (arg.matches("""port=([\d]{4})"""))
-        arg.substring(5)
-      else
-        throw new Exception("Dynamock Initialization Error: Argument 'port' must be a 4 digit value.")
-  } match {
-    case Array() => "8080"
-    case Array(port) => port
-    case _ => throw new Exception("Dynamock Initialization Error: At most one 'port' argument can be defined.")
+  private def tryGetArgValue(args: Array[String], key: String, defaultValue: String, valueTransformation: String => String): String = {
+    val argPrefix = s"$key="
+    args.collect {
+      case arg if arg.startsWith(argPrefix) => valueTransformation(arg.substring(argPrefix.length))
+    } match {
+      case Array() => defaultValue
+      case Array(transformedArg) => transformedArg
+      case _ => throw new Exception(s"Dynamock Initialization Error: At most one '$key' argument can be defined.")
+    }
   }
 }

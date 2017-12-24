@@ -8,12 +8,8 @@ import org.scalatest.{BeforeAndAfterEach, FunSuite, Matchers}
 import scala.util.Random
 
 class ExpectationsFileServiceTests extends FunSuite with Matchers with BeforeAndAfterEach {
-  private val portNumberRegistry = new PortNumberRegistry {
-    override val portNumber: String = "1234"
-  }
-  private val fileRootRegistry = new FileRootRegistry {
-    override val fileRoot: String = s"${File.listRoots.head.getCanonicalPath}${File.separator}Dynamock${File.separator}test"
-  }
+  private val portNumberRegistry = new PortNumberRegistry("1234")
+  private val fileRootRegistry = new FileRootRegistry(s"${File.listRoots.head.getCanonicalPath}${File.separator}Dynamock${File.separator}test")
   private val expectationsFileService = new DefaultExpectationsFileService(portNumberRegistry, fileRootRegistry)
 
   private val expectation1 = Expectation("GET", "/", Map(), HeaderParameters(Set(), Set()), Content("Some Stuff"))
