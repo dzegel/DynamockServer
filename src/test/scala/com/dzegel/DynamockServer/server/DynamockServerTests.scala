@@ -35,7 +35,7 @@ class DynamockServerTests extends FeatureTest {
   }]
 }"""
 
-  test("PUT /expectations returns 204 and the mocked expectation returns the expected response") {
+  test("PUT /DynamockTest/expectations returns 204 and the mocked expectation returns the expected response") {
     server.httpPut(
       path = "/DynamockTest/expectations",
       putBody = expectationPutRequestJson,

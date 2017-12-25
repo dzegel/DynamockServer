@@ -78,7 +78,7 @@ class ExpectationsControllerTests extends FeatureTest with MockFactory with Matc
 
   val response = Response(200, "", Map.empty)
 
-  test("PUT /expectations should call register expectations with ExpectationService and return 204 on success") {
+  test("PUT /test/expectations should call register expectations with ExpectationService and return 204 on success") {
     expectationSetupShouldSucceed("some-path", "POST", Some(Map("query" -> "param")), Some(Set("included" -> "includedValue")), Some(Set("excluded" -> "excludedValue")), Some("Content"))
     expectationSetupShouldSucceed("some-path", "POST", Some(Map("query" -> "param")), Some(Set("included" -> "includedValue")), None, Some("Content"))
     expectationSetupShouldSucceed("some-path", "POST", Some(Map("query" -> "param")), Some(Set("included" -> "includedValue")), Some(Set("excluded" -> "excludedValue")), None)
@@ -122,7 +122,7 @@ class ExpectationsControllerTests extends FeatureTest with MockFactory with Matc
       andExpect = Status.NoContent)
   }
 
-  test("PUT /expectations should call register expectation with ExpectationService and return 500 on failure") {
+  test("PUT /test/expectations should call register expectation with ExpectationService and return 500 on failure") {
     val expectation = Expectation("POST", "some-path", Map("query" -> "param"), HeaderParameters(Set("included" -> "includedValue"), Set("excluded" -> "excludedValue")), Content(""))
     setup_ExpectationService_RegisterExpectations(expectation, response, Failure(new Exception))
 
@@ -139,7 +139,7 @@ class ExpectationsControllerTests extends FeatureTest with MockFactory with Matc
       andExpect = Status.InternalServerError)
   }
 
-  test("DELETE /expectations should call clear all expectations with ExpectationService and return 204 on success") {
+  test("DELETE /test/expectations should call clear all expectations with ExpectationService and return 204 on success") {
     setup_ExpectationService_ClearAllExpectations(Success(()))
 
     server.httpDelete(
@@ -148,7 +148,7 @@ class ExpectationsControllerTests extends FeatureTest with MockFactory with Matc
     )
   }
 
-  test("DELETE /expectations should call clear all expectations with ExpectationService and return 500 on failure") {
+  test("DELETE /test/expectations should call clear all expectations with ExpectationService and return 500 on failure") {
     setup_ExpectationService_ClearAllExpectations(Failure(new Exception(errorMessage)))
 
     server.httpDelete(
@@ -158,7 +158,7 @@ class ExpectationsControllerTests extends FeatureTest with MockFactory with Matc
     )
   }
 
-  test("GET /expectations should call get all expectations with ExpectationService and return 200 on success") {
+  test("GET /test/expectations should call get all expectations with ExpectationService and return 200 on success") {
     val expectation = Expectation(
       "POST",
       "some-path",
@@ -209,7 +209,7 @@ class ExpectationsControllerTests extends FeatureTest with MockFactory with Matc
       andExpect = Status.Ok)
   }
 
-  test("GET /expectations should call get all expectations with ExpectationService and return 500 on failure") {
+  test("GET /test/expectations should call get all expectations with ExpectationService and return 500 on failure") {
     setup_ExpectationService_GetAllExpectations(Failure(new Exception(errorMessage)))
 
     server.httpGet(
@@ -219,7 +219,7 @@ class ExpectationsControllerTests extends FeatureTest with MockFactory with Matc
     )
   }
 
-  test("POST /expectations/store should call store expectation and return 204 on success") {
+  test("POST /test/expectations/store should call store expectation and return 204 on success") {
     val suiteName = "SomeName"
     setup_ExpectationService_StoreExpectations(suiteName, Success(()))
 
@@ -230,7 +230,7 @@ class ExpectationsControllerTests extends FeatureTest with MockFactory with Matc
     )
   }
 
-  test("POST /expectations/store should call store expectation and return 500 on failure") {
+  test("POST /test/expectations/store should call store expectation and return 500 on failure") {
     val suiteName = "SomeName"
     setup_ExpectationService_StoreExpectations(suiteName, Failure(new Exception(errorMessage)))
 
@@ -242,7 +242,7 @@ class ExpectationsControllerTests extends FeatureTest with MockFactory with Matc
     )
   }
 
-  test("POST /expectations/load should call store expectation and return 204 on success") {
+  test("POST /test/expectations/load should call store expectation and return 204 on success") {
     val suiteName = "SomeName"
     setup_ExpectationService_LoadExpectations(suiteName, Success(()))
 
@@ -253,7 +253,7 @@ class ExpectationsControllerTests extends FeatureTest with MockFactory with Matc
     )
   }
 
-  test("POST /expectations/load should call store expectation and return 500 on failure") {
+  test("POST /test/expectations/load should call store expectation and return 500 on failure") {
     val suiteName = "SomeName"
     setup_ExpectationService_LoadExpectations(suiteName, Failure(new Exception(errorMessage)))
 
