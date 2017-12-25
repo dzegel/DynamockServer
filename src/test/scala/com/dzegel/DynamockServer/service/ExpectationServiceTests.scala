@@ -64,10 +64,10 @@ class ExpectationServiceTests extends FunSuite with MockFactory with Matchers {
   test("getAllExpectations returns Success") {
     val expectation = Expectation("dsf", "asd", Map(), null, null)
     val response = Response(200, "some content", Map())
-    val pairs = Set(expectation -> response)
-    setup_ExpectationRegistry_GetAllExpectations(Some(pairs))
+    val expectationResponses = Set(expectation -> response)
+    setup_ExpectationRegistry_GetAllExpectations(Some(expectationResponses))
 
-    expectationService.getAllExpectations should equal(Success(pairs))
+    expectationService.getAllExpectations should equal(Success(expectationResponses))
   }
 
   test("getAllExpectations returns Failure") {
@@ -80,11 +80,11 @@ class ExpectationServiceTests extends FunSuite with MockFactory with Matchers {
   test("storeExpectations returns Success") {
     val expectation = Expectation("dsf", "asd", Map(), null, null)
     val response = Response(200, "some content", Map())
-    val pairs = Set(expectation -> response)
+    val expectationResponses = Set(expectation -> response)
     val suiteName = "SomeName"
 
-    setup_ExpectationRegistry_GetAllExpectations(Some(pairs))
-    setup_ExpectationsFileService_StoreExpectationsAsJson(suiteName, pairs)
+    setup_ExpectationRegistry_GetAllExpectations(Some(expectationResponses))
+    setup_ExpectationsFileService_StoreExpectationsAsJson(suiteName, expectationResponses)
 
     expectationService.storeExpectations(suiteName) should equal(Success(()))
   }
@@ -102,11 +102,11 @@ class ExpectationServiceTests extends FunSuite with MockFactory with Matchers {
     val exception = new Exception("some error message")
     val expectation = Expectation("dsf", "asd", Map(), null, null)
     val response = Response(200, "some content", Map())
-    val pairs = Set(expectation -> response)
+    val expectationResponses = Set(expectation -> response)
     val suiteName = "SomeName"
 
-    setup_ExpectationRegistry_GetAllExpectations(Some(pairs))
-    setup_ExpectationsFileService_StoreExpectationsAsJson(suiteName, pairs, Some(exception))
+    setup_ExpectationRegistry_GetAllExpectations(Some(expectationResponses))
+    setup_ExpectationsFileService_StoreExpectationsAsJson(suiteName, expectationResponses, Some(exception))
 
     expectationService.storeExpectations(suiteName) should equal(Failure(exception))
   }
@@ -116,10 +116,10 @@ class ExpectationServiceTests extends FunSuite with MockFactory with Matchers {
     val response1 = Response(100, "some content", Map())
     val expectation2 = Expectation("2", "2", Map(), null, null)
     val response2 = Response(200, "some content", Map())
-    val pairs = Set(expectation1 -> response1, expectation2 -> response2)
+    val expectationResponses = Set(expectation1 -> response1, expectation2 -> response2)
     val suiteName = "SomeName"
 
-    setup_ExpectationsFileService_LoadExpectationsFromJson(suiteName, pairs)
+    setup_ExpectationsFileService_LoadExpectationsFromJson(suiteName, expectationResponses)
     setup_ExpectationRegistry_RegisterExpectationWithResponse(expectation1, response1, None)
     setup_ExpectationRegistry_RegisterExpectationWithResponse(expectation2, response2, None)
 
@@ -132,10 +132,10 @@ class ExpectationServiceTests extends FunSuite with MockFactory with Matchers {
     val response1 = Response(100, "some content", Map())
     val expectation2 = Expectation("2", "2", Map(), null, null)
     val response2 = Response(200, "some content", Map())
-    val pairs = Set(expectation1 -> response1, expectation2 -> response2)
+    val expectationResponses = Set(expectation1 -> response1, expectation2 -> response2)
     val suiteName = "SomeName"
 
-    setup_ExpectationsFileService_LoadExpectationsFromJson(suiteName, pairs, Some(exception))
+    setup_ExpectationsFileService_LoadExpectationsFromJson(suiteName, expectationResponses, Some(exception))
 
     expectationService.loadExpectations(suiteName) should equal(Failure(exception))
   }
@@ -146,10 +146,10 @@ class ExpectationServiceTests extends FunSuite with MockFactory with Matchers {
     val response1 = Response(100, "some content", Map())
     val expectation2 = Expectation("2", "2", Map(), null, null)
     val response2 = Response(200, "some content", Map())
-    val pairs = Set(expectation1 -> response1, expectation2 -> response2)
+    val expectationResponses = Set(expectation1 -> response1, expectation2 -> response2)
     val suiteName = "SomeName"
 
-    setup_ExpectationsFileService_LoadExpectationsFromJson(suiteName, pairs)
+    setup_ExpectationsFileService_LoadExpectationsFromJson(suiteName, expectationResponses)
     setup_ExpectationRegistry_RegisterExpectationWithResponse(expectation1, response1, None)
     setup_ExpectationRegistry_RegisterExpectationWithResponse(expectation2, response2, Some(exception))
 
@@ -181,12 +181,12 @@ class ExpectationServiceTests extends FunSuite with MockFactory with Matchers {
   }
 
   private def setup_ExpectationRegistry_GetAllExpectations(
-    expectationAndResponsePairs: Option[Set[(Expectation, Response)]] = None,
+    expectationResponses: Option[Set[(Expectation, Response)]] = None,
     exception: Option[Exception] = None
   ): Unit = {
     val callHandler = (mockExpectationRegistry.getAllExpectations _).expects()
     exception match {
-      case None => callHandler.returning(expectationAndResponsePairs.get)
+      case None => callHandler.returning(expectationResponses.get)
       case Some(ex) => callHandler.throwing(ex)
     }
   }

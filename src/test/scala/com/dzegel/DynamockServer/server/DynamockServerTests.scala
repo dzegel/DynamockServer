@@ -19,7 +19,7 @@ class DynamockServerTests extends FeatureTest {
   private val expectationPutRequestJson =
     s"""
 {
-  "expectation_response_pairs": [{
+  "expectation_responses": [{
     "expectation": {
       "path": "${expectation.path}",
       "method": "${expectation.method}",

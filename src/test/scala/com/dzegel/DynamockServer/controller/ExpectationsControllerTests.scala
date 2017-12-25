@@ -38,7 +38,7 @@ class ExpectationsControllerTests extends FeatureTest with MockFactory with Matc
     response: Response) =
     s"""
 {
-  "expectation_response_pairs": [{
+  "expectation_responses": [{
     "expectation": {
       "path": "$expectationPath",
       "method": "$expectationMethod"${
@@ -174,7 +174,7 @@ class ExpectationsControllerTests extends FeatureTest with MockFactory with Matc
 
     val jsonResponse =
       """{
-        |  "expectation_response_pairs" : [
+        |  "expectation_responses" : [
         |    {
         |      "expectation" : {
         |        "method" : "POST",

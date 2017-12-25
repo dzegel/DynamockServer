@@ -16,12 +16,12 @@ Setup a mocked response by registering an expectation and the response to return
 **Content-Type:** application/json
 
 **Request Body Parameters:**
-- expectation_response_pairs: Array of ExpectationResponse Objects
+- expectation_responses: Array of ExpectationResponse Objects
 
 ###### Example Body:
 
     {
-        "expectation_response_pairs": [{
+        "expectation_responses": [{
             "expectation": {
                 "method": "POST",
                 "path": "/some/url/path",
@@ -53,7 +53,7 @@ Clear all registered mock setups.
 List all registered mock setups.
 
 **Response Body Parameters:**
-- expectation_response_pairs: Array of ExpectationResponse Objects
+- expectation_responses: Array of ExpectationResponse Objects
 
 ### POST /expectations/store
 Save the state of registered expectations into an expectations-suite that can be restored at a later point in time.
