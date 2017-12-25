@@ -10,39 +10,40 @@ When designing automated tests for a service with external web dependencies simp
 
 ## Dynamock API
 
-### PUT /expectation
+### PUT /expectations
 Setup a mocked response by registering an expectation and the response to return when the expectation is positively matched. 
 
 **Content-Type:** application/json
 
-**Body Parameters:**
-- expectation: Expectation Object
-- response: Response Object
+**Request Body Parameters:**
+- expectation_response_pairs: Array of ExpectationResponse Objects
 
 ###### Example Body:
 
     {
-        "expectation": {
-            "method": "POST",
-            "path": "/some/url/path",
-            "query_parameters": {
-                "some_query_parm": "SomeValue"
+        "expectation_response_pairs": [{
+            "expectation": {
+                "method": "POST",
+                "path": "/some/url/path",
+                "query_parameters": {
+                    "some_query_parm": "SomeValue"
+                },
+                "included_header_parameters": {
+                    "some_included_header_param": "SomeValue"
+                },
+                "excluded_header_parameters": {
+                    "some_excluded_header_param": "SomeValue"
+                },
+                "content": "Some Content (Possibly Json wrapped in a string)"
             },
-            "included_header_parameters": {
-                "some_included_header_param": "SomeValue"
-            },
-            "excluded_header_parameters": {
-                "some_excluded_header_param": "SomeValue"
-            },
-            "content": "Some Content (Possibly Json wrapped in a string)"
-        },
-        "response": {
-            "status": 200,
-            "content": "Some Content",
-            "header_map": {
-                "some_header_param": "SomeValue"
+            "response": {
+                "status": 200,
+                "content": "Some Content",
+                "header_map": {
+                    "some_header_param": "SomeValue"
+                }
             }
-        }
+        }]
     }
 
 ### DELETE /expectations
@@ -50,6 +51,9 @@ Clear all registered mock setups.
 
 ### GET /expectations
 List all registered mock setups.
+
+**Response Body Parameters:**
+- expectation_response_pairs: Array of ExpectationResponse Objects
 
 ### POST /expectations/store
 Save the state of registered expectations into an expectations-suite that can be restored at a later point in time.
@@ -66,6 +70,15 @@ Restore the state of registered expectations to a stored expectations-suite.
 ----------------------------------------------
 
 ### Definitions
+ExpectationResponse Object:
+- properties:
+    - expectation:
+        - type: Expectation Object
+        - required: true
+    - response:
+        - type: Response Object
+        - required: true
+
 Expectation Object:
 - properties:
     - method:
