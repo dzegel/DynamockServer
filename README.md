@@ -43,7 +43,7 @@ Setup a mocked response by registering an expectation and the response to return
                     "some_header_param": "SomeValue"
                 }
             }
-        }
+        }]
     }
 
 ### DELETE /expectations
