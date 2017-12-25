@@ -19,14 +19,14 @@ class ExpectationServiceTests extends FunSuite with MockFactory with Matchers {
   test("registerExpectation returns Success when no Exception is thrown") {
     setup_ExpectationRegistry_RegisterExpectationWithResponse(expectation, response, None)
 
-    expectationService.registerExpectation(expectation, response) should equal(Success(()))
+    expectationService.registerExpectations(Set((expectation, response))) should equal(Success(()))
   }
 
   test("registerExpectation returns Failure on Exception") {
     val exception = new Exception()
     setup_ExpectationRegistry_RegisterExpectationWithResponse(expectation, response, Some(exception))
 
-    expectationService.registerExpectation(expectation, response) should equal(Failure(exception))
+    expectationService.registerExpectations(Set((expectation, response))) should equal(Failure(exception))
   }
 
   test("getResponse returns Success of response") {

@@ -19,23 +19,25 @@ class DynamockServerTests extends FeatureTest {
   private val expectationPutRequestJson =
     s"""
 {
-  "expectation": {
-    "path": "${expectation.path}",
-    "method": "${expectation.method}",
-    "content": "${expectation.content.stringValue}"
-  },
-  "response": {
-    "status": ${response.status},
-    "content": "${response.content}",
-    "header_map": {
-      "${response.headerMap.head._1}": "${response.headerMap.head._2}"
+  "expectation_response_pairs": [{
+    "expectation": {
+      "path": "${expectation.path}",
+      "method": "${expectation.method}",
+      "content": "${expectation.content.stringValue}"
+    },
+    "response": {
+      "status": ${response.status},
+      "content": "${response.content}",
+      "header_map": {
+        "${response.headerMap.head._1}": "${response.headerMap.head._2}"
+      }
     }
-  }
+  }]
 }"""
 
-  test("PUT /expectation returns 204 and the mocked expectation returns the expected response") {
+  test("PUT /expectations returns 204 and the mocked expectation returns the expected response") {
     server.httpPut(
-      path = "/DynamockTest/expectation",
+      path = "/DynamockTest/expectations",
       putBody = expectationPutRequestJson,
       andExpect = Status.NoContent)
 

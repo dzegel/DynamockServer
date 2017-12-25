@@ -1,6 +1,6 @@
 package com.dzegel.DynamockServer.server
 
-import com.dzegel.DynamockServer.controller.{ExpectationController, MockController}
+import com.dzegel.DynamockServer.controller.{ExpectationsController, MockController}
 import com.dzegel.DynamockServer.registry.RegistryValuesInjectionModule
 import com.twitter.finatra.http.HttpServer
 import com.twitter.finatra.http.routing.HttpRouter
@@ -13,7 +13,7 @@ class DynamockServer extends HttpServer {
 
   override protected def configureHttp(router: HttpRouter): Unit = {
     router
-      .add[ExpectationController]
+      .add[ExpectationsController]
       .add[MockController]
   }
 }
