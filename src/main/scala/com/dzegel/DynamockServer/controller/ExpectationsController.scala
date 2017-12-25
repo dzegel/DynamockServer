@@ -24,19 +24,19 @@ object ExpectationsController {
 
   private case class ResponseDto(status: Int, content: Option[String], headerMap: Option[Map[String, String]])
 
-  private case class ExpectationsPutRequest(expectationResponsePairs: Set[ExpectationsResponsePairDto])
+  private case class ExpectationsPutRequest(expectationResponses: Set[ExpectationsResponseDto])
 
-  private case class ExpectationsResponsePairDto(expectation: ExpectationDto, response: ResponseDto)
+  private case class ExpectationsResponseDto(expectation: ExpectationDto, response: ResponseDto)
 
-  private case class ExpectationsGetResponse(expectationResponsePairs: Set[ExpectationsResponsePairDto])
+  private case class ExpectationsGetResponse(expectationResponses: Set[ExpectationsResponseDto])
 
   private case class ExpectationsStorePostRequest(@QueryParam suiteName: String)
 
   private case class ExpectationsLoadPostRequest(@QueryParam suiteName: String)
 
-  private def expectationsAndResponsePairToDto(expectationsAndResponsePair: (Expectation, Response))
-  : ExpectationsResponsePairDto = expectationsAndResponsePair match {
-    case (expectation, response) => ExpectationsResponsePairDto(expectation, response)
+  private def expectationsAndResponseToDto(expectationsAndResponse: (Expectation, Response))
+  : ExpectationsResponseDto = expectationsAndResponse match {
+    case (expectation, response) => ExpectationsResponseDto(expectation, response)
   }
 
   private implicit def dtoFromExpectation(expectation: Expectation): ExpectationDto = ExpectationDto(
@@ -76,7 +76,7 @@ class ExpectationsController @Inject()(
 
   put(pathBase) { request: ExpectationsPutRequest =>
     makeNoContentResponse(expectationService.registerExpectations(
-      request.expectationResponsePairs.map(x => (x.expectation: Expectation, x.response: Response))
+      request.expectationResponses.map(x => (x.expectation: Expectation, x.response: Response))
     ))
   }
 
@@ -86,8 +86,8 @@ class ExpectationsController @Inject()(
 
   get(pathBase) { _: Request =>
     expectationService.getAllExpectations match {
-      case Success(expectationResponsePairs) =>
-        response.ok(body = ExpectationsGetResponse(expectationResponsePairs.map(expectationsAndResponsePairToDto)))
+      case Success(expectationResponses) =>
+        response.ok(body = ExpectationsGetResponse(expectationResponses.map(expectationsAndResponseToDto)))
       case Failure(exception) => response.internalServerError(exception.getMessage)
     }
   }

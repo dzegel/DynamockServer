@@ -7,7 +7,7 @@ import scala.util.Try
 
 @ImplementedBy(classOf[DefaultExpectationService])
 trait ExpectationService {
-  def registerExpectations(expectationAndResponsePairs: Set[(Expectation, Response)]): Try[Unit]
+  def registerExpectations(expectationResponses: Set[(Expectation, Response)]): Try[Unit]
 
   def getResponse(request: Request): Try[Option[Response]]
 
@@ -22,8 +22,8 @@ trait ExpectationService {
 
 @Singleton
 class DefaultExpectationService @Inject()(expectationRegistry: ExpectationRegistry, fileService: ExpectationsFileService) extends ExpectationService {
-  override def registerExpectations(expectationAndResponsePairs: Set[(Expectation, Response)]): Try[Unit] =
-    Try(expectationAndResponsePairs.foreach {
+  override def registerExpectations(expectationResponses: Set[(Expectation, Response)]): Try[Unit] =
+    Try(expectationResponses.foreach {
       case (expectation, response) => expectationRegistry.registerExpectationWithResponse(expectation, response)
     })
 
