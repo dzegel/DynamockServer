@@ -7,7 +7,12 @@ import com.twitter.inject.server.FeatureTest
 
 class DynamockServerTests extends FeatureTest {
 
-  override protected val server: EmbeddedHttpServer = new EmbeddedHttpServer(new DynamockServer())
+  override protected val server: EmbeddedHttpServer = new EmbeddedHttpServer(
+    new DynamockServer {
+      override protected lazy val allowUndefinedFlags = true
+    }, httpPortFlag = "anything", //setting this to anything other than 'http.port' and setting 'allowUndefinedFlags = true' is a hack that enables the test to pass in the http.port flag defined in args
+    args = Seq("-http.port=:1235", "-expectations.path.base=DynamockTest")
+  )
 
   private val expectation = Expectation("PUT", "/some/path", Map.empty, HeaderParameters(Set.empty, Set.empty), Content("someContent"))
   private val response = Response(201, "SomeOtherContent", Map("SomeKey" -> "SomeValue"))
@@ -30,7 +35,7 @@ class DynamockServerTests extends FeatureTest {
 
   test("PUT /expectation returns 204 and the mocked expectation returns the expected response") {
     server.httpPut(
-      path = "/expectation",
+      path = "/DynamockTest/expectation",
       putBody = expectationPutRequestJson,
       andExpect = Status.NoContent)
 

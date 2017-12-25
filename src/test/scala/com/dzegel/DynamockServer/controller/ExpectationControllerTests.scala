@@ -1,6 +1,7 @@
 package com.dzegel.DynamockServer.controller
 
-import com.dzegel.DynamockServer.service.{ExpectationService, ExpectationsUrlPathBaseRegistry}
+import com.dzegel.DynamockServer.registry.ExpectationsUrlPathBaseRegistry
+import com.dzegel.DynamockServer.service.ExpectationService
 import com.dzegel.DynamockServer.types._
 import com.twitter.finagle.http.Status
 import com.twitter.finatra.http.routing.HttpRouter
@@ -14,7 +15,8 @@ import scala.util.{Failure, Success, Try}
 class ExpectationControllerTests extends FeatureTest with MockFactory with Matchers {
 
   private val mockExpectationService = mock[ExpectationService]
-  private val expectationsUrlPathBaseRegistry = new ExpectationsUrlPathBaseRegistry("/test")
+  private val expectationsUrlPathBaseRegistry = stub[ExpectationsUrlPathBaseRegistry]
+  (expectationsUrlPathBaseRegistry.pathBase _).when().returns("/test")
 
   override protected val server: EmbeddedHttpServer = new EmbeddedHttpServer(
     new HttpServer {

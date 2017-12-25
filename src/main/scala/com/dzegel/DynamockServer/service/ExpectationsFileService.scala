@@ -2,6 +2,7 @@ package com.dzegel.DynamockServer.service
 
 import java.io._
 
+import com.dzegel.DynamockServer.registry.FileRootRegistry
 import com.dzegel.DynamockServer.types.{Expectation, Response}
 import com.fasterxml.jackson.databind.{DeserializationFeature, ObjectMapper}
 import com.fasterxml.jackson.module.scala.DefaultScalaModule
@@ -16,7 +17,7 @@ trait ExpectationsFileService {
 }
 
 @Singleton
-class DefaultExpectationsFileService @Inject()(portNumberRegistry: PortNumberRegistry, fileRootRegistry: FileRootRegistry) extends ExpectationsFileService {
+class DefaultExpectationsFileService @Inject()(fileRootRegistry: FileRootRegistry) extends ExpectationsFileService {
   private val objectMapper = new ObjectMapper with ScalaObjectMapper {
     registerModule(DefaultScalaModule)
     configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)

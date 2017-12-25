@@ -1,7 +1,8 @@
 package com.dzegel.DynamockServer.controller
 
 import com.dzegel.DynamockServer.controller.ExpectationController._
-import com.dzegel.DynamockServer.service.{ExpectationsUrlPathBaseRegistry, ExpectationService}
+import com.dzegel.DynamockServer.registry.ExpectationsUrlPathBaseRegistry
+import com.dzegel.DynamockServer.service.ExpectationService
 import com.dzegel.DynamockServer.types.{Content, Expectation, HeaderParameters, Response}
 import com.google.inject.Inject
 import com.twitter.finagle.http.Request

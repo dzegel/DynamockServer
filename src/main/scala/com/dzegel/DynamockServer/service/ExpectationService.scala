@@ -33,11 +33,11 @@ class DefaultExpectationService @Inject()(expectationRegistry: ExpectationRegist
 
   override def storeExpectations(suiteName: String): Try[Unit] = Try {
     val registeredExpectations = expectationRegistry.getAllExpectations
-    fileService.storeExpectationsAsJson(s"$suiteName.expectations", registeredExpectations)
+    fileService.storeExpectationsAsJson(suiteName, registeredExpectations)
   }
 
   override def loadExpectations(suiteName: String): Try[Unit] = Try {
-    val savedExpectations = fileService.loadExpectationsFromJson(s"$suiteName.expectations")
+    val savedExpectations = fileService.loadExpectationsFromJson(suiteName)
     savedExpectations.foreach {
       case (expectation, response) => expectationRegistry.registerExpectationWithResponse(expectation, response)
     }

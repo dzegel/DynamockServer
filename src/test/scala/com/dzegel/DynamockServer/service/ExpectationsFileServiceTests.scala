@@ -2,15 +2,17 @@ package com.dzegel.DynamockServer.service
 
 import java.io.File
 
+import com.dzegel.DynamockServer.registry.FileRootRegistry
 import com.dzegel.DynamockServer.types.{Content, Expectation, HeaderParameters, Response}
 import org.scalatest.{BeforeAndAfterEach, FunSuite, Matchers}
 
 import scala.util.Random
 
 class ExpectationsFileServiceTests extends FunSuite with Matchers with BeforeAndAfterEach {
-  private val portNumberRegistry = new PortNumberRegistry("1234")
-  private val fileRootRegistry = new FileRootRegistry(s"${File.listRoots.head.getCanonicalPath}${File.separator}Dynamock${File.separator}test")
-  private val expectationsFileService = new DefaultExpectationsFileService(portNumberRegistry, fileRootRegistry)
+  private val fileRootRegistry = new FileRootRegistry {
+    override val fileRoot = s"${File.listRoots.head.getCanonicalPath}${File.separator}Dynamock${File.separator}test"
+  }
+  private val expectationsFileService = new DefaultExpectationsFileService(fileRootRegistry)
 
   private val expectation1 = Expectation("GET", "/", Map(), HeaderParameters(Set(), Set()), Content("Some Stuff"))
   private val expectation2 = Expectation("PUT", "/uri", Map("query1" -> "query2"), HeaderParameters(Set("header1" -> "header2"), Set()), Content("{}"))
