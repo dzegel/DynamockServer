@@ -10,4 +10,4 @@ Release version notation is made of three integers `x`, `y` and `z` delimited by
 
 |Version|JAR|Release Notes|
 |---|---|---|
-|[1.0.0](README.md)|[Dynamock Server 1.0.0](releases/DynamockServer-1.0.0.jar)|Initial Release|
+|[1.0.0](../README.md)|[Dynamock Server 1.0.0](DynamockServer-1.0.0.jar)|Initial Release|
