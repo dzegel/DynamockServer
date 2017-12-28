@@ -3,14 +3,21 @@ A mock-server designed to replicate the classic unit-test mocking experience. Se
 
 ###### Basic Usage
 When designing automated tests for a service with external web dependencies simply:
-1. Spin-up a Dynamock Server instance.
+1. [Spin-up](#deployment) a DynamockServer instance.
 1. Configure the hosts and ports for the dependent services on the service under test, to point to the Dynamock Server.
 1. Setup the expected API calls along with desired responses. (see [PUT /expectations](#put-expectations) or [POST /expectations/load](#post-expectationsload))
-1. Optionally tear-down the registered expectations after test completion (see [DELETE /expectations](#delete-expectations)).
+1. Run your tests, i.e. make http requests to DynamockServer as if it were the dependent service of interest. When a request matches a setup expectation DynamockServer will respond with the registered response. 
+
+## Deployment
+- Download the JAR file of the latest [release](releases/README.md).
+- Ensure Java is installed.
+- Run `java -jar DynamockServer-x.y.z.jar [-http.port :<port-number>] [-expectations.path.base <expectations-path-base>]`, explanation of the optional flags is as follows:
+    - **http.port**: 4 digit port number, prefixed with a `:` that specifies the http port the server runs on. This value defaults to `:8888` if not provided. It is suggested that you use this feature to deploy multiple DynamockServer instances for different consumers, to avoid collisions on expectations. 
+    - **expectations.path.base**: This value prefixes the `/expectations` url path for managing expectations. Use this feature to avoid collisions on mocked http requests and the expectations API.  
 
 ## Dynamock API
 
-### PUT /expectations
+### PUT <expectations-path-base>/expectations
 Setup a mocked response by registering an expectation and the response to return when the expectation is positively matched. 
 
 **Content-Type:** application/json
@@ -46,22 +53,22 @@ Setup a mocked response by registering an expectation and the response to return
         }]
     }
 
-### DELETE /expectations
+### DELETE <expectations-path-base>/expectations
 Clear all registered mock setups.
 
-### GET /expectations
+### GET <expectations-path-base>/expectations
 List all registered mock setups.
 
 **Response Body Parameters:**
 - expectation_responses: Array of [ExpectationResponse](#expectationresponse-object) Objects
 
-### POST /expectations/store
+### POST <expectations-path-base>/expectations/store
 Save the state of registered expectations into an expectations-suite that can be restored at a later point in time.
 
 **Query Parameters:**
 - suite_name: Name of the expectations-suite.
 
-### POST /expectations/load
+### POST <expectations-path-base>/expectations/load
 Restore the state of registered expectations to a stored expectations-suite.
 
 **Query Parameters:**
@@ -126,3 +133,7 @@ Restore the state of registered expectations to a stored expectations-suite.
         - type: map of string to string
         - description: Header parameters to be included in the response's header map.
         - required: false, when not specified it is treated as if an empty map is provided.
+
+## Planned work
+- Regex matching on expectation matching.
+- Expectation hit-count support, for validating the number of times an expectation is matched.
