@@ -1,12 +1,12 @@
 # Dynamock Server
-A mock-server designed to replicate classic unit-test mocking experience. Setup an API expectation and response and receive the registered response when an API call matching the registered expectation is made. 
+A mock-server designed to replicate the classic unit-test mocking experience. Setup an API expectation and response and receive the registered response when an API call matching the registered expectation is made. 
 
-###### Usage
+###### Basic Usage
 When designing automated tests for a service with external web dependencies simply:
 1. Spin-up a Dynamock Server instance.
 1. Configure the hosts and ports for the dependent services on the service under test, to point to the Dynamock Server.
-1. Setup the expected API calls along with desired responses.
-1. Optionally tear-down the setup expectations when done testing.
+1. Setup the expected API calls along with desired responses. (see [PUT /expectations](#put-expectations) or [POST /expectations/load](#post-expectationsload))
+1. Optionally tear-down the registered expectations after test completion (see [DELETE /expectations](#delete-expectations)).
 
 ## Dynamock API
 
@@ -16,7 +16,7 @@ Setup a mocked response by registering an expectation and the response to return
 **Content-Type:** application/json
 
 **Request Body Parameters:**
-- expectation_responses: Array of ExpectationResponse Objects
+- expectation_responses: Array of [ExpectationResponse](#expectationresponse-object) Objects
 
 ###### Example Body:
 
@@ -53,7 +53,7 @@ Clear all registered mock setups.
 List all registered mock setups.
 
 **Response Body Parameters:**
-- expectation_responses: Array of ExpectationResponse Objects
+- expectation_responses: Array of [ExpectationResponse](#expectationresponse-object) Objects
 
 ### POST /expectations/store
 Save the state of registered expectations into an expectations-suite that can be restored at a later point in time.
@@ -70,16 +70,16 @@ Restore the state of registered expectations to a stored expectations-suite.
 ----------------------------------------------
 
 ### Definitions
-ExpectationResponse Object:
+##### ExpectationResponse Object:
 - properties:
     - expectation:
-        - type: Expectation Object
+        - type: [Expectation](#expectation-object) Object
         - required: true
     - response:
-        - type: Response Object
+        - type: [Response](#response-object) Object
         - required: true
 
-Expectation Object:
+##### Expectation Object:
 - properties:
     - method:
         - type: string
@@ -112,7 +112,7 @@ Expectation Object:
         - required: false, when not specified it is treated as if an empty string is provided.
         - matching rule: If the string is valid Json then a positive match occurs on a request with equivalent Json, Json property names are matched case-sensitive. When the specified content is not valid Json then a positive match occurs on exact case-sensitive match.
         
-Response Object:
+##### Response Object:
 - properties:
     - status:
         - type: integer
