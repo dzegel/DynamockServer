@@ -11,7 +11,7 @@ When designing automated tests for a service with external web dependencies simp
 ## Deployment
 - Download the JAR file of the latest [release](releases/README.md).
 - Ensure Java is installed.
-- Run `java -jar DynamockServer-x.y.z.jar [-http.port :<port-number>] [-expectations.path.base <expectations-path-base>]`, explanation of the optional flags is as follows:
+- Run `java -jar DynamockServer-x.y.z.jar [-http.port=:<port-number>] [-expectations.path.base=<expectations-path-base>]`, explanation of the optional flags is as follows:
     - **http.port**: 4 digit port number, prefixed with a `:` that specifies the http port the server runs on. This value defaults to `:8888` if not provided. It is suggested that you use this feature to deploy multiple DynamockServer instances for different consumers, to avoid collisions on expectations. 
     - **expectations.path.base**: This value prefixes the `/expectations` url path for managing expectations. Use this feature to avoid collisions on mocked http requests and the expectations API.  
 
