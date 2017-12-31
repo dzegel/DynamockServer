@@ -1,6 +1,8 @@
 target/
 project/project/
+releases/
 *.sc
+/TODO
 
 # Scala-IDE specific
 .scala_dependencies
@@ -12,4 +14,3 @@ project/project/
 .idea_modules
 *.swp
 tags
-/TODO
