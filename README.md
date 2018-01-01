@@ -11,9 +11,9 @@ When designing automated tests for a service with external web dependencies simp
 ## Deployment
 - Download the JAR file of the latest [release](releases/README.md).
 - Ensure Java is installed.
-- Run `java -jar DynamockServer-x.y.z.jar [-http.port=:<port-number>] [-expectations.path.base=<expectations-path-base>]`, explanations of the optional flags are as follows:
-    - **http.port**: 4 digit port number, prefixed with a `:` that specifies the http port the server runs on. This value defaults to `:8888` if not provided. It is suggested that you use this feature to deploy multiple DynamockServer instances for different consumers, to avoid collisions on expectations. 
-    - **expectations.path.base**: This value prefixes the `/expectations` url path for managing expectations. Use this feature to avoid collisions on mocked http requests and the expectations API.  
+- Run `java -jar DynamockServer-x.y.z.jar [-http.port=:<port-number>] [-expectations.path.base=<expectations-path-base>]`, where `x.y.z` is the version number. Explanations of the optional flag arguments are as follows:
+    - **http.port**: This value is a 4 digit number prefixed with `:`, that specifies the http port the server runs on. For example providing `-http.port=:1234` deploys Dynamock instance listening on port `1234`. If not provided this value defaults to `:8888`. It is suggested that you use this feature to deploy multiple DynamockServer instances for different consumers, to avoid collisions. 
+    - **expectations.path.base**: This value prefixes the `/expectations` url path for managing expectations. For example `-expectations.path.base=dynamock/test` results in a net url path `/dynamock/test/expectations`. Use this feature to avoid collisions on mocked http requests and the expectations API.  
 
 ## Dynamock API
 
