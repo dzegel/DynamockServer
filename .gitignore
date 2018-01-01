@@ -1,6 +1,5 @@
 target/
 project/project/
-releases/
 *.sc
 /TODO
 
