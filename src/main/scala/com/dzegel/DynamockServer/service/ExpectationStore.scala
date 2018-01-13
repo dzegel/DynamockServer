@@ -5,8 +5,8 @@ import com.google.inject.{ImplementedBy, Singleton}
 
 import scala.collection.concurrent.TrieMap
 
-@ImplementedBy(classOf[DefaultExpectationRegistry])
-trait ExpectationRegistry {
+@ImplementedBy(classOf[DefaultExpectationStore])
+trait ExpectationStore {
   def registerExpectationWithResponse(expectation: Expectation, response: Response): Unit
 
   def getResponse(request: Request): Option[Response]
@@ -17,7 +17,7 @@ trait ExpectationRegistry {
 }
 
 @Singleton
-class DefaultExpectationRegistry extends ExpectationRegistry {
+class DefaultExpectationStore extends ExpectationStore {
 
   private val methodRegistry: MethodRegistry = TrieMap.empty[Method, PathRegistry]
 
@@ -45,11 +45,11 @@ class DefaultExpectationRegistry extends ExpectationRegistry {
     }.map { case (_, response) => response }
   }
 
-  private def getHeaderParamRegistry(registryParameters: RegistryParameters): HeaderParamRegistry = {
-    val pathRegistry = methodRegistry.getOrElseUpdate(registryParameters.method, TrieMap.empty)
-    val queryParamRegistry = pathRegistry.getOrElseUpdate(registryParameters.path, TrieMap.empty)
-    val contentRegistry = queryParamRegistry.getOrElseUpdate(registryParameters.queryParams, TrieMap.empty)
-    val headerParamRegistry = contentRegistry.getOrElseUpdate(registryParameters.content, TrieMap.empty)
+  private def getHeaderParamRegistry(expectationStoreParameters: ExpectationStoreParameters): HeaderParamRegistry = {
+    val pathRegistry = methodRegistry.getOrElseUpdate(expectationStoreParameters.method, TrieMap.empty)
+    val queryParamRegistry = pathRegistry.getOrElseUpdate(expectationStoreParameters.path, TrieMap.empty)
+    val contentRegistry = queryParamRegistry.getOrElseUpdate(expectationStoreParameters.queryParams, TrieMap.empty)
+    val headerParamRegistry = contentRegistry.getOrElseUpdate(expectationStoreParameters.content, TrieMap.empty)
     headerParamRegistry
   }
 

@@ -1,6 +1,6 @@
 package com.dzegel.DynamockServer.types
 
-trait RegistryParameters {
+trait ExpectationStoreParameters {
   val method: Method
   val path: Path
   val queryParams: QueryParams

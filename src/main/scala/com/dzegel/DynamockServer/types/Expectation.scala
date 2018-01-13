@@ -6,4 +6,4 @@ case class Expectation(
   queryParams: QueryParams,
   headerParameters: HeaderParameters,
   content: Content
-) extends RegistryParameters
+) extends ExpectationStoreParameters

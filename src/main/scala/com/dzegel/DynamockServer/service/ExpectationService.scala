@@ -21,27 +21,27 @@ trait ExpectationService {
 }
 
 @Singleton
-class DefaultExpectationService @Inject()(expectationRegistry: ExpectationRegistry, fileService: ExpectationsFileService) extends ExpectationService {
+class DefaultExpectationService @Inject()(expectationStore: ExpectationStore, fileService: ExpectationsFileService) extends ExpectationService {
   override def registerExpectations(expectationResponses: Set[(Expectation, Response)]): Try[Unit] =
     Try(expectationResponses.foreach {
-      case (expectation, response) => expectationRegistry.registerExpectationWithResponse(expectation, response)
+      case (expectation, response) => expectationStore.registerExpectationWithResponse(expectation, response)
     })
 
-  override def getResponse(request: Request): Try[Option[Response]] = Try(expectationRegistry.getResponse(request))
+  override def getResponse(request: Request): Try[Option[Response]] = Try(expectationStore.getResponse(request))
 
-  override def getAllExpectations: Try[Set[(Expectation, Response)]] = Try(expectationRegistry.getAllExpectations)
+  override def getAllExpectations: Try[Set[(Expectation, Response)]] = Try(expectationStore.getAllExpectations)
 
-  override def clearAllExpectations(): Try[Unit] = Try(expectationRegistry.clearAllExpectations())
+  override def clearAllExpectations(): Try[Unit] = Try(expectationStore.clearAllExpectations())
 
   override def storeExpectations(suiteName: String): Try[Unit] = Try {
-    val registeredExpectations = expectationRegistry.getAllExpectations
+    val registeredExpectations = expectationStore.getAllExpectations
     fileService.storeExpectationsAsJson(suiteName, registeredExpectations)
   }
 
   override def loadExpectations(suiteName: String): Try[Unit] = Try {
     val savedExpectations = fileService.loadExpectationsFromJson(suiteName)
     savedExpectations.foreach {
-      case (expectation, response) => expectationRegistry.registerExpectationWithResponse(expectation, response)
+      case (expectation, response) => expectationStore.registerExpectationWithResponse(expectation, response)
     }
   }
 }

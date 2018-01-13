@@ -8,55 +8,55 @@ import scala.util.{Failure, Success}
 
 class ExpectationServiceTests extends FunSuite with MockFactory with Matchers {
 
-  private val mockExpectationRegistry = mock[ExpectationRegistry]
+  private val mockExpectationStore = mock[ExpectationStore]
   private val mockExpectationsFileService = mock[ExpectationsFileService]
-  private val expectationService = new DefaultExpectationService(mockExpectationRegistry, mockExpectationsFileService)
+  private val expectationService = new DefaultExpectationService(mockExpectationStore, mockExpectationsFileService)
 
   private val expectation = Expectation("POST", "somePath", Map.empty, HeaderParameters(Set.empty, Set.empty), Content(""))
   private val request = Request(expectation.method, expectation.path, expectation.queryParams, expectation.headerParameters.included, expectation.content)
   private val response = Response(200, "", Map.empty)
 
   test("registerExpectation returns Success when no Exception is thrown") {
-    setup_ExpectationRegistry_RegisterExpectationWithResponse(expectation, response, None)
+    setup_ExpectationStore_RegisterExpectationWithResponse(expectation, response, None)
 
     expectationService.registerExpectations(Set((expectation, response))) should equal(Success(()))
   }
 
   test("registerExpectation returns Failure on Exception") {
     val exception = new Exception()
-    setup_ExpectationRegistry_RegisterExpectationWithResponse(expectation, response, Some(exception))
+    setup_ExpectationStore_RegisterExpectationWithResponse(expectation, response, Some(exception))
 
     expectationService.registerExpectations(Set((expectation, response))) should equal(Failure(exception))
   }
 
   test("getResponse returns Success of response") {
-    setup_ExpectationRegistry_GetResponse(expectation, response = Some(response))
+    setup_ExpectationStore_GetResponse(expectation, response = Some(response))
 
     expectationService.getResponse(request) should equal(Success(Some(response)))
   }
 
   test("getResponse returns Success of None") {
-    setup_ExpectationRegistry_GetResponse(expectation, response = None)
+    setup_ExpectationStore_GetResponse(expectation, response = None)
 
     expectationService.getResponse(request) should equal(Success(None))
   }
 
   test("getResponse returns Failure") {
     val exception = new Exception()
-    setup_ExpectationRegistry_GetResponse(expectation, exception = Some(exception))
+    setup_ExpectationStore_GetResponse(expectation, exception = Some(exception))
 
     expectationService.getResponse(request) should equal(Failure(exception))
   }
 
   test("clearAllExpectations returns Success") {
-    setup_ExpectationRegistry_ClearAllExpectations()
+    setup_ExpectationStore_ClearAllExpectations()
 
     expectationService.clearAllExpectations() should equal(Success(()))
   }
 
   test("clearAllExpectations returns Failure") {
     val exception = new Exception()
-    setup_ExpectationRegistry_ClearAllExpectations(Some(exception))
+    setup_ExpectationStore_ClearAllExpectations(Some(exception))
 
     expectationService.clearAllExpectations() should equal(Failure(exception))
   }
@@ -65,14 +65,14 @@ class ExpectationServiceTests extends FunSuite with MockFactory with Matchers {
     val expectation = Expectation("dsf", "asd", Map(), null, null)
     val response = Response(200, "some content", Map())
     val expectationResponses = Set(expectation -> response)
-    setup_ExpectationRegistry_GetAllExpectations(Some(expectationResponses))
+    setup_ExpectationStore_GetAllExpectations(Some(expectationResponses))
 
     expectationService.getAllExpectations should equal(Success(expectationResponses))
   }
 
   test("getAllExpectations returns Failure") {
     val exception = new Exception("some error message")
-    setup_ExpectationRegistry_GetAllExpectations(exception = Some(exception))
+    setup_ExpectationStore_GetAllExpectations(exception = Some(exception))
 
     expectationService.getAllExpectations should equal(Failure(exception))
   }
@@ -83,7 +83,7 @@ class ExpectationServiceTests extends FunSuite with MockFactory with Matchers {
     val expectationResponses = Set(expectation -> response)
     val suiteName = "SomeName"
 
-    setup_ExpectationRegistry_GetAllExpectations(Some(expectationResponses))
+    setup_ExpectationStore_GetAllExpectations(Some(expectationResponses))
     setup_ExpectationsFileService_StoreExpectationsAsJson(suiteName, expectationResponses)
 
     expectationService.storeExpectations(suiteName) should equal(Success(()))
@@ -93,7 +93,7 @@ class ExpectationServiceTests extends FunSuite with MockFactory with Matchers {
     val exception = new Exception("some error message")
     val suiteName = "SomeName"
 
-    setup_ExpectationRegistry_GetAllExpectations(exception = Some(exception))
+    setup_ExpectationStore_GetAllExpectations(exception = Some(exception))
 
     expectationService.storeExpectations(suiteName) should equal(Failure(exception))
   }
@@ -105,7 +105,7 @@ class ExpectationServiceTests extends FunSuite with MockFactory with Matchers {
     val expectationResponses = Set(expectation -> response)
     val suiteName = "SomeName"
 
-    setup_ExpectationRegistry_GetAllExpectations(Some(expectationResponses))
+    setup_ExpectationStore_GetAllExpectations(Some(expectationResponses))
     setup_ExpectationsFileService_StoreExpectationsAsJson(suiteName, expectationResponses, Some(exception))
 
     expectationService.storeExpectations(suiteName) should equal(Failure(exception))
@@ -120,8 +120,8 @@ class ExpectationServiceTests extends FunSuite with MockFactory with Matchers {
     val suiteName = "SomeName"
 
     setup_ExpectationsFileService_LoadExpectationsFromJson(suiteName, expectationResponses)
-    setup_ExpectationRegistry_RegisterExpectationWithResponse(expectation1, response1, None)
-    setup_ExpectationRegistry_RegisterExpectationWithResponse(expectation2, response2, None)
+    setup_ExpectationStore_RegisterExpectationWithResponse(expectation1, response1, None)
+    setup_ExpectationStore_RegisterExpectationWithResponse(expectation2, response2, None)
 
     expectationService.loadExpectations(suiteName) should equal(Success(()))
   }
@@ -150,49 +150,49 @@ class ExpectationServiceTests extends FunSuite with MockFactory with Matchers {
     val suiteName = "SomeName"
 
     setup_ExpectationsFileService_LoadExpectationsFromJson(suiteName, expectationResponses)
-    setup_ExpectationRegistry_RegisterExpectationWithResponse(expectation1, response1, None)
-    setup_ExpectationRegistry_RegisterExpectationWithResponse(expectation2, response2, Some(exception))
+    setup_ExpectationStore_RegisterExpectationWithResponse(expectation1, response1, None)
+    setup_ExpectationStore_RegisterExpectationWithResponse(expectation2, response2, Some(exception))
 
     expectationService.loadExpectations(suiteName) should equal(Failure(exception))
   }
 
-  private def setup_ExpectationRegistry_RegisterExpectationWithResponse(
+  private def setup_ExpectationStore_RegisterExpectationWithResponse(
     expectation: Expectation,
     response: Response,
     exception: Option[Exception]
   ): Unit = {
-    val callHandler = (mockExpectationRegistry.registerExpectationWithResponse _).expects(expectation, response)
+    val callHandler = (mockExpectationStore.registerExpectationWithResponse _).expects(expectation, response)
     exception match {
       case None => callHandler.returning(())
       case Some(ex) => callHandler.throwing(ex)
     }
   }
 
-  private def setup_ExpectationRegistry_GetResponse(
+  private def setup_ExpectationStore_GetResponse(
     expectation: Expectation,
     response: Option[Response] = None,
     exception: Option[Exception] = None
   ): Unit = {
-    val callHandler = (mockExpectationRegistry.getResponse _).expects(request)
+    val callHandler = (mockExpectationStore.getResponse _).expects(request)
     exception match {
       case None => callHandler.returning(response)
       case Some(ex) => callHandler.throwing(ex)
     }
   }
 
-  private def setup_ExpectationRegistry_GetAllExpectations(
+  private def setup_ExpectationStore_GetAllExpectations(
     expectationResponses: Option[Set[(Expectation, Response)]] = None,
     exception: Option[Exception] = None
   ): Unit = {
-    val callHandler = (mockExpectationRegistry.getAllExpectations _).expects()
+    val callHandler = (mockExpectationStore.getAllExpectations _).expects()
     exception match {
       case None => callHandler.returning(expectationResponses.get)
       case Some(ex) => callHandler.throwing(ex)
     }
   }
 
-  private def setup_ExpectationRegistry_ClearAllExpectations(exception: Option[Exception] = None): Unit = {
-    val callHandler = (mockExpectationRegistry.clearAllExpectations _).expects()
+  private def setup_ExpectationStore_ClearAllExpectations(exception: Option[Exception] = None): Unit = {
+    val callHandler = (mockExpectationStore.clearAllExpectations _).expects()
     exception match {
       case None => callHandler.returning(Unit)
       case Some(ex) => callHandler.throwing(ex)

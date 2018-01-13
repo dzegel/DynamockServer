@@ -3,15 +3,15 @@ package com.dzegel.DynamockServer.service
 import com.dzegel.DynamockServer.types._
 import org.scalatest.{BeforeAndAfterEach, FunSuite, Matchers}
 
-class ExpectationRegistryTests extends FunSuite with Matchers with BeforeAndAfterEach {
-  private var expectationRegistry: ExpectationRegistry = _
+class ExpectationStoreTests extends FunSuite with Matchers with BeforeAndAfterEach {
+  private var expectationStore: ExpectationStore = _
 
   val response100 = Response(100, "", Map.empty)
   val response200 = Response(200, "", Map.empty)
   val response300 = Response(300, "", Map.empty)
 
   override protected def beforeEach(): Unit = {
-    expectationRegistry = new DefaultExpectationRegistry()
+    expectationStore = new DefaultExpectationStore()
   }
 
   test("registerExpectationWithResponse and getResponse works for paths") {
@@ -78,19 +78,19 @@ class ExpectationRegistryTests extends FunSuite with Matchers with BeforeAndAfte
     val request2 = getRequest(headers = Set("key3" -> "value3"))
     val request3 = getRequest(headers = Set())
 
-    expectationRegistry.registerExpectationWithResponse(expectation1, response100)
-    expectationRegistry.registerExpectationWithResponse(expectation2, response200)
+    expectationStore.registerExpectationWithResponse(expectation1, response100)
+    expectationStore.registerExpectationWithResponse(expectation2, response200)
 
-    expectationRegistry.getResponse(request1) shouldBe None
-    expectationRegistry.getResponse(request2) should contain(response200)
-    expectationRegistry.getResponse(request3) should contain(response200)
+    expectationStore.getResponse(request1) shouldBe None
+    expectationStore.getResponse(request2) should contain(response200)
+    expectationStore.getResponse(request3) should contain(response200)
 
-    expectationRegistry.registerExpectationWithResponse(expectation1, response200)
-    expectationRegistry.registerExpectationWithResponse(expectation2, response100)
+    expectationStore.registerExpectationWithResponse(expectation1, response200)
+    expectationStore.registerExpectationWithResponse(expectation2, response100)
 
-    expectationRegistry.getResponse(request1) shouldBe None
-    expectationRegistry.getResponse(request2) should contain(response100)
-    expectationRegistry.getResponse(request3) should contain(response100)
+    expectationStore.getResponse(request1) shouldBe None
+    expectationStore.getResponse(request2) should contain(response100)
+    expectationStore.getResponse(request3) should contain(response100)
   }
 
   test("registerExpectationWithResponse and getResponse works for included and excluded header params") {
@@ -103,27 +103,27 @@ class ExpectationRegistryTests extends FunSuite with Matchers with BeforeAndAfte
     val expectation2 = getExpectation(includedHeaders = Set(included1, included2), excludedHeaders = Set(excluded1))
     val expectation3 = getExpectation(includedHeaders = Set(included1, included2), excludedHeaders = Set(excluded1, excluded3))
 
-    expectationRegistry.registerExpectationWithResponse(expectation1, response100)
-    expectationRegistry.registerExpectationWithResponse(expectation2, response200)
-    expectationRegistry.registerExpectationWithResponse(expectation3, response300)
+    expectationStore.registerExpectationWithResponse(expectation1, response100)
+    expectationStore.registerExpectationWithResponse(expectation2, response200)
+    expectationStore.registerExpectationWithResponse(expectation3, response300)
 
-    expectationRegistry.getResponse(getRequest(headers = Set())) shouldBe None
-    expectationRegistry.getResponse(getRequest(headers = Set("Key" -> "Value"))) shouldBe None
-    expectationRegistry.getResponse(getRequest(headers = Set(included1))) should contain(response100)
-    expectationRegistry.getResponse(getRequest(headers = Set(included2))) shouldBe None
-    expectationRegistry.getResponse(getRequest(headers = Set(included1, included2))) should contain(response300)
-    expectationRegistry.getResponse(getRequest(headers = Set(included1, included2, excluded1))) shouldBe None
-    expectationRegistry.getResponse(getRequest(headers = Set(included1, included2, "Key" -> "Value"))) should contain(response300)
+    expectationStore.getResponse(getRequest(headers = Set())) shouldBe None
+    expectationStore.getResponse(getRequest(headers = Set("Key" -> "Value"))) shouldBe None
+    expectationStore.getResponse(getRequest(headers = Set(included1))) should contain(response100)
+    expectationStore.getResponse(getRequest(headers = Set(included2))) shouldBe None
+    expectationStore.getResponse(getRequest(headers = Set(included1, included2))) should contain(response300)
+    expectationStore.getResponse(getRequest(headers = Set(included1, included2, excluded1))) shouldBe None
+    expectationStore.getResponse(getRequest(headers = Set(included1, included2, "Key" -> "Value"))) should contain(response300)
 
-    val responseFromMultipleValidExpectations = expectationRegistry.getResponse(getRequest(headers = Set(included1, included2, excluded3)))
+    val responseFromMultipleValidExpectations = expectationStore.getResponse(getRequest(headers = Set(included1, included2, excluded3)))
     responseFromMultipleValidExpectations should contain oneElementOf Seq(response100, response200)
 
     //reversing these expectation -> response setups
-    expectationRegistry.registerExpectationWithResponse(expectation1, response200)
-    expectationRegistry.registerExpectationWithResponse(expectation2, response100)
+    expectationStore.registerExpectationWithResponse(expectation1, response200)
+    expectationStore.registerExpectationWithResponse(expectation2, response100)
 
     //the setup should be deterministic based on the expectations so making the same request after reversing the setup should result in a reversed response
-    val responseFromMultipleValidReversedExpectations = expectationRegistry.getResponse(getRequest(headers = Set(included1, included2, excluded3)))
+    val responseFromMultipleValidReversedExpectations = expectationStore.getResponse(getRequest(headers = Set(included1, included2, excluded3)))
     responseFromMultipleValidReversedExpectations should contain oneElementOf Seq(response100, response200)
     responseFromMultipleValidReversedExpectations shouldNot be(responseFromMultipleValidExpectations)
   }
@@ -137,11 +137,11 @@ class ExpectationRegistryTests extends FunSuite with Matchers with BeforeAndAfte
       Content("Some Content"))
     val response = Response(200, "Response Content", Map("ResponseHeaderParam" -> "ResponseHeaderValue"))
 
-    expectationRegistry.getAllExpectations shouldBe empty
+    expectationStore.getAllExpectations shouldBe empty
 
-    expectationRegistry.registerExpectationWithResponse(expectation, response)
+    expectationStore.registerExpectationWithResponse(expectation, response)
 
-    expectationRegistry.getAllExpectations shouldBe Set(expectation -> response)
+    expectationStore.getAllExpectations shouldBe Set(expectation -> response)
   }
 
   test("clearAllExpectations clears all expectations") {
@@ -150,31 +150,31 @@ class ExpectationRegistryTests extends FunSuite with Matchers with BeforeAndAfte
     val expectation2 = getExpectation(path = "path2", method = "PUT")
     val request2 = getRequest(path = expectation2.path, method = expectation2.method)
 
-    expectationRegistry.registerExpectationWithResponse(expectation1, response100)
-    expectationRegistry.registerExpectationWithResponse(expectation2, response200)
+    expectationStore.registerExpectationWithResponse(expectation1, response100)
+    expectationStore.registerExpectationWithResponse(expectation2, response200)
 
-    expectationRegistry.getResponse(request1) should contain(response100)
-    expectationRegistry.getResponse(request2) should contain(response200)
+    expectationStore.getResponse(request1) should contain(response100)
+    expectationStore.getResponse(request2) should contain(response200)
 
-    expectationRegistry.clearAllExpectations()
+    expectationStore.clearAllExpectations()
 
-    expectationRegistry.getResponse(request1) shouldBe empty
-    expectationRegistry.getResponse(request2) shouldBe empty
+    expectationStore.getResponse(request1) shouldBe empty
+    expectationStore.getResponse(request2) shouldBe empty
   }
 
   private def testMultipleRegistrationsWork(expectation1: Expectation, request1: Request, expectation2: Expectation, request2: Request) {
-    expectationRegistry.registerExpectationWithResponse(expectation1, response100)
-    expectationRegistry.registerExpectationWithResponse(expectation2, response200)
+    expectationStore.registerExpectationWithResponse(expectation1, response100)
+    expectationStore.registerExpectationWithResponse(expectation2, response200)
 
-    expectationRegistry.getResponse(request1) should contain(response100)
-    expectationRegistry.getResponse(request2) should contain(response200)
-    expectationRegistry.getResponse(request1) should contain(response100)
+    expectationStore.getResponse(request1) should contain(response100)
+    expectationStore.getResponse(request2) should contain(response200)
+    expectationStore.getResponse(request1) should contain(response100)
 
-    expectationRegistry.registerExpectationWithResponse(expectation1, response300)
+    expectationStore.registerExpectationWithResponse(expectation1, response300)
 
-    expectationRegistry.getResponse(request1) shouldNot contain(response100)
-    expectationRegistry.getResponse(request1) should contain(response300)
-    expectationRegistry.getResponse(request2) should contain(response200)
+    expectationStore.getResponse(request1) shouldNot contain(response100)
+    expectationStore.getResponse(request1) should contain(response300)
+    expectationStore.getResponse(request2) should contain(response200)
   }
 
   private def getExpectation(
