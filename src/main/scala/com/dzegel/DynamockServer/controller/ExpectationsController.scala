@@ -30,9 +30,9 @@ object ExpectationsController {
 
   private case class ExpectationsGetResponse(expectationResponses: Set[ExpectationsResponseDto])
 
-  private case class ExpectationsStorePostRequest(@QueryParam suiteName: String)
+  private case class ExpectationsSuiteStorePostRequest(@QueryParam suiteName: String)
 
-  private case class ExpectationsLoadPostRequest(@QueryParam suiteName: String)
+  private case class ExpectationsSuiteLoadPostRequest(@QueryParam suiteName: String)
 
   private def expectationsAndResponseToDto(expectationsAndResponse: (Expectation, Response))
   : ExpectationsResponseDto = expectationsAndResponse match {
@@ -72,19 +72,19 @@ class ExpectationsController @Inject()(
   expectationService: ExpectationService,
   expectationsUrlPathBaseRegistry: ExpectationsUrlPathBaseRegistry
 ) extends Controller {
-  private val pathBase = s"${expectationsUrlPathBaseRegistry.pathBase}/expectations"
+  private val pathBase = expectationsUrlPathBaseRegistry.pathBase
 
-  put(pathBase) { request: ExpectationsPutRequest =>
+  put(s"$pathBase/expectations") { request: ExpectationsPutRequest =>
     makeNoContentResponse(expectationService.registerExpectations(
       request.expectationResponses.map(x => (x.expectation: Expectation, x.response: Response))
     ))
   }
 
-  delete(pathBase) { _: Request =>
+  delete(s"$pathBase/expectations") { _: Request =>
     makeNoContentResponse(expectationService.clearAllExpectations())
   }
 
-  get(pathBase) { _: Request =>
+  get(s"$pathBase/expectations") { _: Request =>
     expectationService.getAllExpectations match {
       case Success(expectationResponses) =>
         response.ok(body = ExpectationsGetResponse(expectationResponses.map(expectationsAndResponseToDto)))
@@ -92,11 +92,11 @@ class ExpectationsController @Inject()(
     }
   }
 
-  post(s"$pathBase/store") { request: ExpectationsStorePostRequest => //TODO is this the correct http method?
+  post(s"$pathBase/expectations-suite/store") { request: ExpectationsSuiteStorePostRequest =>
     makeNoContentResponse(expectationService.storeExpectations(request.suiteName))
   }
 
-  post(s"$pathBase/load") { request: ExpectationsLoadPostRequest => //TODO is this the correct http method?
+  post(s"$pathBase/expectations-suite/load") { request: ExpectationsSuiteLoadPostRequest =>
     makeNoContentResponse(expectationService.loadExpectations(request.suiteName))
   }
 

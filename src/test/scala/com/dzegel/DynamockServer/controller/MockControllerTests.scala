@@ -63,7 +63,7 @@ class MockControllerTests extends FeatureTest with MockFactory with Matchers {
       path = "/",
       postBody = expectation.content.stringValue,
       andExpect = Status(551),
-      withBody = "Dynamock Error: The provided expectation was not setup.")
+      withBody = "Dynamock Error: The request did not match any registered expectations.")
   }
 
   test("PUT / should return 500 when there is an internal error") {

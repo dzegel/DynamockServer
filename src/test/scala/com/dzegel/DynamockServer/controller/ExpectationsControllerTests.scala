@@ -219,46 +219,46 @@ class ExpectationsControllerTests extends FeatureTest with MockFactory with Matc
     )
   }
 
-  test("POST /test/expectations/store should call store expectation and return 204 on success") {
+  test("POST /test/expectations-suite/store should call store expectation and return 204 on success") {
     val suiteName = "SomeName"
     setup_ExpectationService_StoreExpectations(suiteName, Success(()))
 
     server.httpPost(
-      path = s"/test/expectations/store?suite_name=$suiteName",
+      path = s"/test/expectations-suite/store?suite_name=$suiteName",
       postBody = "",
       andExpect = Status.NoContent
     )
   }
 
-  test("POST /test/expectations/store should call store expectation and return 500 on failure") {
+  test("POST /test/expectations-suite/store should call store expectation and return 500 on failure") {
     val suiteName = "SomeName"
     setup_ExpectationService_StoreExpectations(suiteName, Failure(new Exception(errorMessage)))
 
     server.httpPost(
-      path = s"/test/expectations/store?suite_name=$suiteName",
+      path = s"/test/expectations-suite/store?suite_name=$suiteName",
       postBody = "",
       withBody = errorMessage,
       andExpect = Status.InternalServerError
     )
   }
 
-  test("POST /test/expectations/load should call store expectation and return 204 on success") {
+  test("POST /test/expectations-suite/load should call store expectation and return 204 on success") {
     val suiteName = "SomeName"
     setup_ExpectationService_LoadExpectations(suiteName, Success(()))
 
     server.httpPost(
-      path = s"/test/expectations/load?suite_name=$suiteName",
+      path = s"/test/expectations-suite/load?suite_name=$suiteName",
       postBody = "",
       andExpect = Status.NoContent
     )
   }
 
-  test("POST /test/expectations/load should call store expectation and return 500 on failure") {
+  test("POST /test/expectations-suite/load should call store expectation and return 500 on failure") {
     val suiteName = "SomeName"
     setup_ExpectationService_LoadExpectations(suiteName, Failure(new Exception(errorMessage)))
 
     server.httpPost(
-      path = s"/test/expectations/load?suite_name=$suiteName",
+      path = s"/test/expectations-suite/load?suite_name=$suiteName",
       postBody = "",
       withBody = errorMessage,
       andExpect = Status.InternalServerError

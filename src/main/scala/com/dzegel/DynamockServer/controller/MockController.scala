@@ -24,7 +24,7 @@ class MockController @Inject()(expectationService: ExpectationService) extends C
           .body(res.content)
           .headers(res.headerMap)
       case Success(None) =>
-        response.status(551).body("Dynamock Error: The provided expectation was not setup.")
+        response.status(551).body("Dynamock Error: The request did not match any registered expectations.")
       case Failure(exception) =>
         response.status(550).body(s"Unexpected Dynamock Error: ${exception.getMessage}")
     }

@@ -135,6 +135,7 @@ Restore the state of registered expectations to a stored expectations-suite.
         - required: false, when not specified it is treated as if an empty map is provided.
 
 ## Planned work
-- Targeted expectation deletion
+- Targeted expectation deletion.
+- `/expectation-suite/list` endpoint
 - Regex matching on expectation matching.
 - Expectation hit-count support, for validating the number of times an expectation is matched.
