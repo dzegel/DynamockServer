@@ -1,17 +1,18 @@
 package com.dzegel.DynamockServer.service
 
+import com.dzegel.DynamockServer.service.ExpectationStore.RegisterExpectationWithResponseReturnValue
 import com.dzegel.DynamockServer.types._
 import org.scalatest.{BeforeAndAfterEach, FunSuite, Matchers}
 
 class ExpectationStoreTests extends FunSuite with Matchers with BeforeAndAfterEach {
   private var expectationStore: ExpectationStore = _
 
-  val response100 = Response(100, "", Map.empty)
-  val response200 = Response(200, "", Map.empty)
-  val response300 = Response(300, "", Map.empty)
+  private val response100 = Response(100, "", Map.empty)
+  private val response200 = Response(200, "", Map.empty)
+  private val response300 = Response(300, "", Map.empty)
 
   override protected def beforeEach(): Unit = {
-    expectationStore = new DefaultExpectationStore()
+    expectationStore = new DefaultExpectationStore(new DefaultRandomStringGenerator)
   }
 
   test("registerExpectationWithResponse and getResponse works for paths") {
@@ -78,19 +79,35 @@ class ExpectationStoreTests extends FunSuite with Matchers with BeforeAndAfterEa
     val request2 = getRequest(headers = Set("key3" -> "value3"))
     val request3 = getRequest(headers = Set())
 
-    expectationStore.registerExpectationWithResponse(expectation1, response100)
-    expectationStore.registerExpectationWithResponse(expectation2, response200)
+    val returnValue1 = expectationStore.registerExpectationResponse(expectation1, response100)
+    returnValue1.isResponseUpdated shouldBe false
+    val returnValue2 = expectationStore.registerExpectationResponse(expectation2, response200)
+    returnValue2.isResponseUpdated shouldBe false
 
-    expectationStore.getResponse(request1) shouldBe None
-    expectationStore.getResponse(request2) should contain(response200)
-    expectationStore.getResponse(request3) should contain(response200)
+    expectationStore.getIdsForMatchingExpectations(request1) shouldBe empty
 
-    expectationStore.registerExpectationWithResponse(expectation1, response200)
-    expectationStore.registerExpectationWithResponse(expectation2, response100)
+    val matchingIds1 = expectationStore.getIdsForMatchingExpectations(request2)
+    matchingIds1 shouldBe Set(returnValue1.expectationId, returnValue2.expectationId)
+    expectationStore.getMostConstrainedExpectationWithId(matchingIds1) should contain(returnValue2.expectationId -> (expectation2, response200))
 
-    expectationStore.getResponse(request1) shouldBe None
-    expectationStore.getResponse(request2) should contain(response100)
-    expectationStore.getResponse(request3) should contain(response100)
+    val matchingIds2 = expectationStore.getIdsForMatchingExpectations(request3)
+    matchingIds2 shouldBe Set(returnValue1.expectationId, returnValue2.expectationId)
+    expectationStore.getMostConstrainedExpectationWithId(matchingIds2) should contain(returnValue2.expectationId -> (expectation2, response200))
+
+    val returnValue12 = expectationStore.registerExpectationResponse(expectation1, response200)
+    returnValue12 shouldBe RegisterExpectationWithResponseReturnValue(returnValue1.expectationId, isResponseUpdated = true)
+    val returnValue21 = expectationStore.registerExpectationResponse(expectation2, response100)
+    returnValue21 shouldBe RegisterExpectationWithResponseReturnValue(returnValue2.expectationId, isResponseUpdated = true)
+
+    expectationStore.getIdsForMatchingExpectations(request1) shouldBe empty
+
+    val matchingIds3 = expectationStore.getIdsForMatchingExpectations(request3)
+    matchingIds3 shouldBe Set(returnValue1.expectationId, returnValue2.expectationId)
+    expectationStore.getMostConstrainedExpectationWithId(matchingIds3) should contain(returnValue2.expectationId -> (expectation2, response100))
+
+    val matchingIds4 = expectationStore.getIdsForMatchingExpectations(request3)
+    matchingIds4 shouldBe Set(returnValue1.expectationId, returnValue2.expectationId)
+    expectationStore.getMostConstrainedExpectationWithId(matchingIds4) should contain(returnValue2.expectationId -> (expectation2, response100))
   }
 
   test("registerExpectationWithResponse and getResponse works for included and excluded header params") {
@@ -103,29 +120,41 @@ class ExpectationStoreTests extends FunSuite with Matchers with BeforeAndAfterEa
     val expectation2 = getExpectation(includedHeaders = Set(included1, included2), excludedHeaders = Set(excluded1))
     val expectation3 = getExpectation(includedHeaders = Set(included1, included2), excludedHeaders = Set(excluded1, excluded3))
 
-    expectationStore.registerExpectationWithResponse(expectation1, response100)
-    expectationStore.registerExpectationWithResponse(expectation2, response200)
-    expectationStore.registerExpectationWithResponse(expectation3, response300)
+    val returnValue1 = expectationStore.registerExpectationResponse(expectation1, response100)
+    returnValue1.isResponseUpdated shouldBe false
+    val expectationId1 = returnValue1.expectationId
+    val returnValue2 = expectationStore.registerExpectationResponse(expectation2, response200)
+    returnValue2.isResponseUpdated shouldBe false
+    val expectationId2 = returnValue2.expectationId
+    val returnValue3 = expectationStore.registerExpectationResponse(expectation3, response300)
+    returnValue3.isResponseUpdated shouldBe false
+    val expectationId3 = returnValue3.expectationId
 
-    expectationStore.getResponse(getRequest(headers = Set())) shouldBe None
-    expectationStore.getResponse(getRequest(headers = Set("Key" -> "Value"))) shouldBe None
-    expectationStore.getResponse(getRequest(headers = Set(included1))) should contain(response100)
-    expectationStore.getResponse(getRequest(headers = Set(included2))) shouldBe None
-    expectationStore.getResponse(getRequest(headers = Set(included1, included2))) should contain(response300)
-    expectationStore.getResponse(getRequest(headers = Set(included1, included2, excluded1))) shouldBe None
-    expectationStore.getResponse(getRequest(headers = Set(included1, included2, "Key" -> "Value"))) should contain(response300)
+    expectationStore.getIdsForMatchingExpectations(getRequest(headers = Set())) shouldBe empty
+    expectationStore.getIdsForMatchingExpectations(getRequest(headers = Set())) shouldBe empty
+    expectationStore.getIdsForMatchingExpectations(getRequest(headers = Set("Key" -> "Value"))) shouldBe empty
+    expectationStore.getIdsForMatchingExpectations(getRequest(headers = Set(included1))) shouldBe Set(expectationId1)
+    expectationStore.getIdsForMatchingExpectations(getRequest(headers = Set(included2))) shouldBe empty
+    expectationStore.getIdsForMatchingExpectations(getRequest(headers = Set(included1, included2))) shouldBe Set(expectationId1, expectationId2, expectationId3)
+    expectationStore.getIdsForMatchingExpectations(getRequest(headers = Set(included1, included2, excluded1))) shouldBe empty
+    expectationStore.getIdsForMatchingExpectations(getRequest(headers = Set(included1, included2, "Key" -> "Value"))) shouldBe Set(expectationId1, expectationId2, expectationId3)
 
-    val responseFromMultipleValidExpectations = expectationStore.getResponse(getRequest(headers = Set(included1, included2, excluded3)))
-    responseFromMultipleValidExpectations should contain oneElementOf Seq(response100, response200)
+    val idsFromMultipleValidExpectations = expectationStore.getIdsForMatchingExpectations(getRequest(headers = Set(included1, included2, excluded3)))
+    idsFromMultipleValidExpectations shouldBe Set(expectationId1, expectationId2)
+    val responseFromMultipleValidExpectations = expectationStore.getMostConstrainedExpectationWithId(idsFromMultipleValidExpectations)
+    responseFromMultipleValidExpectations should contain oneElementOf Seq(expectationId1 -> (expectation1, response100), expectationId2 -> (expectation2, response200))
 
     //reversing these expectation -> response setups
-    expectationStore.registerExpectationWithResponse(expectation1, response200)
-    expectationStore.registerExpectationWithResponse(expectation2, response100)
+    val returnValue12 = expectationStore.registerExpectationResponse(expectation1, response200)
+    returnValue12 shouldBe RegisterExpectationWithResponseReturnValue(expectationId1, isResponseUpdated = true)
+    val returnValue21 = expectationStore.registerExpectationResponse(expectation2, response100)
+    returnValue21 shouldBe RegisterExpectationWithResponseReturnValue(expectationId2, isResponseUpdated = true)
 
     //the setup should be deterministic based on the expectations so making the same request after reversing the setup should result in a reversed response
-    val responseFromMultipleValidReversedExpectations = expectationStore.getResponse(getRequest(headers = Set(included1, included2, excluded3)))
-    responseFromMultipleValidReversedExpectations should contain oneElementOf Seq(response100, response200)
-    responseFromMultipleValidReversedExpectations shouldNot be(responseFromMultipleValidExpectations)
+    val idsFromMultipleValidReversedExpectations = expectationStore.getIdsForMatchingExpectations(getRequest(headers = Set(included1, included2, excluded3)))
+    idsFromMultipleValidReversedExpectations shouldBe Set(expectationId1, expectationId2)
+    val responseFromMultipleValidReversedExpectations = expectationStore.getMostConstrainedExpectationWithId(idsFromMultipleValidReversedExpectations)
+    responseFromMultipleValidReversedExpectations should contain oneElementOf Seq(expectationId1 -> (expectation1, response200), expectationId2 -> (expectation2, response100))
   }
 
   test("getAllExpectations returns registered expectations and responses") {
@@ -139,9 +168,9 @@ class ExpectationStoreTests extends FunSuite with Matchers with BeforeAndAfterEa
 
     expectationStore.getAllExpectations shouldBe empty
 
-    expectationStore.registerExpectationWithResponse(expectation, response)
+    val returnValue = expectationStore.registerExpectationResponse(expectation, response)
 
-    expectationStore.getAllExpectations shouldBe Set(expectation -> response)
+    expectationStore.getAllExpectations shouldBe Set(returnValue.expectationId -> (expectation -> response))
   }
 
   test("clearAllExpectations clears all expectations") {
@@ -150,31 +179,52 @@ class ExpectationStoreTests extends FunSuite with Matchers with BeforeAndAfterEa
     val expectation2 = getExpectation(path = "path2", method = "PUT")
     val request2 = getRequest(path = expectation2.path, method = expectation2.method)
 
-    expectationStore.registerExpectationWithResponse(expectation1, response100)
-    expectationStore.registerExpectationWithResponse(expectation2, response200)
+    val returnValue1 = expectationStore.registerExpectationResponse(expectation1, response100)
+    val expectationResponseWithId1 = returnValue1.expectationId -> (expectation1 -> response100)
+    expectationStore.getAllExpectations should equal(Set(expectationResponseWithId1))
 
-    expectationStore.getResponse(request1) should contain(response100)
-    expectationStore.getResponse(request2) should contain(response200)
+    val returnValue2 = expectationStore.registerExpectationResponse(expectation2, response200)
+    val expectationResponseWithId2 = returnValue2.expectationId -> (expectation2 -> response200)
+    expectationStore.getAllExpectations should equal(Set(expectationResponseWithId1, expectationResponseWithId2))
+
+    expectationStore.getIdsForMatchingExpectations(request1) should equal(Set(returnValue1.expectationId))
+    expectationStore.getMostConstrainedExpectationWithId(Set(returnValue1.expectationId)) should contain(expectationResponseWithId1)
+
+    expectationStore.getIdsForMatchingExpectations(request2) should equal(Set(returnValue2.expectationId))
+    expectationStore.getMostConstrainedExpectationWithId(Set(returnValue2.expectationId)) should contain(expectationResponseWithId2)
 
     expectationStore.clearAllExpectations()
 
-    expectationStore.getResponse(request1) shouldBe empty
-    expectationStore.getResponse(request2) shouldBe empty
+    expectationStore.getIdsForMatchingExpectations(request1) shouldBe empty
+    expectationStore.getIdsForMatchingExpectations(request2) shouldBe empty
   }
 
   private def testMultipleRegistrationsWork(expectation1: Expectation, request1: Request, expectation2: Expectation, request2: Request) {
-    expectationStore.registerExpectationWithResponse(expectation1, response100)
-    expectationStore.registerExpectationWithResponse(expectation2, response200)
+    val returnValue1 = expectationStore.registerExpectationResponse(expectation1, response100)
+    val expectationResponseWithId1 = returnValue1.expectationId -> (expectation1 -> response100)
+    expectationStore.getAllExpectations should equal(Set(expectationResponseWithId1))
 
-    expectationStore.getResponse(request1) should contain(response100)
-    expectationStore.getResponse(request2) should contain(response200)
-    expectationStore.getResponse(request1) should contain(response100)
+    val returnValue2 = expectationStore.registerExpectationResponse(expectation2, response200)
+    val expectationResponseWithId2 = returnValue2.expectationId -> (expectation2 -> response200)
+    expectationStore.getAllExpectations should equal(Set(expectationResponseWithId1, expectationResponseWithId2))
 
-    expectationStore.registerExpectationWithResponse(expectation1, response300)
+    expectationStore.getIdsForMatchingExpectations(request1) should equal(Set(returnValue1.expectationId))
+    expectationStore.getMostConstrainedExpectationWithId(Set(returnValue1.expectationId)) should contain(expectationResponseWithId1)
 
-    expectationStore.getResponse(request1) shouldNot contain(response100)
-    expectationStore.getResponse(request1) should contain(response300)
-    expectationStore.getResponse(request2) should contain(response200)
+    expectationStore.getMostConstrainedExpectationWithId(expectationStore.getIdsForMatchingExpectations(request2)) should
+      contain(expectationResponseWithId2)
+
+    expectationStore.getIdsForMatchingExpectations(request1) should equal(Set(returnValue1.expectationId))
+    expectationStore.getMostConstrainedExpectationWithId(Set(returnValue1.expectationId)) should contain(expectationResponseWithId1)
+
+    val returnValue3 = expectationStore.registerExpectationResponse(expectation1, response300)
+    val expectationResponseWithId3 = returnValue3.expectationId -> (expectation1 -> response300)
+    expectationStore.getAllExpectations should equal(Set(expectationResponseWithId2, expectationResponseWithId3))
+
+    expectationStore.getIdsForMatchingExpectations(request1) should equal(Set(returnValue3.expectationId))
+    expectationStore.getMostConstrainedExpectationWithId(Set(returnValue3.expectationId)) should contain(expectationResponseWithId3)
+
+    expectationStore.getMostConstrainedExpectationWithId(expectationStore.getIdsForMatchingExpectations(request2)) should contain(expectationResponseWithId2)
   }
 
   private def getExpectation(

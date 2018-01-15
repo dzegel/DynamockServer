@@ -1,5 +1,6 @@
 package com.dzegel.DynamockServer.service
 
+import com.dzegel.DynamockServer.service.ExpectationStore.RegisterExpectationWithResponseReturnValue
 import com.dzegel.DynamockServer.types._
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.{FunSuite, Matchers}
@@ -15,35 +16,50 @@ class ExpectationServiceTests extends FunSuite with MockFactory with Matchers {
   private val expectation = Expectation("POST", "somePath", Map.empty, HeaderParameters(Set.empty, Set.empty), Content(""))
   private val request = Request(expectation.method, expectation.path, expectation.queryParams, expectation.headerParameters.included, expectation.content)
   private val response = Response(200, "", Map.empty)
+  private val expectationResponse = (expectation, response)
+
+  private val exception = new Exception("some error message")
+  private val expectationSuiteName = "SomeName"
+
+  private val expectationId1 = "id_1"
+  private val expectationIds = Set(expectationId1, "id_2")
 
   test("registerExpectation returns Success when no Exception is thrown") {
-    setup_ExpectationStore_RegisterExpectationWithResponse(expectation, response, None)
+    setup_ExpectationStore_RegisterExpectationResponse(expectation, response, Right(RegisterExpectationWithResponseReturnValue(expectationId1, isResponseUpdated = false)))
 
     expectationService.registerExpectations(Set((expectation, response))) should equal(Success(()))
   }
 
   test("registerExpectation returns Failure on Exception") {
     val exception = new Exception()
-    setup_ExpectationStore_RegisterExpectationWithResponse(expectation, response, Some(exception))
+    setup_ExpectationStore_RegisterExpectationResponse(expectation, response, Left(exception))
 
     expectationService.registerExpectations(Set((expectation, response))) should equal(Failure(exception))
   }
 
   test("getResponse returns Success of response") {
-    setup_ExpectationStore_GetResponse(expectation, response = Some(response))
+    setup_ExpectationStore_GetIdsForMatchingExpectations(request, Right(expectationIds))
+    setup_ExpectationStore_GetMostConstrainedExpectationWithId(expectationIds, Right(Some(expectationId1 -> expectationResponse)))
 
     expectationService.getResponse(request) should equal(Success(Some(response)))
   }
 
   test("getResponse returns Success of None") {
-    setup_ExpectationStore_GetResponse(expectation, response = None)
+    setup_ExpectationStore_GetIdsForMatchingExpectations(request, Right(expectationIds))
+    setup_ExpectationStore_GetMostConstrainedExpectationWithId(expectationIds, Right(None))
 
     expectationService.getResponse(request) should equal(Success(None))
   }
 
-  test("getResponse returns Failure") {
-    val exception = new Exception()
-    setup_ExpectationStore_GetResponse(expectation, exception = Some(exception))
+  test("getResponse returns Failure when ExpectationStore.getIdsForMatchingExpectations fails") {
+    setup_ExpectationStore_GetIdsForMatchingExpectations(request, Left(exception))
+
+    expectationService.getResponse(request) should equal(Failure(exception))
+  }
+
+  test("getResponse returns Failure when ExpectationStore.getMostConstrainedExpectationWithId fails") {
+    setup_ExpectationStore_GetIdsForMatchingExpectations(request, Right(expectationIds))
+    setup_ExpectationStore_GetMostConstrainedExpectationWithId(expectationIds, Left(exception))
 
     expectationService.getResponse(request) should equal(Failure(exception))
   }
@@ -55,143 +71,144 @@ class ExpectationServiceTests extends FunSuite with MockFactory with Matchers {
   }
 
   test("clearAllExpectations returns Failure") {
-    val exception = new Exception()
     setup_ExpectationStore_ClearAllExpectations(Some(exception))
 
     expectationService.clearAllExpectations() should equal(Failure(exception))
   }
 
   test("getAllExpectations returns Success") {
-    val expectation = Expectation("dsf", "asd", Map(), null, null)
-    val response = Response(200, "some content", Map())
-    val expectationResponses = Set(expectation -> response)
-    setup_ExpectationStore_GetAllExpectations(Some(expectationResponses))
+    val returnValue = Set(expectationId1 -> expectationResponse)
+    setup_ExpectationStore_GetAllExpectations(Right(returnValue))
 
-    expectationService.getAllExpectations should equal(Success(expectationResponses))
+    expectationService.getAllExpectations should equal(Success(Set(expectationResponse)))
   }
 
   test("getAllExpectations returns Failure") {
-    val exception = new Exception("some error message")
-    setup_ExpectationStore_GetAllExpectations(exception = Some(exception))
+    setup_ExpectationStore_GetAllExpectations(Left(exception))
 
     expectationService.getAllExpectations should equal(Failure(exception))
   }
 
   test("storeExpectations returns Success") {
-    val expectation = Expectation("dsf", "asd", Map(), null, null)
-    val response = Response(200, "some content", Map())
-    val expectationResponses = Set(expectation -> response)
-    val suiteName = "SomeName"
+    val expectationResponses = Set(expectationId1 -> expectationResponse)
 
-    setup_ExpectationStore_GetAllExpectations(Some(expectationResponses))
-    setup_ExpectationsFileService_StoreExpectationsAsJson(suiteName, expectationResponses)
+    setup_ExpectationStore_GetAllExpectations(Right(expectationResponses))
+    setup_ExpectationsFileService_StoreExpectationsAsJson(expectationSuiteName, expectationResponses)
 
-    expectationService.storeExpectations(suiteName) should equal(Success(()))
+    expectationService.storeExpectations(expectationSuiteName) should equal(Success(()))
   }
 
   test("storeExpectations returns Failure when get all expectations fails") {
-    val exception = new Exception("some error message")
-    val suiteName = "SomeName"
+    setup_ExpectationStore_GetAllExpectations(Left(exception))
 
-    setup_ExpectationStore_GetAllExpectations(exception = Some(exception))
-
-    expectationService.storeExpectations(suiteName) should equal(Failure(exception))
+    expectationService.storeExpectations(expectationSuiteName) should equal(Failure(exception))
   }
 
   test("storeExpectations returns Failure when store object as json fails") {
-    val exception = new Exception("some error message")
-    val expectation = Expectation("dsf", "asd", Map(), null, null)
-    val response = Response(200, "some content", Map())
-    val expectationResponses = Set(expectation -> response)
-    val suiteName = "SomeName"
+    val expectationResponses = Set(expectationId1 -> expectationResponse)
 
-    setup_ExpectationStore_GetAllExpectations(Some(expectationResponses))
-    setup_ExpectationsFileService_StoreExpectationsAsJson(suiteName, expectationResponses, Some(exception))
+    setup_ExpectationStore_GetAllExpectations(Right(expectationResponses))
+    setup_ExpectationsFileService_StoreExpectationsAsJson(expectationSuiteName, expectationResponses, Some(exception))
 
-    expectationService.storeExpectations(suiteName) should equal(Failure(exception))
+    expectationService.storeExpectations(expectationSuiteName) should equal(Failure(exception))
   }
 
   test("loadExpectations returns Success") {
-    val expectation1 = Expectation("1", "1", Map(), null, null)
-    val response1 = Response(100, "some content", Map())
     val expectation2 = Expectation("2", "2", Map(), null, null)
     val response2 = Response(200, "some content", Map())
-    val expectationResponses = Set(expectation1 -> response1, expectation2 -> response2)
-    val suiteName = "SomeName"
+    val expectationResponse2 = expectation2 -> response2
+    val expectationId2 = "id_2"
+    val expectationResponses = Set(expectationId1 -> expectationResponse, expectationId2 -> (expectation2 -> response2))
+    val returnValue1 = RegisterExpectationWithResponseReturnValue(expectationId1, isResponseUpdated = false)
+    val returnValue2 = RegisterExpectationWithResponseReturnValue(expectationId2, isResponseUpdated = true)
 
-    setup_ExpectationsFileService_LoadExpectationsFromJson(suiteName, expectationResponses)
-    setup_ExpectationStore_RegisterExpectationWithResponse(expectation1, response1, None)
-    setup_ExpectationStore_RegisterExpectationWithResponse(expectation2, response2, None)
+    setup_ExpectationsFileService_LoadExpectationsFromJson(expectationSuiteName, Right(expectationResponses))
+    setup_ExpectationStore_RegisterExpectationResponseWithId(expectationId1, expectationResponse, Right(returnValue1))
+    setup_ExpectationStore_RegisterExpectationResponseWithId(expectationId2, expectationResponse2, Right(returnValue2))
 
-    expectationService.loadExpectations(suiteName) should equal(Success(()))
+    expectationService.loadExpectations(expectationSuiteName) should equal(Success(()))
   }
 
   test("loadExpectations returns Failure when load object from json fails") {
-    val exception = new Exception("some error message")
-    val expectation1 = Expectation("1", "1", Map(), null, null)
-    val response1 = Response(100, "some content", Map())
-    val expectation2 = Expectation("2", "2", Map(), null, null)
-    val response2 = Response(200, "some content", Map())
-    val expectationResponses = Set(expectation1 -> response1, expectation2 -> response2)
-    val suiteName = "SomeName"
+    setup_ExpectationsFileService_LoadExpectationsFromJson(expectationSuiteName, Left(exception))
 
-    setup_ExpectationsFileService_LoadExpectationsFromJson(suiteName, expectationResponses, Some(exception))
-
-    expectationService.loadExpectations(suiteName) should equal(Failure(exception))
+    expectationService.loadExpectations(expectationSuiteName) should equal(Failure(exception))
   }
 
   test("loadExpectations returns Failure when register expectation with response fails") {
-    val exception = new Exception("some error message")
-    val expectation1 = Expectation("1", "1", Map(), null, null)
-    val response1 = Response(100, "some content", Map())
     val expectation2 = Expectation("2", "2", Map(), null, null)
     val response2 = Response(200, "some content", Map())
-    val expectationResponses = Set(expectation1 -> response1, expectation2 -> response2)
-    val suiteName = "SomeName"
+    val expectationResponse2 = expectation2 -> response2
+    val expectationId2 = "id_2"
+    val expectationResponses = Set(expectationId1 -> expectationResponse, expectationId2 -> (expectation2 -> response2))
+    val returnValue1 = RegisterExpectationWithResponseReturnValue(expectationId1, isResponseUpdated = false)
 
-    setup_ExpectationsFileService_LoadExpectationsFromJson(suiteName, expectationResponses)
-    setup_ExpectationStore_RegisterExpectationWithResponse(expectation1, response1, None)
-    setup_ExpectationStore_RegisterExpectationWithResponse(expectation2, response2, Some(exception))
+    setup_ExpectationsFileService_LoadExpectationsFromJson(expectationSuiteName, Right(expectationResponses))
+    setup_ExpectationStore_RegisterExpectationResponseWithId(expectationId1, expectationResponse, Right(returnValue1))
+    setup_ExpectationStore_RegisterExpectationResponseWithId(expectationId2, expectationResponse2, Left(exception))
 
-    expectationService.loadExpectations(suiteName) should equal(Failure(exception))
+    expectationService.loadExpectations(expectationSuiteName) should equal(Failure(exception))
   }
 
-  private def setup_ExpectationStore_RegisterExpectationWithResponse(
+  private def setup_ExpectationStore_RegisterExpectationResponse(
     expectation: Expectation,
     response: Response,
-    exception: Option[Exception]
+    exceptionOrReturnValue: Either[Exception, RegisterExpectationWithResponseReturnValue]
   ): Unit = {
-    val callHandler = (mockExpectationStore.registerExpectationWithResponse _).expects(expectation, response)
-    exception match {
-      case None => callHandler.returning(())
-      case Some(ex) => callHandler.throwing(ex)
+    val callHandler = (mockExpectationStore.registerExpectationResponse _).expects(expectation -> response)
+    exceptionOrReturnValue match {
+      case Right(returnValue) => callHandler.returning(returnValue)
+      case Left(ex) => callHandler.throwing(ex)
     }
   }
 
-  private def setup_ExpectationStore_GetResponse(
-    expectation: Expectation,
-    response: Option[Response] = None,
-    exception: Option[Exception] = None
+  private def setup_ExpectationStore_RegisterExpectationResponseWithId(
+    expectationId: ExpectationId,
+    expectationResponse: ExpectationResponse,
+    exceptionOrReturnValue: Either[Exception, RegisterExpectationWithResponseReturnValue]
   ): Unit = {
-    val callHandler = (mockExpectationStore.getResponse _).expects(request)
-    exception match {
-      case None => callHandler.returning(response)
-      case Some(ex) => callHandler.throwing(ex)
+    val callHandler = (mockExpectationStore.registerExpectationResponseWithId _).expects(expectationResponse, expectationId)
+    exceptionOrReturnValue match {
+      case Right(returnValue) => callHandler.returning(returnValue)
+      case Left(ex) => callHandler.throwing(ex)
+    }
+  }
+
+  private def setup_ExpectationStore_GetIdsForMatchingExpectations(
+    request: Request,
+    exceptionOrReturnValue: Either[Exception, Set[ExpectationId]]
+  ): Unit = {
+    val callHandler = (mockExpectationStore.getIdsForMatchingExpectations _).expects(request)
+    exceptionOrReturnValue match {
+      case Right(returnValue) => callHandler.returning(returnValue)
+      case Left(ex) => callHandler.throwing(ex)
+    }
+  }
+
+  private def setup_ExpectationStore_GetMostConstrainedExpectationWithId(
+    expectationIds: Set[ExpectationId],
+    exceptionOrReturnValue: Either[Exception, Option[(ExpectationId, ExpectationResponse)]]
+  ): Unit = {
+    val callHandler = (mockExpectationStore.getMostConstrainedExpectationWithId _).expects(expectationIds)
+    exceptionOrReturnValue match {
+      case Right(returnValue) => callHandler.returning(returnValue)
+      case Left(ex) => callHandler.throwing(ex)
     }
   }
 
   private def setup_ExpectationStore_GetAllExpectations(
-    expectationResponses: Option[Set[(Expectation, Response)]] = None,
-    exception: Option[Exception] = None
+    exceptionOrReturnValue: Either[Exception, Set[(ExpectationId, ExpectationResponse)]]
   ): Unit = {
     val callHandler = (mockExpectationStore.getAllExpectations _).expects()
-    exception match {
-      case None => callHandler.returning(expectationResponses.get)
-      case Some(ex) => callHandler.throwing(ex)
+    exceptionOrReturnValue match {
+      case Right(returnValue) => callHandler.returning(returnValue)
+      case Left(ex) => callHandler.throwing(ex)
     }
   }
 
-  private def setup_ExpectationStore_ClearAllExpectations(exception: Option[Exception] = None): Unit = {
+  private def setup_ExpectationStore_ClearAllExpectations(
+    exception: Option[Exception] = None
+  ): Unit = {
     val callHandler = (mockExpectationStore.clearAllExpectations _).expects()
     exception match {
       case None => callHandler.returning(Unit)
@@ -199,7 +216,11 @@ class ExpectationServiceTests extends FunSuite with MockFactory with Matchers {
     }
   }
 
-  private def setup_ExpectationsFileService_StoreExpectationsAsJson(fileName: String, obj: Set[(Expectation, Response)], exception: Option[Exception] = None): Unit = {
+  private def setup_ExpectationsFileService_StoreExpectationsAsJson(
+    fileName: String,
+    obj: Set[(ExpectationId, ExpectationResponse)],
+    exception: Option[Exception] = None
+  ): Unit = {
     val callHandler = (mockExpectationsFileService.storeExpectationsAsJson _).expects(fileName, obj)
     exception match {
       case None => callHandler.returning(Unit)
@@ -207,11 +228,14 @@ class ExpectationServiceTests extends FunSuite with MockFactory with Matchers {
     }
   }
 
-  private def setup_ExpectationsFileService_LoadExpectationsFromJson(fileName: String, returnValue: Set[(Expectation, Response)] = null, exception: Option[Exception] = None): Unit = {
+  private def setup_ExpectationsFileService_LoadExpectationsFromJson(
+    fileName: String,
+    exceptionOrReturnValue: Either[Exception, Set[(ExpectationId, ExpectationResponse)]]
+  ): Unit = {
     val callHandler = (mockExpectationsFileService.loadExpectationsFromJson _).expects(fileName)
-    exception match {
-      case None => callHandler.returning(returnValue)
-      case Some(ex) => callHandler.throwing(ex)
+    exceptionOrReturnValue match {
+      case Right(returnValue) => callHandler.returning(returnValue)
+      case Left(ex) => callHandler.throwing(ex)
     }
   }
 }

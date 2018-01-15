@@ -3,7 +3,7 @@ package com.dzegel.DynamockServer.controller
 import com.dzegel.DynamockServer.controller.ExpectationsController._
 import com.dzegel.DynamockServer.registry.ExpectationsUrlPathBaseRegistry
 import com.dzegel.DynamockServer.service.ExpectationService
-import com.dzegel.DynamockServer.types.{Content, Expectation, HeaderParameters, Response}
+import com.dzegel.DynamockServer.types._
 import com.google.inject.Inject
 import com.twitter.finagle.http.Request
 import com.twitter.finatra.http.Controller
@@ -34,7 +34,7 @@ object ExpectationsController {
 
   private case class ExpectationsSuiteLoadPostRequest(@QueryParam suiteName: String)
 
-  private def expectationsAndResponseToDto(expectationsAndResponse: (Expectation, Response))
+  private def expectationsAndResponseToDto(expectationsAndResponse: ExpectationResponse)
   : ExpectationsResponseDto = expectationsAndResponse match {
     case (expectation, response) => ExpectationsResponseDto(expectation, response)
   }
