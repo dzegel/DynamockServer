@@ -275,7 +275,7 @@ class ExpectationsControllerTests extends FeatureTest with MockFactory with Matc
       .returning(returnValue)
   }
 
-  private def setup_ExpectationService_GetAllExpectations(returnValue: Try[Set[(Expectation, Response)]]) = {
+  private def setup_ExpectationService_GetAllExpectations(returnValue: Try[Set[ExpectationResponse]]) = {
     (mockExpectationService.getAllExpectations _)
       .expects()
       .returning(returnValue)

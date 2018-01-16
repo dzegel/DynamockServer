@@ -75,7 +75,7 @@ class MockControllerTests extends FeatureTest with MockFactory with Matchers {
       path = "/",
       putBody = expectation.content.stringValue,
       andExpect = Status(550),
-      withBody = s"Unexpected Dynamock Error: $errorMessage")
+      withBody = s"Unexpected Dynamock Server Error: $errorMessage")
   }
 
   private def setup_ExpectationService_GetResponse(expectation: Expectation, returnValue: Try[Option[Response]]) = {

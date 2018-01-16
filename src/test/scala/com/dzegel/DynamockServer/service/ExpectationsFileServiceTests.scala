@@ -18,7 +18,7 @@ class ExpectationsFileServiceTests extends FunSuite with Matchers with BeforeAnd
   private val expectation2 = Expectation("PUT", "/uri", Map("query1" -> "query2"), HeaderParameters(Set("header1" -> "header2"), Set()), Content("{}"))
   private val response1 = Response(200, "stuff", Map())
   private val response2 = Response(300, "other stuff", Map())
-  private val expectations = Set(expectation1 -> response1, expectation2 -> response2)
+  private val idAndExpectationResponses = Set(("id_1", expectation1 -> response1), ("id_2", expectation2 -> response2))
   private val fileName = "testFile_" + Random.nextInt()
 
   override protected def afterEach: Unit = getFile.delete()
@@ -26,10 +26,10 @@ class ExpectationsFileServiceTests extends FunSuite with Matchers with BeforeAnd
   test("storeExpectationsAsJson and loadExpectationsFromJson work") {
     getFile.exists() shouldBe false
 
-    expectationsFileService.storeExpectationsAsJson(fileName, expectations)
+    expectationsFileService.storeExpectationsAsJson(fileName, idAndExpectationResponses)
     val result = expectationsFileService.loadExpectationsFromJson(fileName)
 
-    result should equal(expectations)
+    result should equal(idAndExpectationResponses)
     getFile.exists() shouldBe true
   }
 
