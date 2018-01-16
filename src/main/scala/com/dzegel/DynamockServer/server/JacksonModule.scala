@@ -14,7 +14,7 @@ private[server] object ContentSerializer extends JsonSerializer[Content] {
   override val handledType: Class[Content] = classOf[Content]
 }
 
-private[server] object MapStringStringSerializer extends JsonSerializer[Set[(String, String)]] {
+private[server] object SetStringStringSerializer extends JsonSerializer[Set[(String, String)]] {
 
   override protected def serialize(setStringString: Set[(String, String)], gen: JsonGenerator, serializers: SerializerProvider): Unit = {
     gen.writeStartObject()
@@ -29,7 +29,7 @@ private[server] object MapStringStringSerializer extends JsonSerializer[Set[(Str
 
 private[server] object CustomModule extends SimpleModule {
   addSerializer(ContentSerializer)
-  addSerializer(MapStringStringSerializer)
+  addSerializer(SetStringStringSerializer)
 }
 
 object JacksonModule extends FinatraJacksonModule {
