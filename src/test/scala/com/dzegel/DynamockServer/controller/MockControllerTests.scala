@@ -1,11 +1,15 @@
 package com.dzegel.DynamockServer.controller
 
+import com.dzegel.DynamockServer.server.JacksonModule
 import com.dzegel.DynamockServer.service.ExpectationService
 import com.dzegel.DynamockServer.types._
 import com.twitter.finagle.http.Status
 import com.twitter.finatra.http.routing.HttpRouter
 import com.twitter.finatra.http.{EmbeddedHttpServer, HttpServer}
+import com.twitter.finatra.json.modules.FinatraJacksonModule
 import com.twitter.inject.server.FeatureTest
+import org.json4s.JsonAST.JString
+import org.json4s.native.JsonParser.parse
 import org.scalamock.function.FunctionAdapter1
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.Matchers
@@ -17,6 +21,8 @@ class MockControllerTests extends FeatureTest with MockFactory with Matchers {
 
   override protected val server: EmbeddedHttpServer = new EmbeddedHttpServer(
     new HttpServer {
+      override protected lazy val jacksonModule: FinatraJacksonModule = JacksonModule
+
       override protected def configureHttp(router: HttpRouter): Unit = {
         router.add(new MockController(mockExpectationService))
       }
@@ -56,14 +62,32 @@ class MockControllerTests extends FeatureTest with MockFactory with Matchers {
   }
 
   test("POST / should return 551 when expectation is not setup") {
-    val expectation = Expectation("POST", "/", Map.empty, HeaderParameters(Set.empty, Set.empty), Content("Some Stuff"))
+    val urlResource = "someResource"
+    val queryParam = "queryParam"
+    val queryValue = "queryValue"
+    val headerKey = "headerKey"
+    val headerValue = "headerValue"
+    val content = "Some Stuff"
+    val method = "POST"
+    val expectation = Expectation(method, s"/$urlResource", Map(queryParam -> queryValue), HeaderParameters(Set.empty, Set.empty), Content(content))
     setup_ExpectationService_GetResponse(expectation, Success(None))
 
-    server.httpPost(
-      path = "/",
+    val response = server.httpPost(
+      path = s"/$urlResource?$queryParam=$queryValue",
+      headers = Map(headerKey -> headerValue),
       postBody = expectation.content.stringValue,
-      andExpect = Status(551),
-      withBody = "Dynamock Error: The request did not match any registered expectations.")
+      andExpect = Status(551))
+
+    val responseMap = parse(response.contentString).filterField(x => true).toMap
+    responseMap("message") shouldBe JString("Dynamock Error: The request did not match any registered expectations.")
+    val requestMap = responseMap("request").filterField(x => true).toMap
+    requestMap("method") shouldBe JString(method)
+    requestMap("path") shouldBe JString(s"/$urlResource")
+    requestMap("content") shouldBe JString(content)
+    val queryParamsMap = requestMap("query_params").filterField(x => true).toMap
+    queryParamsMap(queryParam) shouldBe JString(queryValue)
+    val headerParamsMap = requestMap("headers").filterField(x => true).toMap
+    headerParamsMap(headerKey) shouldBe JString(headerValue)
   }
 
   test("PUT / should return 500 when there is an internal error") {
