@@ -9,9 +9,9 @@ import scala.collection.concurrent.TrieMap
 @ImplementedBy(classOf[DefaultExpectationStore])
 trait ExpectationStore {
 
-  def registerExpectationResponse(expectationResponse: ExpectationResponse): RegisterExpectationWithResponseReturnValue
+  def registerExpectationResponse(expectationResponse: ExpectationResponse): RegisterExpectationResponseReturnValue
 
-  def registerExpectationResponseWithId(expectationResponse: ExpectationResponse, id: ExpectationId): RegisterExpectationWithResponseReturnValue
+  def registerExpectationResponseWithId(expectationResponse: ExpectationResponse, id: ExpectationId): RegisterExpectationResponseReturnValue
 
   def getIdsForMatchingExpectations(request: Request): Set[ExpectationId]
 
@@ -24,7 +24,7 @@ trait ExpectationStore {
 
 object ExpectationStore {
 
-  case class RegisterExpectationWithResponseReturnValue(expectationId: ExpectationId, isResponseUpdated: Boolean)
+  case class RegisterExpectationResponseReturnValue(expectationId: ExpectationId, isResponseUpdated: Boolean)
 
 }
 
@@ -38,7 +38,7 @@ class DefaultExpectationStore @Inject()(randomStringGenerator: RandomStringGener
   private val methodRegistry: MethodRegistry = TrieMap.empty[Method, PathRegistry]
 
   override def registerExpectationResponse(expectationResponse: ExpectationResponse)
-  : RegisterExpectationWithResponseReturnValue = this.synchronized {
+  : RegisterExpectationResponseReturnValue = this.synchronized {
 
     val (expectation, response) = expectationResponse
     val headerParamRegistry = getHeaderParamRegistry(expectation)
@@ -48,14 +48,14 @@ class DefaultExpectationStore @Inject()(randomStringGenerator: RandomStringGener
     idToExpectationResponse.put(expectationId, expectationResponse)
     headerParamRegistry.put(expectation.headerParameters, expectationId)
 
-    RegisterExpectationWithResponseReturnValue(
+    RegisterExpectationResponseReturnValue(
       expectationId,
       isResponseUpdated = oldExpectationAndResponse.exists { case (_, oldResponse) => oldResponse != response }
     )
   }
 
   override def registerExpectationResponseWithId(expectationResponse: ExpectationResponse, expectationId: ExpectationId)
-  : RegisterExpectationWithResponseReturnValue = this.synchronized {
+  : RegisterExpectationResponseReturnValue = this.synchronized {
 
     val (expectation, response) = expectationResponse
     val headerParamRegistry = getHeaderParamRegistry(expectation)
@@ -66,7 +66,7 @@ class DefaultExpectationStore @Inject()(randomStringGenerator: RandomStringGener
     oldExpectationId.foreach(idToExpectationResponse.remove)
     idToExpectationResponse.put(expectationId, expectationResponse)
 
-    RegisterExpectationWithResponseReturnValue(
+    RegisterExpectationResponseReturnValue(
       expectationId,
       isResponseUpdated = oldExpectationAndResponse.exists { case (_, oldResponse) => oldResponse != response }
     )
