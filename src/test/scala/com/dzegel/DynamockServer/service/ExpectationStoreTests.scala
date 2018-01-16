@@ -22,7 +22,7 @@ class ExpectationStoreTests extends FunSuite with MockFactory with Matchers with
     expectationStore = new DefaultExpectationStore(mockRandomStringGenerator)
   }
 
-  test("registerExpectationWithResponse and getResponse works for paths") {
+  test("registerExpectationResponse and getResponse works for paths") {
     val expectation1 = getExpectation(path = "path1")
     val request1 = getRequest(path = expectation1.path)
     val expectation2 = getExpectation(path = "path2")
@@ -31,7 +31,7 @@ class ExpectationStoreTests extends FunSuite with MockFactory with Matchers with
     testMultipleRegistrationsWork(expectation1, request1, expectation2, request2)
   }
 
-  test("registerExpectationWithResponse and getResponse works for method") {
+  test("registerExpectationResponse and getResponse works for method") {
     val expectation1 = getExpectation(method = "method1")
     val request1 = getRequest(method = expectation1.method)
     val expectation2 = getExpectation(method = "method2")
@@ -40,7 +40,7 @@ class ExpectationStoreTests extends FunSuite with MockFactory with Matchers with
     testMultipleRegistrationsWork(expectation1, request1, expectation2, request2)
   }
 
-  test("registerExpectationWithResponse and getResponse works for query params") {
+  test("registerExpectationResponse and getResponse works for query params") {
     val expectation1 = getExpectation(queryParams = Map("key1" -> "value1"))
     val request1 = getRequest(queryParams = expectation1.queryParams)
     val expectation2 = getExpectation(queryParams = Map("key2" -> "value2", "key3" -> "value3"))
@@ -49,7 +49,7 @@ class ExpectationStoreTests extends FunSuite with MockFactory with Matchers with
     testMultipleRegistrationsWork(expectation1, request1, expectation2, request2)
   }
 
-  test("registerExpectationWithResponse and getResponse works for overlapping query params") {
+  test("registerExpectationResponse and getResponse works for overlapping query params") {
     val keyValue1 = "key1" -> "value1"
     val expectation1 = getExpectation(queryParams = Map(keyValue1))
     val request1 = getRequest(queryParams = expectation1.queryParams)
@@ -59,7 +59,7 @@ class ExpectationStoreTests extends FunSuite with MockFactory with Matchers with
     testMultipleRegistrationsWork(expectation1, request1, expectation2, request2)
   }
 
-  test("registerExpectationWithResponse and getResponse works for stringContent") {
+  test("registerExpectationResponse and getResponse works for stringContent") {
     val expectation1 = getExpectation(content = Content("stringContent1"))
     val request1 = getRequest(content = expectation1.content)
     val expectation2 = getExpectation(content = Content("stringContent2"))
@@ -68,7 +68,7 @@ class ExpectationStoreTests extends FunSuite with MockFactory with Matchers with
     testMultipleRegistrationsWork(expectation1, request1, expectation2, request2)
   }
 
-  test("registerExpectationWithResponse and getResponse works for included header params") {
+  test("registerExpectationResponse and getResponse works for included header params") {
     val keyValue1 = "key1" -> "value1"
     val expectation1 = getExpectation(includedHeaders = Set(keyValue1))
     val request1 = getRequest(headers = expectation1.headerParameters.included)
@@ -108,7 +108,7 @@ class ExpectationStoreTests extends FunSuite with MockFactory with Matchers with
     expectationStore.getMostConstrainedExpectationWithId(Set(id1, id2)) should contain(expectationResponseWithId2)
   }
 
-  test("registerExpectationWithResponse and getResponse works for excluded header params") {
+  test("registerExpectationResponse and getResponse works for excluded header params") {
     val keyValue1 = "key1" -> "value1"
     val expectation1 = getExpectation(excludedHeaders = Set(keyValue1))
     val expectation2 = getExpectation(excludedHeaders = Set(keyValue1, "key2" -> "value2"))
@@ -150,7 +150,7 @@ class ExpectationStoreTests extends FunSuite with MockFactory with Matchers with
     expectationStore.getMostConstrainedExpectationWithId(matchingIds4) should contain(returnValue2.expectationId -> (expectation2, response100))
   }
 
-  test("registerExpectationWithResponse and getResponse works for included and excluded header params") {
+  test("registerExpectationResponse and getResponse works for included and excluded header params") {
     val included1 = "includedKey1" -> "includedValue1"
     val excluded1 = "excludedKey1" -> "excludedValue1"
     val included2 = "includedKey2" -> "includedValue2"
@@ -245,6 +245,20 @@ class ExpectationStoreTests extends FunSuite with MockFactory with Matchers with
 
     expectationStore.getIdsForMatchingExpectations(request1) shouldBe empty
     expectationStore.getIdsForMatchingExpectations(request2) shouldBe empty
+  }
+
+  test("registerExpectationResponseWithId adds/overrides expectation with provided id") {
+    val expectation = getExpectation(path = "path1", method = "GET", queryParams = Map("param1" -> "value2"), content = Content("Some Content"))
+
+    expectationStore.getAllExpectations shouldBe empty
+
+    expectationStore.registerExpectationResponseWithId(expectation -> response100, id1)
+
+    expectationStore.getAllExpectations shouldBe Set(id1 -> (expectation -> response100))
+
+    expectationStore.registerExpectationResponseWithId(expectation -> response200, id2)
+
+    expectationStore.getAllExpectations shouldBe Set(id2 -> (expectation -> response200))
   }
 
   private def testMultipleRegistrationsWork(expectation1: Expectation, request1: Request, expectation2: Expectation, request2: Request) {
