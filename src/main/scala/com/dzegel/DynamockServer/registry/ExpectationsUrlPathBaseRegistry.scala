@@ -7,7 +7,7 @@ trait ExpectationsUrlPathBaseRegistry {
 class DefaultExpectationsUrlPathBaseRegistry(rawPathBase: String) extends ExpectationsUrlPathBaseRegistry {
   override val pathBase: String = rawPathBase match {
     case "" => ""
-    case bp if bp.startsWith("/") => bp
+    case base if base.startsWith("/") => base
     case base => s"/$base"
   }
 }

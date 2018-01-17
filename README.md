@@ -9,11 +9,11 @@ When designing automated tests for a service with external web dependencies simp
 1. Run your tests, i.e. make http requests to DynamockServer as if it were the dependent service of interest. When a request matches a setup expectation DynamockServer will respond with the registered response. 
 
 ## Deployment
+- Ensure Java 8 or higher is installed.
 - Download the JAR file of the latest [release](releases/README.md).
-- Ensure Java is installed.
-- Run `java -jar DynamockServer-x.y.z.jar [-http.port=:<port-number>] [-expectations.path.base=<expectations-path-base>]`, where `x.y.z` is the version number. Explanations of the optional flag arguments are as follows:
-    - **http.port**: This value is a 4 digit number prefixed with `:`, that specifies the http port the server runs on. For example providing `-http.port=:1234` deploys Dynamock instance listening on port `1234`. If not provided this value defaults to `:8888`. It is suggested that you use this feature to deploy multiple DynamockServer instances for different consumers, to avoid collisions. 
-    - **expectations.path.base**: This value prefixes the `/expectations` url path for managing expectations. For example `-expectations.path.base=dynamock/test` results in a net url path `/dynamock/test/expectations`. Use this feature to avoid collisions on mocked http requests and the expectations API.  
+- Run `java -jar DynamockServer-x.y.z.jar [-http.port=:<port-number>] [-expectations.path.base=<expectations-path-base>]`, where `x.y.z` is the version number. The optional arguments are as follows:
+    - **http.port**: An integer in the range [2, 65534], prefixed with `:`, specifying the http port the server runs on. For example, providing `-http.port=:1234` deploys a Dynamock instance listening on port `1234`. If not provided this value defaults to `:8888`. This feature can be used to deploy multiple DynamockServer instances for different consumers, to avoid collisions. 
+    - **expectations.path.base**: This value prefixes the `/expectations` url path for managing expectations. For example, `-expectations.path.base=dynamock/test` or `-expectations.path.base=/dynamock/test` results in a net url path `/dynamock/test/expectations`. This feature can be used to avoid collisions on mocked http requests and the expectations API.  
 
 ## Dynamock API
 

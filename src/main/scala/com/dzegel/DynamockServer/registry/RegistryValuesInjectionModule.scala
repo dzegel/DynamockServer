@@ -17,10 +17,12 @@ object RegistryValuesInjectionModule extends TwitterModule {
     new DefaultExpectationsUrlPathBaseRegistry(pathBase)
 
   private def extractPortNumber(portNumber: String): String = {
-    val portNumberRegex = """:([\d]{4})""".r
+    val portNumberRegex = """:(\d+)""".r
+    val portRangeStart = 2
+    val portRangeEnd = 65534
     portNumber match {
-      case portNumberRegex(number) => number
-      case _ => throw new Exception("Dynamock Initialization Error: 'http.port' flag must be a colon prefixed four digit port number (i.e. :8080).")
+      case portNumberRegex(number) if portRangeStart <= number.toInt && number.toInt <= portRangeEnd => number.toInt.toString //strip leading 0s
+      case _ => throw new Exception(s"Dynamock Initialization Error: 'http.port' flag must be a colon prefixed integer in the range [$portRangeStart, $portRangeEnd] (i.e. :8080).")
     }
   }
 }
