@@ -17,7 +17,7 @@ When designing automated tests for a service with external web dependencies simp
 
 ## Dynamock API
 
-### PUT <dynamock-path-base>/expectations
+### PUT `<dynamock-path-base>/expectations`
 Setup a mocked response by registering an expectation and the response to return when the expectation is positively matched. 
 
 **Content-Type:** application/json
@@ -57,22 +57,22 @@ Setup a mocked response by registering an expectation and the response to return
         }]
     }
 
-### DELETE <dynamock-path-base>/expectations
+### DELETE `<dynamock-path-base>/expectations`
 Clear all registered mock setups.
 
-### GET <dynamock-path-base>/expectations
+### GET `<dynamock-path-base>/expectations`
 List all registered mock setups.
 
 **Response Body Parameters:**
 - expectation_responses: Array of [ExpectationResponse](#expectationresponse-object) Objects
 
-### POST <dynamock-path-base>/expectations-suite/store
+### POST `<dynamock-path-base>/expectations-suite/store`
 Save the state of registered expectations into an expectations-suite that can be restored at a later point in time.
 
 **Query Parameters:**
 - suite_name: Name of the expectations-suite.
 
-### POST <dynamock-path-base>/expectations-suite/load
+### POST `<dynamock-path-base>/expectations-suite/load`
 Restore the state of registered expectations to a stored expectations-suite.
 
 **Query Parameters:**
