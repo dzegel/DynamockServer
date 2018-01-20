@@ -43,14 +43,14 @@ class DefaultExpectationStore @Inject()(randomStringGenerator: RandomStringGener
     val (expectation, response) = expectationResponse
     val headerParamRegistry = getHeaderParamRegistry(expectation)
     val expectationId = headerParamRegistry.getOrElseUpdate(expectation.headerParameters, randomStringGenerator.next())
-    val oldExpectationAndResponse = idToExpectationResponse.get(expectationId)
+    val oldExpectationResponse = idToExpectationResponse.get(expectationId)
 
     idToExpectationResponse.put(expectationId, expectationResponse)
     headerParamRegistry.put(expectation.headerParameters, expectationId)
 
     RegisterExpectationResponseReturnValue(
       expectationId,
-      isResponseUpdated = oldExpectationAndResponse.exists { case (_, oldResponse) => oldResponse != response }
+      isResponseUpdated = oldExpectationResponse.exists { case (_, oldResponse) => oldResponse != response }
     )
   }
 
@@ -60,7 +60,7 @@ class DefaultExpectationStore @Inject()(randomStringGenerator: RandomStringGener
     val (expectation, response) = expectationResponse
     val headerParamRegistry = getHeaderParamRegistry(expectation)
     val oldExpectationId = headerParamRegistry.get(expectation.headerParameters)
-    val oldExpectationAndResponse = oldExpectationId.flatMap(idToExpectationResponse.get)
+    val oldExpectationResponse = oldExpectationId.flatMap(idToExpectationResponse.get)
 
     headerParamRegistry.put(expectation.headerParameters, expectationId)
     oldExpectationId.foreach(idToExpectationResponse.remove)
@@ -68,7 +68,7 @@ class DefaultExpectationStore @Inject()(randomStringGenerator: RandomStringGener
 
     RegisterExpectationResponseReturnValue(
       expectationId,
-      isResponseUpdated = oldExpectationAndResponse.exists { case (_, oldResponse) => oldResponse != response }
+      isResponseUpdated = oldExpectationResponse.exists { case (_, oldResponse) => oldResponse != response }
     )
   }
 
