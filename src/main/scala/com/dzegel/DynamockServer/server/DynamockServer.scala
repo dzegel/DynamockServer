@@ -4,12 +4,10 @@ import com.dzegel.DynamockServer.controller.{ExpectationsController, MockControl
 import com.dzegel.DynamockServer.registry.RegistryValuesInjectionModule
 import com.twitter.finatra.http.HttpServer
 import com.twitter.finatra.http.routing.HttpRouter
-import com.twitter.finatra.json.modules.FinatraJacksonModule
 
 class DynamockServer extends HttpServer {
   override protected lazy val disableAdminHttpServer = true
   override protected lazy val failfastOnFlagsNotParsed: Boolean = true
-  override protected lazy val jacksonModule:FinatraJacksonModule = JacksonModule
 
   override protected lazy val modules = Seq(RegistryValuesInjectionModule)
 

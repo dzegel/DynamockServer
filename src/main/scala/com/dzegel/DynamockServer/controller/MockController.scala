@@ -1,17 +1,28 @@
 package com.dzegel.DynamockServer.controller
 
-import com.dzegel.DynamockServer.controller.MockController.UnmatchedMockResponse
+import com.dzegel.DynamockServer.controller.MockController._
 import com.dzegel.DynamockServer.service.ExpectationService
 import com.dzegel.DynamockServer.types.{Content, Request => DynamockRequest}
 import com.google.inject.Inject
 import com.twitter.finagle.http.{Request => FinagleRequest}
 import com.twitter.finatra.http.Controller
 
+import scala.language.implicitConversions
 import scala.util.{Failure, Success}
 
 object MockController {
 
-  case class UnmatchedMockResponse(message: String, request: DynamockRequest)
+  private case class RequestDto(method: String, path: String, queryParams: Map[String, String], headers: Map[String, String], content: String)
+
+  private case class UnmatchedMockResponse(message: String, request: RequestDto)
+
+  private implicit def RequestToDto(dynamockRequest: DynamockRequest): RequestDto = RequestDto(
+    dynamockRequest.method,
+    dynamockRequest.path,
+    dynamockRequest.queryParams,
+    dynamockRequest.headers.toMap,
+    dynamockRequest.content.stringValue
+  )
 
 }
 

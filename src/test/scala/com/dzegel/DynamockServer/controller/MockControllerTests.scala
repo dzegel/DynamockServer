@@ -1,12 +1,10 @@
 package com.dzegel.DynamockServer.controller
 
-import com.dzegel.DynamockServer.server.JacksonModule
 import com.dzegel.DynamockServer.service.ExpectationService
 import com.dzegel.DynamockServer.types._
 import com.twitter.finagle.http.Status
 import com.twitter.finatra.http.routing.HttpRouter
 import com.twitter.finatra.http.{EmbeddedHttpServer, HttpServer}
-import com.twitter.finatra.json.modules.FinatraJacksonModule
 import com.twitter.inject.server.FeatureTest
 import org.json4s.JsonAST.JString
 import org.json4s.native.JsonParser.parse
@@ -21,8 +19,6 @@ class MockControllerTests extends FeatureTest with MockFactory with Matchers {
 
   override protected val server: EmbeddedHttpServer = new EmbeddedHttpServer(
     new HttpServer {
-      override protected lazy val jacksonModule: FinatraJacksonModule = JacksonModule
-
       override protected def configureHttp(router: HttpRouter): Unit = {
         router.add(new MockController(mockExpectationService))
       }
