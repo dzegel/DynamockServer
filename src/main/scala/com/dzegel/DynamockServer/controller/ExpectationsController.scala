@@ -1,7 +1,7 @@
 package com.dzegel.DynamockServer.controller
 
 import com.dzegel.DynamockServer.controller.ExpectationsController._
-import com.dzegel.DynamockServer.registry.ExpectationsUrlPathBaseRegistry
+import com.dzegel.DynamockServer.registry.DynamockUrlPathBaseRegistry
 import com.dzegel.DynamockServer.service.ExpectationService
 import com.dzegel.DynamockServer.service.ExpectationService.RegisterExpectationsInput
 import com.dzegel.DynamockServer.types._
@@ -27,13 +27,13 @@ object ExpectationsController {
 
   private case class ExpectationResponseDto(expectation: ExpectationDto, response: ResponseDto)
 
-  private case class ExpectationsPutRequestItemDto(expectation: ExpectationDto, response: ResponseDto, setupName: String)
+  private case class ExpectationsPutRequestItemDto(expectation: ExpectationDto, response: ResponseDto, expectationName: String)
 
-  private case class ExpectationsPutResponseItemDto(expectationId: String, clientName: String, didOverwriteResponse: Boolean)
+  private case class ExpectationsPutResponseItemDto(expectationId: String, expectationName: String, didOverwriteResponse: Boolean)
 
   private case class ExpectationsPutRequest(expectationResponses: Set[ExpectationsPutRequestItemDto])
 
-  private case class ExpectationsPutResponse(setupInfo: Set[ExpectationsPutResponseItemDto])
+  private case class ExpectationsPutResponse(expectationsInfo: Seq[ExpectationsPutResponseItemDto])
 
   private case class ExpectationsGetResponse(expectationResponses: Set[ExpectationResponseDto])
 
@@ -77,13 +77,13 @@ object ExpectationsController {
 
 class ExpectationsController @Inject()(
   expectationService: ExpectationService,
-  expectationsUrlPathBaseRegistry: ExpectationsUrlPathBaseRegistry
+  dynamockUrlPathBaseRegistry: DynamockUrlPathBaseRegistry
 ) extends Controller {
-  private val pathBase = expectationsUrlPathBaseRegistry.pathBase
+  private val pathBase = dynamockUrlPathBaseRegistry.pathBase
 
   put(s"$pathBase/expectations") { request: ExpectationsPutRequest =>
     expectationService.registerExpectations(
-      request.expectationResponses.map(x => RegisterExpectationsInput(x.expectation: Expectation, x.response: Response, x.setupName))
+      request.expectationResponses.map(x => RegisterExpectationsInput(x.expectation: Expectation, x.response: Response, x.expectationName))
     ) match {
       case Success(registerExpectationsOutputs) =>
         response.ok(body = ExpectationsPutResponse(

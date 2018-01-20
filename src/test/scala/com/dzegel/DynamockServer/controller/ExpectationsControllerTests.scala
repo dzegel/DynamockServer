@@ -1,6 +1,6 @@
 package com.dzegel.DynamockServer.controller
 
-import com.dzegel.DynamockServer.registry.ExpectationsUrlPathBaseRegistry
+import com.dzegel.DynamockServer.registry.DynamockUrlPathBaseRegistry
 import com.dzegel.DynamockServer.service.ExpectationService
 import com.dzegel.DynamockServer.service.ExpectationService.{RegisterExpectationsInput, RegisterExpectationsOutput}
 import com.dzegel.DynamockServer.types._
@@ -16,19 +16,19 @@ import scala.util.{Failure, Success, Try}
 class ExpectationsControllerTests extends FeatureTest with MockFactory with Matchers {
 
   private val mockExpectationService = mock[ExpectationService]
-  private val expectationsUrlPathBaseRegistry = stub[ExpectationsUrlPathBaseRegistry]
-  (expectationsUrlPathBaseRegistry.pathBase _).when().returns("/test")
+  private val dynamockUrlPathBaseRegistry = stub[DynamockUrlPathBaseRegistry]
+  (dynamockUrlPathBaseRegistry.pathBase _).when().returns("/test")
 
   override protected val server: EmbeddedHttpServer = new EmbeddedHttpServer(
     new HttpServer {
       override protected def configureHttp(router: HttpRouter): Unit = {
-        router.add(new ExpectationsController(mockExpectationService, expectationsUrlPathBaseRegistry))
+        router.add(new ExpectationsController(mockExpectationService, dynamockUrlPathBaseRegistry))
       }
     }
   )
 
   val errorMessage = "Some Error Message"
-  val setupName = "setup name"
+  val expectationName = "expectation name"
   val expectationId = "expectation id"
 
   private def expectationPutRequestJson(
@@ -42,7 +42,7 @@ class ExpectationsControllerTests extends FeatureTest with MockFactory with Matc
     s"""
 {
   "expectation_responses": [{
-    "setup_name": "$setupName",
+    "expectation_name": "$expectationName",
     "expectation": {
       "path": "$expectationPath",
       "method": "$expectationMethod"${
@@ -111,7 +111,7 @@ class ExpectationsControllerTests extends FeatureTest with MockFactory with Matc
         HeaderParameters(expectationIncludedHeaderParams.getOrElse(Set.empty), expectationExcludedHeaderParams.getOrElse(Set.empty)),
         Content(expectationContent.getOrElse(""))),
       response,
-      Success(Set(RegisterExpectationsOutput(expectationId, setupName, didOverwriteResponse = false))))
+      Success(Seq(RegisterExpectationsOutput(expectationId, expectationName, didOverwriteResponse = false))))
 
     server.httpPut(
       path = "/test/expectations",
@@ -126,10 +126,10 @@ class ExpectationsControllerTests extends FeatureTest with MockFactory with Matc
       andExpect = Status.Ok,
       withJsonBody =
         s"""{
-           |  "setup_info" : [
+           |  "expectations_info" : [
            |    {
            |      "expectation_id" : "$expectationId",
-           |      "client_name" : "$setupName",
+           |      "expectation_name" : "$expectationName",
            |      "did_overwrite_response" : false
            |    }
            |  ]
@@ -283,10 +283,10 @@ class ExpectationsControllerTests extends FeatureTest with MockFactory with Matc
   private def setup_ExpectationService_RegisterExpectations(
     expectation: Expectation,
     response: Response,
-    returnValue: Try[Set[RegisterExpectationsOutput]]
+    returnValue: Try[Seq[RegisterExpectationsOutput]]
   ) = {
     (mockExpectationService.registerExpectations _)
-      .expects(Set(RegisterExpectationsInput(expectation, response, setupName)))
+      .expects(Set(RegisterExpectationsInput(expectation, response, expectationName)))
       .returning(returnValue)
   }
 

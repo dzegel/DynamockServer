@@ -8,7 +8,7 @@ import scala.util.Try
 
 @ImplementedBy(classOf[DefaultExpectationService])
 trait ExpectationService {
-  def registerExpectations(expectationResponses: Set[RegisterExpectationsInput]): Try[Set[RegisterExpectationsOutput]]
+  def registerExpectations(expectationResponses: Set[RegisterExpectationsInput]): Try[Seq[RegisterExpectationsOutput]]
 
   def getResponse(request: Request): Try[Option[Response]]
 
@@ -39,9 +39,9 @@ class DefaultExpectationService @Inject()(expectationStore: ExpectationStore, fi
   extends ExpectationService {
 
   override def registerExpectations(expectationResponses: Set[RegisterExpectationsInput])
-  : Try[Set[RegisterExpectationsOutput]] = Try {
+  : Try[Seq[RegisterExpectationsOutput]] = Try {
     this.synchronized {
-      expectationResponses.map { x =>
+      expectationResponses.toSeq.map { x =>
         val output = expectationStore.registerExpectationResponse(x.expectationResponse)
         RegisterExpectationsOutput(output.expectationId, x.clientName, output.isResponseUpdated)
       }

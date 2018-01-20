@@ -32,15 +32,15 @@ class RegistryValuesInjectionModuleTests extends FunSuite with Matchers {
       "Dynamock Initialization Error: 'http.port' flag must be a colon prefixed integer in the range [2, 65534] (i.e. :8080)."
   }
 
-  test("""expectationsUrlPathBaseRegistry("test") adds leading /""") {
-    RegistryValuesInjectionModule.expectationsUrlPathBaseRegistry("test").pathBase shouldBe "/test"
+  test("""dynamockUrlPathBaseRegistry("test") adds leading /""") {
+    RegistryValuesInjectionModule.dynamockUrlPathBaseRegistry("test").pathBase shouldBe "/test"
   }
 
-  test("""expectationsUrlPathBaseRegistry("/test") is a pass though""") {
-    RegistryValuesInjectionModule.expectationsUrlPathBaseRegistry("/test").pathBase shouldBe "/test"
+  test("""dynamockUrlPathBaseRegistry("/test") is a pass though""") {
+    RegistryValuesInjectionModule.dynamockUrlPathBaseRegistry("/test").pathBase shouldBe "/test"
   }
 
-  test("""expectationsUrlPathBaseRegistry("one/two") works""") {
-    RegistryValuesInjectionModule.expectationsUrlPathBaseRegistry("one/two").pathBase shouldBe "/one/two"
+  test("""dynamockUrlPathBaseRegistry("one/two") works""") {
+    RegistryValuesInjectionModule.dynamockUrlPathBaseRegistry("one/two").pathBase shouldBe "/one/two"
   }
 }

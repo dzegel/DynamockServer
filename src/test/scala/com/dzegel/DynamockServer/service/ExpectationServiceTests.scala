@@ -45,7 +45,7 @@ class ExpectationServiceTests extends FunSuite with MockFactory with Matchers {
     expectationService.registerExpectations(Set(
       RegisterExpectationsInput(expectation, response, clientName1),
       RegisterExpectationsInput(expectation2, response, clientName2)
-    )) shouldBe Success(Set(
+    )) shouldBe Success(Seq(
       RegisterExpectationsOutput(expectationId1, clientName1, didOverwriteResponse = false),
       RegisterExpectationsOutput(expectationId2, clientName2, didOverwriteResponse = true)
     ))

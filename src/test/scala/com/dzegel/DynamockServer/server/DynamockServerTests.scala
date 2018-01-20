@@ -14,17 +14,17 @@ class DynamockServerTests extends FeatureTest with Matchers {
     new DynamockServer {
       override protected lazy val allowUndefinedFlags = true
     }, httpPortFlag = "anything", //setting this to anything other than 'http.port' and setting 'allowUndefinedFlags = true' is a hack that enables the test to pass in the http.port flag defined in args
-    args = Seq("-http.port=:1235", "-expectations.path.base=DynamockTest")
+    args = Seq("-http.port=:1235", "-dynamock.path.base=DynamockTest")
   )
 
   private val expectation = Expectation("PUT", "/some/path", Map.empty, HeaderParameters(Set.empty, Set.empty), Content("someContent"))
   private val response = Response(201, "SomeOtherContent", Map("SomeKey" -> "SomeValue"))
-  private val setupName = "setup name"
+  private val expectationName = "expectation name"
   private val expectationPutRequestJson =
     s"""
 {
   "expectation_responses": [{
-    "setup_name": "$setupName",
+    "expectation_name": "$expectationName",
     "expectation": {
       "path": "${expectation.path}",
       "method": "${expectation.method}",
@@ -41,28 +41,28 @@ class DynamockServerTests extends FeatureTest with Matchers {
 }"""
 
   test("PUT /DynamockTest/expectations returns 204 and the mocked expectation returns the expected response") {
-    val setupRespones = server.httpPut(
+    val putExpectationsResponse = server.httpPut(
       path = "/DynamockTest/expectations",
       putBody = expectationPutRequestJson,
       andExpect = Status.Ok)
 
-    val putResponse = server.httpPut(
+    val mockResponse = server.httpPut(
       expectation.path,
       putBody = expectation.content.stringValue,
       andExpect = Status(response.status),
       withBody = response.content)
 
-    val setupResponseMap = parse(setupRespones.contentString).filterField(x => true).toMap
-    val setupInfoJArray = setupResponseMap("setup_info")
-    setupInfoJArray shouldBe a[JArray]
-    val setupInfoSeq = setupInfoJArray.values.asInstanceOf[::[Map[String, Any]]]
-    setupInfoSeq.size shouldBe 1
-    val setupInfoMap = setupInfoSeq.head
-    setupInfoMap("client_name") shouldBe setupName
-    setupInfoMap("did_overwrite_response") shouldBe false
-    setupInfoMap("expectation_id") shouldBe a[String]
-    setupInfoMap("expectation_id").asInstanceOf[String] should not be empty
+    val responseMap = parse(putExpectationsResponse.contentString).filterField(x => true).toMap
+    val expectationInfoJArray = responseMap("expectations_info")
+    expectationInfoJArray shouldBe a[JArray]
+    val expectationInfoSeq = expectationInfoJArray.values.asInstanceOf[::[Map[String, Any]]]
+    expectationInfoSeq.size shouldBe 1
+    val expectationInfoMap = expectationInfoSeq.head
+    expectationInfoMap("expectation_name") shouldBe expectationName
+    expectationInfoMap("did_overwrite_response") shouldBe false
+    expectationInfoMap("expectation_id") shouldBe a[String]
+    expectationInfoMap("expectation_id").asInstanceOf[String] should not be empty
 
-    putResponse.headerMap should contain allElementsOf response.headerMap
+    mockResponse.headerMap should contain allElementsOf response.headerMap
   }
 }

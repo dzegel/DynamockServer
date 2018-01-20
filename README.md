@@ -11,24 +11,28 @@ When designing automated tests for a service with external web dependencies simp
 ## Deployment
 - Ensure Java 8 or higher is installed.
 - Download the JAR file of the latest [release](releases/README.md).
-- Run `java -jar DynamockServer-x.y.z.jar [-http.port=:<port-number>] [-expectations.path.base=<expectations-path-base>]`, where `x.y.z` is the version number. The optional arguments are as follows:
+- Run `java -jar DynamockServer-x.y.z.jar [-http.port=:<port-number>] [-dynamock.path.base=<dynamock-path-base>]`, where `x.y.z` is the version number. The optional arguments are as follows:
     - **http.port**: An integer in the range [2, 65534], prefixed with `:`, specifying the http port the server runs on. For example, providing `-http.port=:1234` deploys a Dynamock instance listening on port `1234`. If not provided this value defaults to `:8888`. This feature can be used to deploy multiple DynamockServer instances for different consumers, to avoid collisions. 
-    - **expectations.path.base**: This value prefixes the `/expectations` url path for managing expectations. For example, `-expectations.path.base=dynamock/test` or `-expectations.path.base=/dynamock/test` results in a net url path `/dynamock/test/expectations`. This feature can be used to avoid collisions on mocked http requests and the expectations API.  
+    - **dynamock.path.base**: This value prefixes Dynamock API url-paths. For example, `-dynamock.path.base=dynamock/test` or `-dynamock.path.base=/dynamock/test` results in a net url path `/dynamock/test/expectations` for the Dynamock API url-path `<dynamock-path-base>/expectations`. This feature can be used to avoid collisions on mocked http requests and the dynamock API.  
 
 ## Dynamock API
 
-### PUT <expectations-path-base>/expectations
+### PUT <dynamock-path-base>/expectations
 Setup a mocked response by registering an expectation and the response to return when the expectation is positively matched. 
 
 **Content-Type:** application/json
 
 **Request Body Parameters:**
-- expectation_responses: Array of [ExpectationResponse](#expectationresponse-object) Objects
+- expectation_responses: Array of [NamedExpectationResponse](#namedexpectationresponse-object) Objects
 
-###### Example Body:
+**Response Body Parameters:**
+- expectations_info: Array of [ExpectationInfo](#expectationinfo-object) Objects
+
+###### Example Request Body:
 
     {
         "expectation_responses": [{
+            "expectation_name": "Some value that is meaningful to the client",
             "expectation": {
                 "method": "POST",
                 "path": "/some/url/path",
@@ -53,22 +57,22 @@ Setup a mocked response by registering an expectation and the response to return
         }]
     }
 
-### DELETE <expectations-path-base>/expectations
+### DELETE <dynamock-path-base>/expectations
 Clear all registered mock setups.
 
-### GET <expectations-path-base>/expectations
+### GET <dynamock-path-base>/expectations
 List all registered mock setups.
 
 **Response Body Parameters:**
 - expectation_responses: Array of [ExpectationResponse](#expectationresponse-object) Objects
 
-### POST <expectations-path-base>/expectations-suite/store
+### POST <dynamock-path-base>/expectations-suite/store
 Save the state of registered expectations into an expectations-suite that can be restored at a later point in time.
 
 **Query Parameters:**
 - suite_name: Name of the expectations-suite.
 
-### POST <expectations-path-base>/expectations-suite/load
+### POST <dynamock-path-base>/expectations-suite/load
 Restore the state of registered expectations to a stored expectations-suite.
 
 **Query Parameters:**
@@ -77,8 +81,36 @@ Restore the state of registered expectations to a stored expectations-suite.
 ----------------------------------------------
 
 ### Definitions
-##### ExpectationResponse Object:
+##### NamedExpectationResponse Object:
 - properties:
+    - expectation_name:
+        - type: String
+        - required: true
+        - description: A value for the client to associate the resulting expectation id with the provided expectation.  
+    - expectation:
+        - type: [Expectation](#expectation-object) Object
+        - required: true
+    - response:
+        - type: [Response](#response-object) Object
+        - required: true
+        
+##### ExpectationInfo Object:
+- properties:
+    - expectation_name:
+        - type: String
+        - required: true
+        - description: The value provided in the request with the associated expectation.
+    - expectation_id:
+        - type: String
+        - required: true
+        - description: The unique id assigned to the expectation provided in the request.
+    - did_overwrite_response:
+        - type: boolean
+        - required: true
+        - description: Indicates if the response provided overwrites a response previously registered with the expectation provided.
+
+##### ExpectationResponse Object:
+- properties:  
     - expectation:
         - type: [Expectation](#expectation-object) Object
         - required: true
