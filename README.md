@@ -5,7 +5,7 @@ A mock-server designed to replicate the classic unit-test mocking experience. Se
 When designing automated tests for a service with external web dependencies simply:
 1. [Spin-up](#deployment) a DynamockServer instance.
 1. Configure the hosts and ports for the dependent services on the service under test, to point to the Dynamock Server.
-1. Setup the expected API calls along with desired responses. (see [PUT /expectations](#put-expectations) or [POST /expectations/load](#post-expectationsload))
+1. Setup the expected API calls along with desired responses. (see [PUT /expectations](#put-dynamock-path-baseexpectations) or [POST /expectations-suite/load](#post-dynamock-path-baseexpectations-suiteload))
 1. Run your tests, i.e. make http requests to DynamockServer as if it were the dependent service of interest. When a request matches a setup expectation DynamockServer will respond with the registered response. 
 
 ## Deployment
