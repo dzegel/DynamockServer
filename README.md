@@ -62,13 +62,13 @@ List all registered mock setups.
 **Response Body Parameters:**
 - expectation_responses: Array of [ExpectationResponse](#expectationresponse-object) Objects
 
-### POST <expectations-path-base>/expectations/store
+### POST <expectations-path-base>/expectations-suite/store
 Save the state of registered expectations into an expectations-suite that can be restored at a later point in time.
 
 **Query Parameters:**
 - suite_name: Name of the expectations-suite.
 
-### POST <expectations-path-base>/expectations/load
+### POST <expectations-path-base>/expectations-suite/load
 Restore the state of registered expectations to a stored expectations-suite.
 
 **Query Parameters:**
@@ -138,5 +138,6 @@ Restore the state of registered expectations to a stored expectations-suite.
 - Expectation endpoints return id info.
 - Targeted expectation deletion.
 - `/expectation-suite/list` endpoint
+- `/expectation-suite` DELETE endpoint
 - Expectation hit-count support, for validating the number of times an expectation is matched.
 - Regex matching on expectation matching.
