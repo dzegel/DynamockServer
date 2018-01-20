@@ -4,8 +4,11 @@ import com.dzegel.DynamockServer.types.{Content, Expectation, HeaderParameters, 
 import com.twitter.finagle.http.Status
 import com.twitter.finatra.http.EmbeddedHttpServer
 import com.twitter.inject.server.FeatureTest
+import org.json4s.JsonAST._
+import org.json4s.native.JsonParser.parse
+import org.scalatest.Matchers
 
-class DynamockServerTests extends FeatureTest {
+class DynamockServerTests extends FeatureTest with Matchers {
 
   override protected val server: EmbeddedHttpServer = new EmbeddedHttpServer(
     new DynamockServer {
@@ -16,10 +19,12 @@ class DynamockServerTests extends FeatureTest {
 
   private val expectation = Expectation("PUT", "/some/path", Map.empty, HeaderParameters(Set.empty, Set.empty), Content("someContent"))
   private val response = Response(201, "SomeOtherContent", Map("SomeKey" -> "SomeValue"))
+  private val setupName = "setup name"
   private val expectationPutRequestJson =
     s"""
 {
   "expectation_responses": [{
+    "setup_name": "$setupName",
     "expectation": {
       "path": "${expectation.path}",
       "method": "${expectation.method}",
@@ -36,17 +41,28 @@ class DynamockServerTests extends FeatureTest {
 }"""
 
   test("PUT /DynamockTest/expectations returns 204 and the mocked expectation returns the expected response") {
-    server.httpPut(
+    val setupRespones = server.httpPut(
       path = "/DynamockTest/expectations",
       putBody = expectationPutRequestJson,
-      andExpect = Status.NoContent)
+      andExpect = Status.Ok)
 
-    val result = server.httpPut(
+    val putResponse = server.httpPut(
       expectation.path,
       putBody = expectation.content.stringValue,
       andExpect = Status(response.status),
       withBody = response.content)
 
-    result.headerMap should contain allElementsOf response.headerMap
+    val setupResponseMap = parse(setupRespones.contentString).filterField(x => true).toMap
+    val setupInfoJArray = setupResponseMap("setup_info")
+    setupInfoJArray shouldBe a[JArray]
+    val setupInfoSeq = setupInfoJArray.values.asInstanceOf[::[Map[String, Any]]]
+    setupInfoSeq.size shouldBe 1
+    val setupInfoMap = setupInfoSeq.head
+    setupInfoMap("client_name") shouldBe setupName
+    setupInfoMap("did_overwrite_response") shouldBe false
+    setupInfoMap("expectation_id") shouldBe a[String]
+    setupInfoMap("expectation_id").asInstanceOf[String] should not be empty
+
+    putResponse.headerMap should contain allElementsOf response.headerMap
   }
 }

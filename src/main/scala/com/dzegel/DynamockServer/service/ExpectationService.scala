@@ -1,13 +1,14 @@
 package com.dzegel.DynamockServer.service
 
-import com.dzegel.DynamockServer.types.{ExpectationResponse, Request, Response}
+import com.dzegel.DynamockServer.service.ExpectationService._
+import com.dzegel.DynamockServer.types._
 import com.google.inject.{ImplementedBy, Inject, Singleton}
 
 import scala.util.Try
 
 @ImplementedBy(classOf[DefaultExpectationService])
 trait ExpectationService {
-  def registerExpectations(expectationResponses: Set[ExpectationResponse]): Try[Unit]
+  def registerExpectations(expectationResponses: Set[RegisterExpectationsInput]): Try[Set[RegisterExpectationsOutput]]
 
   def getResponse(request: Request): Try[Option[Response]]
 
@@ -20,13 +21,30 @@ trait ExpectationService {
   def loadExpectations(suiteName: String): Try[Unit]
 }
 
+object ExpectationService {
+
+  case class RegisterExpectationsInput(expectationResponse: ExpectationResponse, clientName: String)
+
+  object RegisterExpectationsInput {
+    def apply(expectation: Expectation, response: Response, clientName: String): RegisterExpectationsInput =
+      RegisterExpectationsInput(expectation -> response, clientName)
+  }
+
+  case class RegisterExpectationsOutput(expectationId: String, clientName: String, didOverwriteResponse: Boolean)
+
+}
+
 @Singleton
 class DefaultExpectationService @Inject()(expectationStore: ExpectationStore, fileService: ExpectationsFileService)
   extends ExpectationService {
 
-  override def registerExpectations(expectationResponses: Set[ExpectationResponse]): Try[Unit] = Try {
+  override def registerExpectations(expectationResponses: Set[RegisterExpectationsInput])
+  : Try[Set[RegisterExpectationsOutput]] = Try {
     this.synchronized {
-      expectationResponses.foreach(expectationStore.registerExpectationResponse)
+      expectationResponses.map { x =>
+        val output = expectationStore.registerExpectationResponse(x.expectationResponse)
+        RegisterExpectationsOutput(output.expectationId, x.clientName, output.isResponseUpdated)
+      }
     }
   }
 

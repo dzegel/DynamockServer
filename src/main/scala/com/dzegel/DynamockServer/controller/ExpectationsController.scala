@@ -3,6 +3,7 @@ package com.dzegel.DynamockServer.controller
 import com.dzegel.DynamockServer.controller.ExpectationsController._
 import com.dzegel.DynamockServer.registry.ExpectationsUrlPathBaseRegistry
 import com.dzegel.DynamockServer.service.ExpectationService
+import com.dzegel.DynamockServer.service.ExpectationService.RegisterExpectationsInput
 import com.dzegel.DynamockServer.types._
 import com.google.inject.Inject
 import com.twitter.finagle.http.Request
@@ -26,7 +27,13 @@ object ExpectationsController {
 
   private case class ExpectationResponseDto(expectation: ExpectationDto, response: ResponseDto)
 
-  private case class ExpectationsPutRequest(expectationResponses: Set[ExpectationResponseDto])
+  private case class ExpectationsPutRequestItemDto(expectation: ExpectationDto, response: ResponseDto, setupName: String)
+
+  private case class ExpectationsPutResponseItemDto(expectationId: String, clientName: String, didOverwriteResponse: Boolean)
+
+  private case class ExpectationsPutRequest(expectationResponses: Set[ExpectationsPutRequestItemDto])
+
+  private case class ExpectationsPutResponse(setupInfo: Set[ExpectationsPutResponseItemDto])
 
   private case class ExpectationsGetResponse(expectationResponses: Set[ExpectationResponseDto])
 
@@ -75,9 +82,15 @@ class ExpectationsController @Inject()(
   private val pathBase = expectationsUrlPathBaseRegistry.pathBase
 
   put(s"$pathBase/expectations") { request: ExpectationsPutRequest =>
-    makeNoContentResponse(expectationService.registerExpectations(
-      request.expectationResponses.map(x => (x.expectation: Expectation, x.response: Response))
-    ))
+    expectationService.registerExpectations(
+      request.expectationResponses.map(x => RegisterExpectationsInput(x.expectation: Expectation, x.response: Response, x.setupName))
+    ) match {
+      case Success(registerExpectationsOutputs) =>
+        response.ok(body = ExpectationsPutResponse(
+          registerExpectationsOutputs.map(x => ExpectationsPutResponseItemDto(x.expectationId, x.clientName, x.didOverwriteResponse))
+        ))
+      case Failure(exception) => response.internalServerError(exception.getMessage)
+    }
   }
 
   delete(s"$pathBase/expectations") { _: Request =>
