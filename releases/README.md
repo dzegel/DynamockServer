@@ -4,7 +4,7 @@
 Release version notation is made of three integers `x`, `y` and `z` delimited by `.` (i.e. `x.y.z`). Incrementation of version numbers follows the following rules:
 - `z` - incremented on **minor** updates such as bug-fixes, optimizations, refactor, ect.
 - `y` - incremented on **major** updates such as feature additions.
-- `x` - incremented on **breaking** updates such that at least some feature is not fully backwards compatible.
+- `x` - incremented on **breaking** updates such that some feature is not fully backwards compatible.
 
 ### Versions
 
