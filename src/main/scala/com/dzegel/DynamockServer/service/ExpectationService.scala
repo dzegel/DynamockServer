@@ -14,7 +14,7 @@ trait ExpectationService {
 
   def clearAllExpectations(): Try[Unit]
 
-  def getAllExpectations: Try[Set[ExpectationResponse]]
+  def getAllExpectations: Try[Set[GetExpectationsOutput]]
 
   def storeExpectations(suiteName: String): Try[Unit]
 
@@ -30,7 +30,9 @@ object ExpectationService {
       RegisterExpectationsInput(expectation -> response, clientName)
   }
 
-  case class RegisterExpectationsOutput(expectationId: String, clientName: String, didOverwriteResponse: Boolean)
+  case class RegisterExpectationsOutput(expectationId: ExpectationId, clientName: String, didOverwriteResponse: Boolean)
+
+  case class GetExpectationsOutput(expectationId: ExpectationId, expectation: Expectation, response: Response)
 
 }
 
@@ -55,10 +57,10 @@ class DefaultExpectationService @Inject()(expectationStore: ExpectationStore, fi
     }.map { case (_, (_, response)) => response }
   }
 
-  override def getAllExpectations: Try[Set[ExpectationResponse]] = Try {
+  override def getAllExpectations: Try[Set[GetExpectationsOutput]] = Try {
     this.synchronized {
       expectationStore.getAllExpectations
-    }.map { case (_, expectationResponse) => expectationResponse }
+    }.map { case (id, (expectation, response)) => GetExpectationsOutput(id, expectation, response) }
   }
 
   override def clearAllExpectations(): Try[Unit] = Try {

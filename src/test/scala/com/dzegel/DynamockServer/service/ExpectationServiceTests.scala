@@ -102,7 +102,8 @@ class ExpectationServiceTests extends FunSuite with MockFactory with Matchers {
     val returnValue = Set(expectationId1 -> expectationResponse)
     setup_ExpectationStore_GetAllExpectations(Right(returnValue))
 
-    expectationService.getAllExpectations should equal(Success(Set(expectationResponse)))
+    expectationService.getAllExpectations should
+      equal(Success(Set(GetExpectationsOutput(expectationId1, expectation, response))))
   }
 
   test("getAllExpectations returns Failure") {

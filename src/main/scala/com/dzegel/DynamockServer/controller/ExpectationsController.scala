@@ -25,8 +25,6 @@ object ExpectationsController {
 
   private case class ResponseDto(status: Int, content: Option[String], headerMap: Option[Map[String, String]])
 
-  private case class ExpectationResponseDto(expectation: ExpectationDto, response: ResponseDto)
-
   private case class ExpectationsPutRequestItemDto(expectation: ExpectationDto, response: ResponseDto, expectationName: String)
 
   private case class ExpectationsPutResponseItemDto(expectationId: String, expectationName: String, didOverwriteResponse: Boolean)
@@ -35,16 +33,13 @@ object ExpectationsController {
 
   private case class ExpectationsPutResponse(expectationsInfo: Seq[ExpectationsPutResponseItemDto])
 
-  private case class ExpectationsGetResponse(expectationResponses: Set[ExpectationResponseDto])
+  private case class ExpectationsGetResponseItemDto(expectation: ExpectationDto, response: ResponseDto, expectationId: String)
+
+  private case class ExpectationsGetResponse(expectationResponses: Set[ExpectationsGetResponseItemDto])
 
   private case class ExpectationsSuiteStorePostRequest(@QueryParam suiteName: String)
 
   private case class ExpectationsSuiteLoadPostRequest(@QueryParam suiteName: String)
-
-  private def expectationResponseToDto(expectationResponse: ExpectationResponse)
-  : ExpectationResponseDto = expectationResponse match {
-    case (expectation, response) => ExpectationResponseDto(expectation, response)
-  }
 
   private implicit def dtoFromExpectation(expectation: Expectation): ExpectationDto = ExpectationDto(
     expectation.method,
@@ -100,7 +95,9 @@ class ExpectationsController @Inject()(
   get(s"$pathBase/expectations") { _: Request =>
     expectationService.getAllExpectations match {
       case Success(expectationResponses) =>
-        response.ok(body = ExpectationsGetResponse(expectationResponses.map(expectationResponseToDto)))
+        response.ok(body = ExpectationsGetResponse(expectationResponses.map(
+          x => ExpectationsGetResponseItemDto(x.expectation, x.response, x.expectationId)
+        )))
       case Failure(exception) => response.internalServerError(exception.getMessage)
     }
   }
