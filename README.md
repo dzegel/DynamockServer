@@ -23,10 +23,14 @@ Setup a mocked response by registering an expectation and the response to return
 **Content-Type:** application/json
 
 **Request Body Parameters:**
-- expectation_responses: Array of [NamedExpectationResponse](#namedexpectationresponse-object) Objects
+- expectation_responses: 
+    - type: Array of [NamedExpectationResponse](#namedexpectationresponse-object) Objects
+    - required: true
 
 **Response Body Parameters:**
-- expectations_info: Array of [ExpectationInfo](#expectationinfo-object) Objects
+- expectations_info:
+    - type: Array of [ExpectationInfo](#expectationinfo-object) Objects
+    - required: true
 
 ###### Example Request Body:
 
@@ -58,25 +62,41 @@ Setup a mocked response by registering an expectation and the response to return
     }
 
 ### DELETE `<dynamock-path-base>/expectations`
-Clear all registered mock setups.
+Clear registered expectations.
+
+**Content-Type:** application/json
+
+**Request Body Parameters:**
+- expectation_ids:
+    - type: Array of String
+    - required: false
+    - description: Ids of the expectations to de-register. When `null` or not provided clears all expectations.  
 
 ### GET `<dynamock-path-base>/expectations`
 List all registered mock setups.
 
 **Response Body Parameters:**
-- expectation_responses: Array of [ExpectationResponse](#expectationresponse-object) Objects
+- expectation_responses:
+    - type: Array of [ExpectationResponse](#expectationresponse-object) Objects
+    - required: true
 
 ### POST `<dynamock-path-base>/expectations-suite/store`
 Save the state of registered expectations into an expectations-suite that can be restored at a later point in time.
 
 **Query Parameters:**
-- suite_name: Name of the expectations-suite.
+- suite_name:
+    - type: String
+    - required: true
+    - description: Name of the expectations-suite.
 
 ### POST `<dynamock-path-base>/expectations-suite/load`
 Restore the state of registered expectations to a stored expectations-suite.
 
 **Query Parameters:**
-- suite_name: Name of the expectations-suite.
+- suite_name:
+    - type: String
+    - required: true
+    - description: Name of the expectations-suite.
 
 ----------------------------------------------
 
@@ -137,22 +157,22 @@ Restore the state of registered expectations to a stored expectations-suite.
     - queryParameters:
         - type: map of string to string
         - description: The url/query parameters of the expected request.
-        - required: false, when not specified it is treated as if an empty map is provided.
+        - required: false, when `null` or not specified it is treated as if an empty map is provided.
         - matching rule: Exact case-sensitive match on all key-value pairs.
     - includedHeaderParameters:
         - type: map of string to string
         - description: Header parameters expected to be included in the request.
-        - required: false, when not specified it is treated as if an empty map is provided.
+        - required: false, when `null` or not specified it is treated as if an empty map is provided.
         - matching rule: Exact case-sensitive match on all key-value pairs. A positive match occurs when all of the specified key-value pairs are found in the request's header map.
     - excludedHeaderParameters:
         - type: map of string to string
         - description: Header parameters expected to be excluded from the request.
-        - required: false, when not specified it is treated as if an empty map is provided.
+        - required: false, when `null` or not specified it is treated as if an empty map is provided.
         - matching rule: Exact case-sensitive match on all key-value pairs. A positive match occurs when none of the specified key-value pairs are found in the request's header map.
     - content:
         - type: string
         - description: The string content expected to be included in the request.
-        - required: false, when not specified it is treated as if an empty string is provided.
+        - required: false, when `null` or not specified it is treated as if an empty string is provided.
         - matching rule: If the string is valid Json then a positive match occurs on a request with equivalent Json, Json property names are matched case-sensitive. When the specified content is not valid Json then a positive match occurs on exact case-sensitive match.
         
 ##### Response Object:
@@ -164,14 +184,13 @@ Restore the state of registered expectations to a stored expectations-suite.
     - content:
         - type: string
         - description: The body of the response.
-        - required: false, when not specified it is treated as if an empty string is provided.
+        - required: false, when `null` or not specified it is treated as if an empty string is provided.
     - headerMap:
         - type: map of string to string
         - description: Header parameters to be included in the response's header map.
-        - required: false, when not specified it is treated as if an empty map is provided.
+        - required: false, when `null` or not specified it is treated as if an empty map is provided.
 
 ## Planned work
-- Targeted expectation deletion.
 - `/expectation-suite/list` endpoint
 - `/expectation-suite` DELETE endpoint
 - Expectation hit-count support, for validating the number of times an expectation is matched.

@@ -37,6 +37,8 @@ object ExpectationsController {
 
   private case class ExpectationsGetResponse(expectationResponses: Set[ExpectationsGetResponseItemDto])
 
+  private case class ExpectationsDeleteRequest(expectation_ids: Option[Set[String]])
+
   private case class ExpectationsSuiteStorePostRequest(@QueryParam suiteName: String)
 
   private case class ExpectationsSuiteLoadPostRequest(@QueryParam suiteName: String)
@@ -88,8 +90,8 @@ class ExpectationsController @Inject()(
     }
   }
 
-  delete(s"$pathBase/expectations") { _: Request =>
-    makeNoContentResponse(expectationService.clearAllExpectations())
+  delete(s"$pathBase/expectations") { request: ExpectationsDeleteRequest =>
+    makeNoContentResponse(expectationService.clearExpectations(request.expectation_ids))
   }
 
   get(s"$pathBase/expectations") { _: Request =>

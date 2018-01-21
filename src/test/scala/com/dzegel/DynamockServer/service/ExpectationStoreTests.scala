@@ -245,6 +245,40 @@ class ExpectationStoreTests extends FunSuite with MockFactory with Matchers with
 
     expectationStore.getIdsForMatchingExpectations(request1) shouldBe empty
     expectationStore.getIdsForMatchingExpectations(request2) shouldBe empty
+
+    expectationStore.getAllExpectations shouldBe empty
+  }
+
+  test("clearExpectations clears targeted expectations") {
+    val expectation1 = getExpectation(path = "path1", method = "GET")
+    val request1 = getRequest(path = expectation1.path, method = expectation1.method)
+    val expectation2 = getExpectation(path = "path2", method = "PUT")
+    val request2 = getRequest(path = expectation2.path, method = expectation2.method)
+
+    (mockRandomStringGenerator.next _).expects().returns(id1)
+    val returnValue1 = expectationStore.registerExpectationResponse(expectation1, response100)
+    returnValue1 shouldBe RegisterExpectationResponseReturnValue(id1, isResponseUpdated = false)
+    val expectationResponseWithId1 = id1 -> (expectation1 -> response100)
+    expectationStore.getAllExpectations should equal(Set(expectationResponseWithId1))
+
+    (mockRandomStringGenerator.next _).expects().returns(id2)
+    val returnValue2 = expectationStore.registerExpectationResponse(expectation2, response200)
+    returnValue2 shouldBe RegisterExpectationResponseReturnValue(id2, isResponseUpdated = false)
+    val expectationResponseWithId2 = id2 -> (expectation2 -> response200)
+    expectationStore.getAllExpectations should equal(Set(expectationResponseWithId1, expectationResponseWithId2))
+
+    expectationStore.getIdsForMatchingExpectations(request1) should equal(Set(id1))
+    expectationStore.getMostConstrainedExpectationWithId(Set(id1)) should contain(expectationResponseWithId1)
+
+    expectationStore.getIdsForMatchingExpectations(request2) should equal(Set(id2))
+    expectationStore.getMostConstrainedExpectationWithId(Set(id2)) should contain(expectationResponseWithId2)
+
+    expectationStore.clearExpectations(Set(id1))
+
+    expectationStore.getIdsForMatchingExpectations(request1) shouldBe empty
+    expectationStore.getIdsForMatchingExpectations(request2) shouldBe Set(id2)
+
+    expectationStore.getAllExpectations shouldBe Set(expectationResponseWithId2)
   }
 
   test("registerExpectationResponseWithId adds/overrides expectation with provided id") {

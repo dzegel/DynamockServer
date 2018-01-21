@@ -10,5 +10,5 @@ Release version notation is made of three integers `x`, `y` and `z` delimited by
 
 |Version|JAR|Release Notes|
 |---|---|---|
-|[2.0.0](../README.md) (LATEST)|not released|<ul><li>Rename `/expectations/store` and `/expectations/load` => `/expectation-suite/store` and `/expectation-suite/load`.</li><li>Verbose 551 error message.</li><li>Rename input argument `expectations.path.base` => `dynamock.path.base`.</li><li>Update PUT `/expectations` output with expectation ids.</li><li>Update GET `/expectations` output with expectation ids.</li></ul>|
+|[2.0.0](../README.md) (LATEST)|not released|<ul><li>Rename `/expectations/store` and `/expectations/load` => `/expectation-suite/store` and `/expectation-suite/load`.</li><li>Verbose 551 error message.</li><li>Rename input argument `expectations.path.base` => `dynamock.path.base`.</li><li>Update PUT `/expectations` output with expectation ids.</li><li>Update GET `/expectations` output with expectation ids.</li><li>Targeted expectation deletion.</li></ul>|
 |[1.0.0](https://github.com/dzegel/DynamockServer/tree/Version_1.0.0)|[Dynamock Server 1.0.0 JAR](DynamockServer-1.0.0.jar)|Initial Release|

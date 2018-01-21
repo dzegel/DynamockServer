@@ -154,8 +154,8 @@ class ExpectationsControllerTests extends FeatureTest with MockFactory with Matc
       withBody = errorMessage)
   }
 
-  test("DELETE /test/expectations should call clear all expectations with ExpectationService and return 204 on success") {
-    setup_ExpectationService_ClearAllExpectations(Success(()))
+  test("DELETE /test/expectations with empty body should clear all expectations with ExpectationService and return 204 on success") {
+    setup_ExpectationService_ClearExpectations(None, Success(()))
 
     server.httpDelete(
       path = "/test/expectations",
@@ -163,11 +163,42 @@ class ExpectationsControllerTests extends FeatureTest with MockFactory with Matc
     )
   }
 
-  test("DELETE /test/expectations should call clear all expectations with ExpectationService and return 500 on failure") {
-    setup_ExpectationService_ClearAllExpectations(Failure(new Exception(errorMessage)))
+  test("DELETE /test/expectations with empty object in body should clear all expectations with ExpectationService and return 204 on success") {
+    setup_ExpectationService_ClearExpectations(None, Success(()))
 
     server.httpDelete(
       path = "/test/expectations",
+      deleteBody = "{}",
+      andExpect = Status.NoContent
+    )
+  }
+
+  test("DELETE /test/expectations with null expectation ids should clear all expectations with ExpectationService and return 204 on success") {
+    setup_ExpectationService_ClearExpectations(None, Success(()))
+
+    server.httpDelete(
+      path = "/test/expectations",
+      deleteBody = """{"expectation_ids": null}""",
+      andExpect = Status.NoContent
+    )
+  }
+
+  test("DELETE /test/expectations with specified expectation ids should clear specified expectations with ExpectationService and return 204 on success") {
+    setup_ExpectationService_ClearExpectations(Some(Set(expectationId)), Success(()))
+
+    server.httpDelete(
+      path = "/test/expectations",
+      deleteBody = s"""{"expectation_ids": ["$expectationId"]}""",
+      andExpect = Status.NoContent
+    )
+  }
+
+  test("DELETE /test/expectations should clear expectations with ExpectationService and return 500 on failure") {
+    setup_ExpectationService_ClearExpectations(Some(Set()), Failure(new Exception(errorMessage)))
+
+    server.httpDelete(
+      path = "/test/expectations",
+      deleteBody = """{"expectation_ids":[]}""",
       withBody = errorMessage,
       andExpect = Status.InternalServerError
     )
@@ -297,9 +328,9 @@ class ExpectationsControllerTests extends FeatureTest with MockFactory with Matc
       .returning(returnValue)
   }
 
-  private def setup_ExpectationService_ClearAllExpectations(returnValue: Try[Unit]) = {
-    (mockExpectationService.clearAllExpectations _)
-      .expects()
+  private def setup_ExpectationService_ClearExpectations(expectationIds: Option[Set[ExpectationId]], returnValue: Try[Unit]) = {
+    (mockExpectationService.clearExpectations _)
+      .expects(expectationIds)
       .returning(returnValue)
   }
 

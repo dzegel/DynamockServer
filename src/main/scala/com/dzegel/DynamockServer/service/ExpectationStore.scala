@@ -19,6 +19,8 @@ trait ExpectationStore {
 
   def clearAllExpectations(): Unit
 
+  def clearExpectations(expectationIds: Set[ExpectationId]): Unit
+
   def getAllExpectations: Set[(ExpectationId, ExpectationResponse)]
 }
 
@@ -100,6 +102,17 @@ class DefaultExpectationStore @Inject()(randomStringGenerator: RandomStringGener
   override def clearAllExpectations(): Unit = this.synchronized {
     methodRegistry.clear()
     idToExpectationResponse.clear()
+  }
+
+  override def clearExpectations(expectationIds: Set[ExpectationId]): Unit = this.synchronized {
+    expectationIds.foreach { id =>
+      idToExpectationResponse.remove(id) match {
+        case None =>
+        case Some((expectation, _)) =>
+          val headerParamRegistry = getHeaderParamRegistry(expectation)
+          headerParamRegistry.remove(expectation.headerParameters)
+      }
+    }
   }
 
   override def getAllExpectations: Set[(ExpectationId, ExpectationResponse)] = this.synchronized {
