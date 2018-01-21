@@ -4,21 +4,21 @@ A mock-server designed to replicate the classic unit-test mocking experience. Se
 ###### Basic Usage
 When designing automated tests for a service with external web dependencies simply:
 1. [Spin-up](#deployment) a DynamockServer instance.
-1. Configure the hosts and ports for the dependent services on the service under test, to point to the Dynamock Server.
-1. Setup the expected API calls along with desired responses. (see [PUT /expectations](#put-dynamock-path-baseexpectations) or [POST /expectations-suite/load](#post-dynamock-path-baseexpectations-suiteload))
-1. Run your tests, i.e. make http requests to DynamockServer as if it were the dependent service of interest. When a request matches a setup expectation DynamockServer will respond with the registered response. 
+1. Configure the hosts and ports for the dependent services on the service under test, to point to the DynamockServer.
+1. Setup the expected API calls with desired responses. (see [PUT /expectations](#put-dynamock-path-baseexpectations) or [POST /expectations-suite/load](#post-dynamock-path-baseexpectations-suiteload))
+1. Run your tests, i.e. make http requests to DynamockServer as if it were the dependent service of interest. When a request matches an expectation that is setup, DynamockServer will respond with the registered response. 
 
 ## Deployment
 - Ensure Java 8 or higher is installed.
 - Download the JAR file of the latest [release](releases/README.md).
-- Run `java -jar DynamockServer-x.y.z.jar [-http.port=:<port-number>] [-dynamock.path.base=<dynamock-path-base>]`, where `x.y.z` is the version number. The optional arguments are as follows:
+- Run `java -jar DynamockServer-x.y.z.jar [-http.port=:<port-number>] [-dynamock.path.base=<dynamock-path-base>]`, where `x.y.z` is the version number. The arguments are as follows:
     - **http.port**: An integer in the range [2, 65534], prefixed with `:`, specifying the http port the server runs on. For example, providing `-http.port=:1234` deploys a Dynamock instance listening on port `1234`. If not provided this value defaults to `:8888`. This feature can be used to deploy multiple DynamockServer instances for different consumers, to avoid collisions. 
-    - **dynamock.path.base**: This value prefixes Dynamock API url-paths. For example, `-dynamock.path.base=dynamock/test` or `-dynamock.path.base=/dynamock/test` results in a net url path `/dynamock/test/expectations` for the Dynamock API url-path `<dynamock-path-base>/expectations`. This feature can be used to avoid collisions on mocked http requests and the dynamock API.  
+    - **dynamock.path.base**: This value prefixes Dynamock API url-paths. For example, `-dynamock.path.base=dynamock/test` or `-dynamock.path.base=/dynamock/test` both result in a net url path `/dynamock/test/expectations` for the Dynamock API url-path `<dynamock-path-base>/expectations`. If not provided the net url-path would be `/expectations`. This feature can be used to avoid collisions on mocked http requests and the dynamock API.  
 
 ## Dynamock API
 
 ### PUT `<dynamock-path-base>/expectations`
-Setup a mocked response by registering an expectation and the response to return when the expectation is positively matched. 
+Setup a mocked response by registering an expectation and the response to return when the expectation is positively matched. An expectation name must also be provided and can be used by the client to associate the returned expectation ids to their respective registered expectations.  
 
 **Content-Type:** application/json
 
@@ -111,6 +111,10 @@ Restore the state of registered expectations to a stored expectations-suite.
 
 ##### ExpectationResponse Object:
 - properties:  
+    - expectation_id:
+        - type: String
+        - required: true
+        - description: The id associated with the expectation. 
     - expectation:
         - type: [Expectation](#expectation-object) Object
         - required: true
@@ -167,7 +171,6 @@ Restore the state of registered expectations to a stored expectations-suite.
         - required: false, when not specified it is treated as if an empty map is provided.
 
 ## Planned work
-- Expectation endpoints return id info.
 - Targeted expectation deletion.
 - `/expectation-suite/list` endpoint
 - `/expectation-suite` DELETE endpoint
