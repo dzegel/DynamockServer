@@ -156,23 +156,23 @@ Restore the state of registered expectations to a stored expectations-suite.
         - matching rule: Exact case-sensitive match.
     - queryParameters:
         - type: map of string to string
-        - description: The url/query parameters of the expected request.
-        - required: false, when `null` or not specified it is treated as if an empty map is provided.
+        - required: false
+        - description: The url/query parameters of the expected request. When `null` or not specified it is treated as if an empty map is provided.
         - matching rule: Exact case-sensitive match on all key-value pairs.
     - includedHeaderParameters:
         - type: map of string to string
-        - description: Header parameters expected to be included in the request.
-        - required: false, when `null` or not specified it is treated as if an empty map is provided.
+        - required: false
+        - description: Header parameters expected to be included in the request. When `null` or not specified it is treated as if an empty map is provided.
         - matching rule: Exact case-sensitive match on all key-value pairs. A positive match occurs when all of the specified key-value pairs are found in the request's header map.
     - excludedHeaderParameters:
         - type: map of string to string
-        - description: Header parameters expected to be excluded from the request.
-        - required: false, when `null` or not specified it is treated as if an empty map is provided.
+        - required: false
+        - description: Header parameters expected to be excluded from the request. When `null` or not specified it is treated as if an empty map is provided.
         - matching rule: Exact case-sensitive match on all key-value pairs. A positive match occurs when none of the specified key-value pairs are found in the request's header map.
     - content:
         - type: string
-        - description: The string content expected to be included in the request.
-        - required: false, when `null` or not specified it is treated as if an empty string is provided.
+        - required: false
+        - description: The string content expected to be included in the request. When `null` or not specified it is treated as if an empty string is provided.
         - matching rule: If the string is valid Json then a positive match occurs on a request with equivalent Json, Json property names are matched case-sensitive. When the specified content is not valid Json then a positive match occurs on exact case-sensitive match.
         
 ##### Response Object:
@@ -183,12 +183,12 @@ Restore the state of registered expectations to a stored expectations-suite.
         - required: true
     - content:
         - type: string
-        - description: The body of the response.
-        - required: false, when `null` or not specified it is treated as if an empty string is provided.
+        - required: false
+        - description: The body of the response. When `null` or not specified it is treated as if an empty string is provided.
     - headerMap:
         - type: map of string to string
-        - description: Header parameters to be included in the response's header map.
-        - required: false, when `null` or not specified it is treated as if an empty map is provided.
+        - required: false
+        - description: Header parameters to be included in the response's header map. When `null` or not specified it is treated as if an empty map is provided.
 
 ## Planned work
 - `/expectation-suite/list` endpoint
