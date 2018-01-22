@@ -6,15 +6,15 @@ import com.twitter.inject.annotations.Flag
 
 object RegistryValuesInjectionModule extends TwitterModule {
   //http.port flag is built into finatra
-  flag("expectations.path.base", "", "Url base path for the expectations controller.")
+  flag("dynamock.path.base", "", "Url base path for the Dynamock API.")
 
   @Singleton
   @Provides def fileRootRegistry(@Flag("http.port") port: String): FileRootRegistry =
     new DefaultFileRootRegistry(extractPortNumber(port))
 
   @Singleton
-  @Provides def expectationsUrlPathBaseRegistry(@Flag("expectations.path.base") pathBase: String): ExpectationsUrlPathBaseRegistry =
-    new DefaultExpectationsUrlPathBaseRegistry(pathBase)
+  @Provides def dynamockUrlPathBaseRegistry(@Flag("dynamock.path.base") pathBase: String): DynamockUrlPathBaseRegistry =
+    new DefaultDynamockUrlPathBaseRegistry(pathBase)
 
   private def extractPortNumber(portNumber: String): String = {
     val portNumberRegex = """:(\d+)""".r

@@ -1,8 +1,9 @@
 package com.dzegel.DynamockServer.controller
 
 import com.dzegel.DynamockServer.controller.ExpectationsController._
-import com.dzegel.DynamockServer.registry.ExpectationsUrlPathBaseRegistry
+import com.dzegel.DynamockServer.registry.DynamockUrlPathBaseRegistry
 import com.dzegel.DynamockServer.service.ExpectationService
+import com.dzegel.DynamockServer.service.ExpectationService.RegisterExpectationsInput
 import com.dzegel.DynamockServer.types._
 import com.google.inject.Inject
 import com.twitter.finagle.http.Request
@@ -24,20 +25,21 @@ object ExpectationsController {
 
   private case class ResponseDto(status: Int, content: Option[String], headerMap: Option[Map[String, String]])
 
-  private case class ExpectationResponseDto(expectation: ExpectationDto, response: ResponseDto)
+  private case class ExpectationsPutRequestItemDto(expectation: ExpectationDto, response: ResponseDto, expectationName: String)
 
-  private case class ExpectationsPutRequest(expectationResponses: Set[ExpectationResponseDto])
+  private case class ExpectationsPutResponseItemDto(expectationId: String, expectationName: String, didOverwriteResponse: Boolean)
 
-  private case class ExpectationsGetResponse(expectationResponses: Set[ExpectationResponseDto])
+  private case class ExpectationsPutRequest(expectationResponses: Set[ExpectationsPutRequestItemDto])
+
+  private case class ExpectationsPutResponse(expectationsInfo: Seq[ExpectationsPutResponseItemDto])
+
+  private case class ExpectationsGetResponseItemDto(expectation: ExpectationDto, response: ResponseDto, expectationId: String)
+
+  private case class ExpectationsGetResponse(expectationResponses: Set[ExpectationsGetResponseItemDto])
 
   private case class ExpectationsSuiteStorePostRequest(@QueryParam suiteName: String)
 
   private case class ExpectationsSuiteLoadPostRequest(@QueryParam suiteName: String)
-
-  private def expectationResponseToDto(expectationResponse: ExpectationResponse)
-  : ExpectationResponseDto = expectationResponse match {
-    case (expectation, response) => ExpectationResponseDto(expectation, response)
-  }
 
   private implicit def dtoFromExpectation(expectation: Expectation): ExpectationDto = ExpectationDto(
     expectation.method,
@@ -70,14 +72,20 @@ object ExpectationsController {
 
 class ExpectationsController @Inject()(
   expectationService: ExpectationService,
-  expectationsUrlPathBaseRegistry: ExpectationsUrlPathBaseRegistry
+  dynamockUrlPathBaseRegistry: DynamockUrlPathBaseRegistry
 ) extends Controller {
-  private val pathBase = expectationsUrlPathBaseRegistry.pathBase
+  private val pathBase = dynamockUrlPathBaseRegistry.pathBase
 
   put(s"$pathBase/expectations") { request: ExpectationsPutRequest =>
-    makeNoContentResponse(expectationService.registerExpectations(
-      request.expectationResponses.map(x => (x.expectation: Expectation, x.response: Response))
-    ))
+    expectationService.registerExpectations(
+      request.expectationResponses.map(x => RegisterExpectationsInput(x.expectation: Expectation, x.response: Response, x.expectationName))
+    ) match {
+      case Success(registerExpectationsOutputs) =>
+        response.ok(body = ExpectationsPutResponse(
+          registerExpectationsOutputs.map(x => ExpectationsPutResponseItemDto(x.expectationId, x.clientName, x.didOverwriteResponse))
+        ))
+      case Failure(exception) => response.internalServerError(exception.getMessage)
+    }
   }
 
   delete(s"$pathBase/expectations") { _: Request =>
@@ -87,7 +95,9 @@ class ExpectationsController @Inject()(
   get(s"$pathBase/expectations") { _: Request =>
     expectationService.getAllExpectations match {
       case Success(expectationResponses) =>
-        response.ok(body = ExpectationsGetResponse(expectationResponses.map(expectationResponseToDto)))
+        response.ok(body = ExpectationsGetResponse(expectationResponses.map(
+          x => ExpectationsGetResponseItemDto(x.expectation, x.response, x.expectationId)
+        )))
       case Failure(exception) => response.internalServerError(exception.getMessage)
     }
   }

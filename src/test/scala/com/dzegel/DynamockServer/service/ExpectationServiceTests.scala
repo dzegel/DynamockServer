@@ -1,5 +1,6 @@
 package com.dzegel.DynamockServer.service
 
+import com.dzegel.DynamockServer.service.ExpectationService._
 import com.dzegel.DynamockServer.service.ExpectationStore.RegisterExpectationResponseReturnValue
 import com.dzegel.DynamockServer.types._
 import org.scalamock.scalatest.MockFactory
@@ -22,19 +23,40 @@ class ExpectationServiceTests extends FunSuite with MockFactory with Matchers {
   private val expectationSuiteName = "SomeName"
 
   private val expectationId1 = "id_1"
-  private val expectationIds = Set(expectationId1, "id_2")
+  private val expectationId2 = "id_2"
+  private val expectationIds = Set(expectationId1, expectationId2)
+
+  private val clientName1 = "client name 1"
+  private val clientName2 = "client name 2"
 
   test("registerExpectation returns Success when no Exception is thrown") {
-    setup_ExpectationStore_RegisterExpectationResponse(expectation, response, Right(RegisterExpectationResponseReturnValue(expectationId1, isResponseUpdated = false)))
+    val expectation2 = expectation.copy(path = "someOtherPath")
+    setup_ExpectationStore_RegisterExpectationResponse(
+      expectation,
+      response,
+      Right(RegisterExpectationResponseReturnValue(expectationId1, isResponseUpdated = false))
+    )
+    setup_ExpectationStore_RegisterExpectationResponse(
+      expectation2,
+      response,
+      Right(RegisterExpectationResponseReturnValue(expectationId2, isResponseUpdated = true))
+    )
 
-    expectationService.registerExpectations(Set((expectation, response))) should equal(Success(()))
+    expectationService.registerExpectations(Set(
+      RegisterExpectationsInput(expectation, response, clientName1),
+      RegisterExpectationsInput(expectation2, response, clientName2)
+    )) shouldBe Success(Seq(
+      RegisterExpectationsOutput(expectationId1, clientName1, didOverwriteResponse = false),
+      RegisterExpectationsOutput(expectationId2, clientName2, didOverwriteResponse = true)
+    ))
   }
 
   test("registerExpectation returns Failure on Exception") {
     val exception = new Exception()
     setup_ExpectationStore_RegisterExpectationResponse(expectation, response, Left(exception))
 
-    expectationService.registerExpectations(Set((expectation, response))) should equal(Failure(exception))
+    expectationService.registerExpectations(Set(RegisterExpectationsInput(expectation, response, clientName1))) shouldBe
+      Failure(exception)
   }
 
   test("getResponse returns Success of response") {
@@ -80,7 +102,8 @@ class ExpectationServiceTests extends FunSuite with MockFactory with Matchers {
     val returnValue = Set(expectationId1 -> expectationResponse)
     setup_ExpectationStore_GetAllExpectations(Right(returnValue))
 
-    expectationService.getAllExpectations should equal(Success(Set(expectationResponse)))
+    expectationService.getAllExpectations should
+      equal(Success(Set(GetExpectationsOutput(expectationId1, expectation, response))))
   }
 
   test("getAllExpectations returns Failure") {
@@ -117,7 +140,6 @@ class ExpectationServiceTests extends FunSuite with MockFactory with Matchers {
     val expectation2 = Expectation("2", "2", Map(), null, null)
     val response2 = Response(200, "some content", Map())
     val expectationResponse2 = expectation2 -> response2
-    val expectationId2 = "id_2"
     val expectationResponses = Set(expectationId1 -> expectationResponse, expectationId2 -> (expectation2 -> response2))
     val returnValue1 = RegisterExpectationResponseReturnValue(expectationId1, isResponseUpdated = false)
     val returnValue2 = RegisterExpectationResponseReturnValue(expectationId2, isResponseUpdated = true)
@@ -139,7 +161,6 @@ class ExpectationServiceTests extends FunSuite with MockFactory with Matchers {
     val expectation2 = Expectation("2", "2", Map(), null, null)
     val response2 = Response(200, "some content", Map())
     val expectationResponse2 = expectation2 -> response2
-    val expectationId2 = "id_2"
     val expectationResponses = Set(expectationId1 -> expectationResponse, expectationId2 -> (expectation2 -> response2))
     val returnValue1 = RegisterExpectationResponseReturnValue(expectationId1, isResponseUpdated = false)
 

@@ -1,7 +1,8 @@
 package com.dzegel.DynamockServer.controller
 
-import com.dzegel.DynamockServer.registry.ExpectationsUrlPathBaseRegistry
+import com.dzegel.DynamockServer.registry.DynamockUrlPathBaseRegistry
 import com.dzegel.DynamockServer.service.ExpectationService
+import com.dzegel.DynamockServer.service.ExpectationService.{GetExpectationsOutput, RegisterExpectationsInput, RegisterExpectationsOutput}
 import com.dzegel.DynamockServer.types._
 import com.twitter.finagle.http.Status
 import com.twitter.finatra.http.routing.HttpRouter
@@ -15,18 +16,20 @@ import scala.util.{Failure, Success, Try}
 class ExpectationsControllerTests extends FeatureTest with MockFactory with Matchers {
 
   private val mockExpectationService = mock[ExpectationService]
-  private val expectationsUrlPathBaseRegistry = stub[ExpectationsUrlPathBaseRegistry]
-  (expectationsUrlPathBaseRegistry.pathBase _).when().returns("/test")
+  private val dynamockUrlPathBaseRegistry = stub[DynamockUrlPathBaseRegistry]
+  (dynamockUrlPathBaseRegistry.pathBase _).when().returns("/test")
 
   override protected val server: EmbeddedHttpServer = new EmbeddedHttpServer(
     new HttpServer {
       override protected def configureHttp(router: HttpRouter): Unit = {
-        router.add(new ExpectationsController(mockExpectationService, expectationsUrlPathBaseRegistry))
+        router.add(new ExpectationsController(mockExpectationService, dynamockUrlPathBaseRegistry))
       }
     }
   )
 
   val errorMessage = "Some Error Message"
+  val expectationName = "expectation name"
+  val expectationId = "expectation id"
 
   private def expectationPutRequestJson(
     expectationPath: String,
@@ -39,37 +42,38 @@ class ExpectationsControllerTests extends FeatureTest with MockFactory with Matc
     s"""
 {
   "expectation_responses": [{
+    "expectation_name": "$expectationName",
     "expectation": {
       "path": "$expectationPath",
       "method": "$expectationMethod"${
-        expectationContent match {
-          case Some(content) =>
-            s""",
+      expectationContent match {
+        case Some(content) =>
+          s""",
       "content": "$content""""
-          case None => ""
-        }
-      }${
-        queryParams match {
-          case Some(params) =>
-            s""",
+        case None => ""
+      }
+    }${
+      queryParams match {
+        case Some(params) =>
+          s""",
       "query_parameters":{${params.map(param => s""""${param._1}":"${param._2}"""").mkString(",")}}"""
-          case None => ""
-        }
-      }${
-        includedHeaderParams match {
-          case Some(params) =>
-            s""",
+        case None => ""
+      }
+    }${
+      includedHeaderParams match {
+        case Some(params) =>
+          s""",
       "included_header_parameters":{${params.map(param => s""""${param._1}":"${param._2}"""").mkString(",")}}"""
-          case None => ""
-        }
-      }${
-        excludedHeaderParams match {
-          case Some(params) =>
-            s""",
+        case None => ""
+      }
+    }${
+      excludedHeaderParams match {
+        case Some(params) =>
+          s""",
       "excluded_header_parameters":{${params.map(param => s""""${param._1}":"${param._2}"""").mkString(",")}}"""
-          case None => ""
-        }
-      }},
+        case None => ""
+      }
+    }},
     "response": {
       "status": ${response.status}
     }
@@ -107,7 +111,7 @@ class ExpectationsControllerTests extends FeatureTest with MockFactory with Matc
         HeaderParameters(expectationIncludedHeaderParams.getOrElse(Set.empty), expectationExcludedHeaderParams.getOrElse(Set.empty)),
         Content(expectationContent.getOrElse(""))),
       response,
-      Success(()))
+      Success(Seq(RegisterExpectationsOutput(expectationId, expectationName, didOverwriteResponse = false))))
 
     server.httpPut(
       path = "/test/expectations",
@@ -119,12 +123,22 @@ class ExpectationsControllerTests extends FeatureTest with MockFactory with Matc
         expectationIncludedHeaderParams,
         expectationExcludedHeaderParams,
         response),
-      andExpect = Status.NoContent)
+      andExpect = Status.Ok,
+      withJsonBody =
+        s"""{
+           |  "expectations_info" : [
+           |    {
+           |      "expectation_id" : "$expectationId",
+           |      "expectation_name" : "$expectationName",
+           |      "did_overwrite_response" : false
+           |    }
+           |  ]
+           |}""".stripMargin)
   }
 
   test("PUT /test/expectations should call register expectation with ExpectationService and return 500 on failure") {
     val expectation = Expectation("POST", "some-path", Map("query" -> "param"), HeaderParameters(Set("included" -> "includedValue"), Set("excluded" -> "excludedValue")), Content(""))
-    setup_ExpectationService_RegisterExpectations(expectation, response, Failure(new Exception))
+    setup_ExpectationService_RegisterExpectations(expectation, response, Failure(new Exception(errorMessage)))
 
     server.httpPut(
       path = "/test/expectations",
@@ -136,7 +150,8 @@ class ExpectationsControllerTests extends FeatureTest with MockFactory with Matc
         Some(expectation.headerParameters.included),
         Some(expectation.headerParameters.excluded),
         response),
-      andExpect = Status.InternalServerError)
+      andExpect = Status.InternalServerError,
+      withBody = errorMessage)
   }
 
   test("DELETE /test/expectations should call clear all expectations with ExpectationService and return 204 on success") {
@@ -170,38 +185,39 @@ class ExpectationsControllerTests extends FeatureTest with MockFactory with Matc
     )
 
     val response = Response(200, "Some Response Content", Map("responseParam" -> "value"))
-    setup_ExpectationService_GetAllExpectations(Success(Set(expectation -> response)))
+    setup_ExpectationService_GetAllExpectations(Success(Set(GetExpectationsOutput(expectationId, expectation, response))))
 
     val jsonResponse =
-      """{
-        |  "expectation_responses" : [
-        |    {
-        |      "expectation" : {
-        |        "method" : "POST",
-        |        "path" : "some-path",
-        |        "query_parameters" : {
-        |          "query" : "param"
-        |        },
-        |        "included_header_parameters" : {
-        |          "included1" : "includedValue1",
-        |          "included2" : "includedValue2"
-        |        },
-        |        "excluded_header_parameters" : {
-        |          "excluded1" : "excludedValue1",
-        |          "excluded2" : "excludedValue2"
-        |        },
-        |        "content" : "Some Expectation Content"
-        |      },
-        |      "response" : {
-        |        "status" : 200,
-        |        "content" : "Some Response Content",
-        |        "header_map" : {
-        |          "responseParam" : "value"
-        |        }
-        |      }
-        |    }
-        |  ]
-        |}""".stripMargin
+      s"""{
+         |  "expectation_responses" : [
+         |    {
+         |      "expectation_id": "$expectationId",
+         |      "expectation": {
+         |        "method": "${expectation.method}",
+         |        "path": "${expectation.path}",
+         |        "query_parameters": {
+         |          "query": "param"
+         |        },
+         |        "included_header_parameters": {
+         |          "included1": "includedValue1",
+         |          "included2": "includedValue2"
+         |        },
+         |        "excluded_header_parameters": {
+         |          "excluded1": "excludedValue1",
+         |          "excluded2": "excludedValue2"
+         |        },
+         |        "content" : "${expectation.content.stringValue}"
+         |      },
+         |      "response": {
+         |        "status": ${response.status},
+         |        "content": "${response.content}",
+         |        "header_map": {
+         |          "responseParam": "value"
+         |        }
+         |      }
+         |    }
+         |  ]
+         |}""".stripMargin
 
     server.httpGet(
       path = "/test/expectations",
@@ -268,14 +284,14 @@ class ExpectationsControllerTests extends FeatureTest with MockFactory with Matc
   private def setup_ExpectationService_RegisterExpectations(
     expectation: Expectation,
     response: Response,
-    returnValue: Try[Unit]
+    returnValue: Try[Seq[RegisterExpectationsOutput]]
   ) = {
     (mockExpectationService.registerExpectations _)
-      .expects(Set((expectation, response)))
+      .expects(Set(RegisterExpectationsInput(expectation, response, expectationName)))
       .returning(returnValue)
   }
 
-  private def setup_ExpectationService_GetAllExpectations(returnValue: Try[Set[ExpectationResponse]]) = {
+  private def setup_ExpectationService_GetAllExpectations(returnValue: Try[Set[GetExpectationsOutput]]) = {
     (mockExpectationService.getAllExpectations _)
       .expects()
       .returning(returnValue)
