@@ -12,7 +12,7 @@ trait ExpectationService {
 
   def getResponse(request: Request): Try[Option[Response]]
 
-  def clearAllExpectations(): Try[Unit]
+  def clearExpectations(expectationIds: Option[Set[ExpectationId]]): Try[Unit]
 
   def getAllExpectations: Try[Set[GetExpectationsOutput]]
 
@@ -63,9 +63,12 @@ class DefaultExpectationService @Inject()(expectationStore: ExpectationStore, fi
     }.map { case (id, (expectation, response)) => GetExpectationsOutput(id, expectation, response) }
   }
 
-  override def clearAllExpectations(): Try[Unit] = Try {
+  override def clearExpectations(expectationIds: Option[Set[ExpectationId]]): Try[Unit] = Try {
     this.synchronized {
-      expectationStore.clearAllExpectations()
+      expectationIds match {
+        case None => expectationStore.clearAllExpectations()
+        case Some(ids) => expectationStore.clearExpectations(ids)
+      }
     }
   }
 

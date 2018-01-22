@@ -86,16 +86,28 @@ class ExpectationServiceTests extends FunSuite with MockFactory with Matchers {
     expectationService.getResponse(request) should equal(Failure(exception))
   }
 
-  test("clearAllExpectations returns Success") {
+  test("clearExpectations(None) returns Success") {
     setup_ExpectationStore_ClearAllExpectations()
 
-    expectationService.clearAllExpectations() should equal(Success(()))
+    expectationService.clearExpectations(None) should equal(Success(()))
   }
 
-  test("clearAllExpectations returns Failure") {
+  test("clearAllExpectations(None) returns Failure") {
     setup_ExpectationStore_ClearAllExpectations(Some(exception))
 
-    expectationService.clearAllExpectations() should equal(Failure(exception))
+    expectationService.clearExpectations(None) should equal(Failure(exception))
+  }
+
+  test("clearExpectations(Some) returns Success") {
+    setup_ExpectationStore_ClearExpectations(expectationIds)
+
+    expectationService.clearExpectations(Some(expectationIds)) should equal(Success(()))
+  }
+
+  test("clearAllExpectations(Some) returns Failure") {
+    setup_ExpectationStore_ClearExpectations(expectationIds, Some(exception))
+
+    expectationService.clearExpectations(Some(expectationIds)) should equal(Failure(exception))
   }
 
   test("getAllExpectations returns Success") {
@@ -231,6 +243,17 @@ class ExpectationServiceTests extends FunSuite with MockFactory with Matchers {
     exception: Option[Exception] = None
   ): Unit = {
     val callHandler = (mockExpectationStore.clearAllExpectations _).expects()
+    exception match {
+      case None => callHandler.returning(Unit)
+      case Some(ex) => callHandler.throwing(ex)
+    }
+  }
+
+  private def setup_ExpectationStore_ClearExpectations(
+    ids: Set[ExpectationId],
+    exception: Option[Exception] = None
+  ): Unit = {
+    val callHandler = (mockExpectationStore.clearExpectations _).expects(ids)
     exception match {
       case None => callHandler.returning(Unit)
       case Some(ex) => callHandler.throwing(ex)
