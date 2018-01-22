@@ -106,9 +106,8 @@ class DefaultExpectationStore @Inject()(randomStringGenerator: RandomStringGener
 
   override def clearExpectations(expectationIds: Set[ExpectationId]): Unit = this.synchronized {
     expectationIds.foreach { id =>
-      idToExpectationResponse.remove(id) match {
-        case None =>
-        case Some((expectation, _)) =>
+      idToExpectationResponse.remove(id).foreach {
+        case (expectation, _) =>
           val headerParamRegistry = getHeaderParamRegistry(expectation)
           headerParamRegistry.remove(expectation.headerParameters)
       }
