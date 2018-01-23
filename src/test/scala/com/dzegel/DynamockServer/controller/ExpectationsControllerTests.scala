@@ -2,7 +2,7 @@ package com.dzegel.DynamockServer.controller
 
 import com.dzegel.DynamockServer.registry.DynamockUrlPathBaseRegistry
 import com.dzegel.DynamockServer.service.ExpectationService
-import com.dzegel.DynamockServer.service.ExpectationService.{GetExpectationsOutput, RegisterExpectationsInput, RegisterExpectationsOutput}
+import com.dzegel.DynamockServer.service.ExpectationService._
 import com.dzegel.DynamockServer.types._
 import com.twitter.finagle.http.Status
 import com.twitter.finatra.http.routing.HttpRouter
@@ -289,18 +289,19 @@ class ExpectationsControllerTests extends FeatureTest with MockFactory with Matc
     )
   }
 
-  test("POST /test/expectations-suite/load should call store expectation and return 204 on success") {
+  test("POST /test/expectations-suite/load should call load expectations and return 200 on success") {
     val suiteName = "SomeName"
-    setup_ExpectationService_LoadExpectations(suiteName, Success(()))
+    setup_ExpectationService_LoadExpectations(suiteName, Success(Seq(LoadExpectationsOutput(expectationId, didOverwriteResponse = true))))
 
     server.httpPost(
       path = s"/test/expectations-suite/load?suite_name=$suiteName",
       postBody = "",
-      andExpect = Status.NoContent
+      andExpect = Status.Ok,
+      withJsonBody = s"""{ "suite_load_info": [{ "expectation_id": "$expectationId", "did_overwrite_response": true }] }"""
     )
   }
 
-  test("POST /test/expectations-suite/load should call store expectation and return 500 on failure") {
+  test("POST /test/expectations-suite/load should call load expectations and return 500 on failure") {
     val suiteName = "SomeName"
     setup_ExpectationService_LoadExpectations(suiteName, Failure(new Exception(errorMessage)))
 
@@ -340,7 +341,7 @@ class ExpectationsControllerTests extends FeatureTest with MockFactory with Matc
       .returning(returnValue)
   }
 
-  private def setup_ExpectationService_LoadExpectations(suiteName: String, returnValue: Try[Unit]) = {
+  private def setup_ExpectationService_LoadExpectations(suiteName: String, returnValue: Try[Seq[LoadExpectationsOutput]]) = {
     (mockExpectationService.loadExpectations _)
       .expects(suiteName)
       .returning(returnValue)
