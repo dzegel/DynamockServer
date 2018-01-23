@@ -44,7 +44,8 @@ The Mocked API responds with a `550` error code for internal server errors, in o
 
 ### PUT `<dynamock-path-base>/expectations`
 Setup a mocked response by registering an expectation and the response to return when the expectation is positively matched.
-An expectation name must also be provided and can be used by the client to associate the returned expectation ids to their respective registered expectations.  
+An expectation name is provided to be used by the client to associate the returned expectation ids to their respective registered expectations.
+Previously registered expectations which are identical to expectations provided will have their respective responses overridden with the responses provided and will keep the ids the expectations were originally registered with.
 
 **Content-Type:** application/json
 
@@ -117,13 +118,19 @@ Save the state of registered expectations into an expectations-suite that can be
     - description: Name of the expectations-suite.
 
 ### POST `<dynamock-path-base>/expectations-suite/load`
-Restore the state of registered expectations to a stored expectations-suite.
+Register expectations stored in an expectations-suite with their original expectation ids.
+Registered expectations which are identical to expectations in the loaded suite will have their ids and responses overridden with the respective values in the suite.
 
 **Query Parameters:**
 - suite_name:
     - type: String
     - required: true
     - description: Name of the expectations-suite.
+    
+**Response Body Parameters:**
+- suite_load_info:
+    - type: Array of [LoadInfo](#loadinfo-object) Objects
+    - required: true
 
 ----------------------------------------------
 
@@ -168,6 +175,17 @@ Restore the state of registered expectations to a stored expectations-suite.
     - response:
         - type: [Response](#response-object) Object
         - required: true
+        
+##### LoadInfo Object:
+- properties:
+    - expectation_id:
+        - type: String
+        - required: true
+        - description: The unique expectation id loaded from the expectation suite.
+    - did_overwrite_response:
+        - type: boolean
+        - required: true
+        - description: Indicates if the response registered with the expectation that is associated with the expectation id overwrites a response previously registered with the expectation.
 
 ##### Expectation Object:
 - properties:
