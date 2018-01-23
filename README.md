@@ -1,5 +1,6 @@
 # Dynamock Server
-A mock-server designed to replicate the classic unit-test mocking experience. Setup an API expectation and response and receive the registered response when an API call matching the registered expectation is made. 
+A mock-server designed to replicate the classic unit-test mocking experience.
+Setup an API expectation and response and receive the registered response when an API call matching the registered expectation is made. 
 
 ###### Basic Usage
 When designing automated tests for a service with external web dependencies simply:
@@ -11,14 +12,21 @@ When designing automated tests for a service with external web dependencies simp
 ## Deployment
 - Ensure Java 8 or higher is installed.
 - Download the JAR file of the latest [release](releases/README.md).
-- Run `java -jar DynamockServer-x.y.z.jar [-http.port=:<port-number>] [-dynamock.path.base=<dynamock-path-base>]`, where `x.y.z` is the version number. The arguments are as follows:
-    - **http.port**: An integer in the range [2, 65534], prefixed with `:`, specifying the http port the server runs on. For example, providing `-http.port=:1234` deploys a Dynamock instance listening on port `1234`. If not provided this value defaults to `:8888`. This feature can be used to deploy multiple DynamockServer instances for different consumers, to avoid collisions. 
-    - **dynamock.path.base**: This value prefixes Dynamock API url-paths. For example, `-dynamock.path.base=dynamock/test` or `-dynamock.path.base=/dynamock/test` both result in a net url path `/dynamock/test/expectations` for the Dynamock API url-path `<dynamock-path-base>/expectations`. If not provided the net url-path would be `/expectations`. This feature can be used to avoid collisions on mocked http requests and the dynamock API.  
+- Run `java -jar DynamockServer-x.y.z.jar [-http.port=:<port-number>] [-dynamock.path.base=<dynamock-path-base>]`, where `x.y.z` is the version number.
+The arguments are as follows:
+    - **http.port**: An integer in the range [2, 65534], prefixed with `:`, specifying the http port the server runs on.
+    For example, providing `-http.port=:1234` deploys a Dynamock instance listening on port `1234`.
+    If not provided this value defaults to `:8888`. This feature can be used to deploy multiple DynamockServer instances for different consumers, to avoid collisions. 
+    - **dynamock.path.base**: This value prefixes Dynamock API url-paths.
+    For example, `-dynamock.path.base=dynamock/test` or `-dynamock.path.base=/dynamock/test` both result in a net url path `/dynamock/test/expectations` for the Dynamock API url-path `<dynamock-path-base>/expectations`.
+    If not provided the net url-path would be `/expectations`.
+    This feature can be used to avoid collisions on mocked http requests and the dynamock API.  
 
 ## Dynamock API
 
 ### PUT `<dynamock-path-base>/expectations`
-Setup a mocked response by registering an expectation and the response to return when the expectation is positively matched. An expectation name must also be provided and can be used by the client to associate the returned expectation ids to their respective registered expectations.  
+Setup a mocked response by registering an expectation and the response to return when the expectation is positively matched.
+An expectation name must also be provided and can be used by the client to associate the returned expectation ids to their respective registered expectations.  
 
 **Content-Type:** application/json
 
@@ -70,7 +78,8 @@ Clear registered expectations.
 - expectation_ids:
     - type: Array of String
     - required: false
-    - description: Ids of the expectations to de-register. When `null` or not provided clears all expectations.  
+    - description: Ids of the expectations to de-register.
+    When `null` or not provided clears all expectations.  
 
 ### GET `<dynamock-path-base>/expectations`
 List all registered mock setups.
@@ -157,23 +166,30 @@ Restore the state of registered expectations to a stored expectations-suite.
     - queryParameters:
         - type: map of string to string
         - required: false
-        - description: The url/query parameters of the expected request. When `null` or not specified it is treated as if an empty map is provided.
+        - description: The url/query parameters of the expected request.
+        When `null` or not specified it is treated as if an empty map is provided.
         - matching rule: Exact case-sensitive match on all key-value pairs.
     - includedHeaderParameters:
         - type: map of string to string
         - required: false
-        - description: Header parameters expected to be included in the request. When `null` or not specified it is treated as if an empty map is provided.
-        - matching rule: Exact case-sensitive match on all key-value pairs. A positive match occurs when all of the specified key-value pairs are found in the request's header map.
+        - description: Header parameters expected to be included in the request.
+        When `null` or not specified it is treated as if an empty map is provided.
+        - matching rule: Exact case-sensitive match on all key-value pairs.
+        A positive match occurs when all of the specified key-value pairs are found in the request's header map.
     - excludedHeaderParameters:
         - type: map of string to string
         - required: false
-        - description: Header parameters expected to be excluded from the request. When `null` or not specified it is treated as if an empty map is provided.
-        - matching rule: Exact case-sensitive match on all key-value pairs. A positive match occurs when none of the specified key-value pairs are found in the request's header map.
+        - description: Header parameters expected to be excluded from the request.
+        When `null` or not specified it is treated as if an empty map is provided.
+        - matching rule: Exact case-sensitive match on all key-value pairs.
+        A positive match occurs when none of the specified key-value pairs are found in the request's header map.
     - content:
         - type: string
         - required: false
-        - description: The string content expected to be included in the request. When `null` or not specified it is treated as if an empty string is provided.
-        - matching rule: If the string is valid Json then a positive match occurs on a request with equivalent Json, Json property names are matched case-sensitive. When the specified content is not valid Json then a positive match occurs on exact case-sensitive match.
+        - description: The string content expected to be included in the request.
+        When `null` or not specified it is treated as if an empty string is provided.
+        - matching rule: If the string is valid Json then a positive match occurs on a request with equivalent Json, Json property names are matched case-sensitive.
+        When the specified content is not valid Json then a positive match occurs on exact case-sensitive match.
         
 ##### Response Object:
 - properties:
@@ -195,3 +211,6 @@ Restore the state of registered expectations to a stored expectations-suite.
 - `/expectation-suite` DELETE endpoint
 - Expectation hit-count support, for validating the number of times an expectation is matched.
 - Regex matching on expectation matching.
+
+## Bug Reports / Feature Requests
+To report a bug, feature request or any other constructive comment, please create a detailed GitHub issue with a mention of **@dzegel**. 
