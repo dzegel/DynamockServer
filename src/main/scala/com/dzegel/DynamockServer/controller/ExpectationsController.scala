@@ -41,7 +41,11 @@ object ExpectationsController {
 
   private case class ExpectationsSuiteStorePostRequest(@QueryParam suiteName: String)
 
+  private case class ExpectationsSuiteLoadPostResponseItemDto(expectationId: String, didOverwriteResponse: Boolean)
+
   private case class ExpectationsSuiteLoadPostRequest(@QueryParam suiteName: String)
+
+  private case class ExpectationsSuiteLoadPostResponse(suiteLoadInfo: Seq[ExpectationsSuiteLoadPostResponseItemDto])
 
   private implicit def dtoFromExpectation(expectation: Expectation): ExpectationDto = ExpectationDto(
     expectation.method,
@@ -109,7 +113,13 @@ class ExpectationsController @Inject()(
   }
 
   post(s"$pathBase/expectations-suite/load") { request: ExpectationsSuiteLoadPostRequest =>
-    makeNoContentResponse(expectationService.loadExpectations(request.suiteName))
+    expectationService.loadExpectations(request.suiteName) match {
+      case Success(registerExpectationsOutputs) =>
+        response.ok(body = ExpectationsSuiteLoadPostResponse(
+          registerExpectationsOutputs.map(x => ExpectationsSuiteLoadPostResponseItemDto(x.expectationId, x.didOverwriteResponse))
+        ))
+      case Failure(exception) => response.internalServerError(exception.getMessage)
+    }
   }
 
   private def makeNoContentResponse(`try`: Try[Unit]) = `try` match {

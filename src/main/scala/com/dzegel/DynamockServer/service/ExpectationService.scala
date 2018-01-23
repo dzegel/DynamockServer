@@ -1,6 +1,7 @@
 package com.dzegel.DynamockServer.service
 
 import com.dzegel.DynamockServer.service.ExpectationService._
+import com.dzegel.DynamockServer.service.ExpectationStore.RegisterExpectationResponseReturnValue
 import com.dzegel.DynamockServer.types._
 import com.google.inject.{ImplementedBy, Inject, Singleton}
 
@@ -18,7 +19,7 @@ trait ExpectationService {
 
   def storeExpectations(suiteName: String): Try[Unit]
 
-  def loadExpectations(suiteName: String): Try[Unit]
+  def loadExpectations(suiteName: String): Try[Seq[LoadExpectationsOutput]]
 }
 
 object ExpectationService {
@@ -33,6 +34,8 @@ object ExpectationService {
   case class RegisterExpectationsOutput(expectationId: ExpectationId, clientName: String, didOverwriteResponse: Boolean)
 
   case class GetExpectationsOutput(expectationId: ExpectationId, expectation: Expectation, response: Response)
+
+  case class LoadExpectationsOutput(expectationId: ExpectationId, didOverwriteResponse: Boolean)
 
 }
 
@@ -79,11 +82,12 @@ class DefaultExpectationService @Inject()(expectationStore: ExpectationStore, fi
     fileService.storeExpectationsAsJson(suiteName, registeredExpectations)
   }
 
-  override def loadExpectations(suiteName: String): Try[Unit] = Try {
+  override def loadExpectations(suiteName: String): Try[Seq[LoadExpectationsOutput]] = Try {
     val savedExpectations = fileService.loadExpectationsFromJson(suiteName)
     this.synchronized {
-      savedExpectations.foreach { case (expectationId, expectationResponse) =>
-        expectationStore.registerExpectationResponseWithId(expectationResponse, expectationId)
+      savedExpectations.toSeq.map { case (expectationId, expectationResponse) =>
+        val output = expectationStore.registerExpectationResponseWithId(expectationResponse, expectationId)
+        LoadExpectationsOutput(output.expectationId, output.isResponseUpdated)
       }
     }
   }
