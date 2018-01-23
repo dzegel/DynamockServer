@@ -2,12 +2,12 @@
 
 ## Overview
 A mock-server designed to mimic any api. 
-Setup an API expectation and response and then when an API call matching the registered expectation is made, receive the registered response.
+Simply setup an API expectation and response and then when an API call matching the registered expectation is made, Dynamock Server responds with the registered response.
 
 ###### Use Cases
 
 - Testing: Integration test, an application that relies on web APIs, with a classic unit-test mocking experience.
-- Development: Develop an application that relies on web APIs that are themselves in development or that are currently inaccessible. 
+- Development: Develop an application that relies on web APIs that are themselves in development or currently inaccessible. 
 
 ###### Basic Usage
 When designing automated tests for a service with external web dependencies simply:
@@ -28,6 +28,17 @@ The arguments are as follows:
     For example, `-dynamock.path.base=dynamock/test` or `-dynamock.path.base=/dynamock/test` both result in a net url path `/dynamock/test/expectations` for the Dynamock API url-path `<dynamock-path-base>/expectations`.
     If not provided the net url-path would be `/expectations`.
     This feature can be used to avoid collisions on mocked http requests and the dynamock API.  
+
+## Mocked API
+Any API call made to Dynamock Server is included in the Mocked API, except for API calls that would collide with the [Dynamock API](#dynamock-api).
+To avoid collisions between the Mocked API and the [Dynamock API](#dynamock-api), set the `dynamock.path.base` argument to a unique value that will not collide on any APIs being mocked.
+
+Given an API request that positively matches a registered expectation, the Mocked API will respond with the response registered with the expectation.
+See [PUT /expectations](#put-dynamock-path-baseexpectations) or [POST /expectations-suite/load](#post-dynamock-path-baseexpectations-suiteload) for registering expectations.
+
+Given an API request that does not positively match a registered expectation, the Mocked API responds with a `551` status code along with details of the specific request made to the Mocked API.
+
+The Mocked API responds with a `550` error code for internal server errors, in order not to collide with more common `500` errors.
 
 ## Dynamock API
 
