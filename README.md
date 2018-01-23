@@ -22,7 +22,7 @@
 <small><i><a href='http://ecotrust-canada.github.io/markdown-toc/'>Table of contents generated with markdown-toc</a></i></small>
 
 ## Overview
-A mock-server designed to mimic any api. 
+A mock-server designed to mimic any API. 
 Simply setup an API expectation and response and then when an API call matching the registered expectation is made, Dynamock Server responds with the registered response.
 
 ###### Use Cases
