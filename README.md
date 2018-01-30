@@ -52,14 +52,17 @@ The arguments are as follows:
 
 ## Mocked API
 Any API call made to Dynamock Server is included in the Mocked API, except for API calls that would collide with the [Dynamock API](#dynamock-api).
-To avoid collisions between the Mocked API and the [Dynamock API](#dynamock-api), set the `dynamock.path.base` argument to a unique value that will not collide on any APIs being mocked.
 
 Given an API request that positively matches a registered expectation, the Mocked API will respond with the response registered with the expectation.
 See [PUT /expectations](#put-dynamock-path-baseexpectations) or [POST /expectations-suite/load](#post-dynamock-path-baseexpectations-suiteload) for registering expectations.
 
+It is possible for an API request to positively match multiple registered expectations. This would occur when there are multiple expectations registered which are identical except for the included and excluded header parameters. In this scenario the most constrained expectation is selected; that is, the expectation with the greatest number of included and excluded header parameters specified. In the event that there are multiple equally constrained expectations that positively match the API request, one of those expectations is selected arbitrarily but deterministically.
+
 Given an API request that does not positively match a registered expectation, the Mocked API responds with a `551` status code along with details of the specific request made to the Mocked API.
 
 The Mocked API responds with a `550` error code for internal server errors, in order not to collide with more common `500` errors.
+
+To avoid collisions between the Mocked API and the [Dynamock API](#dynamock-api), set the `dynamock.path.base` argument to a unique value that will not collide on any APIs being mocked.
 
 ## Dynamock API
 
