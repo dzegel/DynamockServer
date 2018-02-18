@@ -113,7 +113,11 @@ class DefaultExpectationStore @Inject()(randomStringGenerator: RandomStringGener
     expectationIds.foreach { id =>
       idToExpectationResponse.remove(id).foreach {
         case (expectation, _) =>
-          expectationKeyToHeaderParamRegistry.getOrElse(expectation, TrieMap.empty).remove(expectation.headerParameters)
+          val headerParamRegistry = expectationKeyToHeaderParamRegistry.getOrElse(expectation, TrieMap.empty)
+          headerParamRegistry.remove(expectation.headerParameters)
+          if (headerParamRegistry.isEmpty) {
+            expectationKeyToHeaderParamRegistry.remove(expectation)
+          }
       }
     }
   }
