@@ -3,7 +3,7 @@ organization := "com.dzegel"
 homepage := Some(url("https://github.com/dzegel/DynamockServer"))
 
 val applicationName = "DynamockServer"
-val applicationVersion = "2.0.0"
+val applicationVersion = "2.0.1"
 
 name := applicationName
 
