@@ -28,22 +28,27 @@ object ExpectationStore {
 
   case class RegisterExpectationResponseReturnValue(expectationId: ExpectationId, isResponseUpdated: Boolean)
 
+  private[service] case class ExpectationKey(method: Method, path: Path, queryParams: QueryParams, content: Content)
+
+  object ExpectationKey {
+    implicit def apply(expectation: Expectation): ExpectationKey = ExpectationKey(expectation.method, expectation.path, expectation.queryParams, expectation.content)
+
+    implicit def apply(request: Request): ExpectationKey = ExpectationKey(request.method, request.path, request.queryParams, request.content)
+  }
+
 }
 
 @Singleton
 class DefaultExpectationStore @Inject()(randomStringGenerator: RandomStringGenerator) extends ExpectationStore {
 
-  //this is the primary store
   private val idToExpectationResponse = TrieMap.empty[ExpectationId, ExpectationResponse]
-
-  //this secondary store is used for faster expectation lookup/matching operations
-  private val methodRegistry: MethodRegistry = TrieMap.empty[Method, PathRegistry]
+  private val expectationKeyToHeaderParamRegistry = TrieMap.empty[ExpectationKey, HeaderParamRegistry]
 
   override def registerExpectationResponse(expectationResponse: ExpectationResponse)
   : RegisterExpectationResponseReturnValue = this.synchronized {
 
     val (expectation, response) = expectationResponse
-    val headerParamRegistry = getHeaderParamRegistry(expectation)
+    val headerParamRegistry = expectationKeyToHeaderParamRegistry.getOrElseUpdate(expectation, TrieMap.empty)
     val expectationId = headerParamRegistry.getOrElseUpdate(expectation.headerParameters, randomStringGenerator.next())
     val oldExpectationResponse = idToExpectationResponse.get(expectationId)
 
@@ -60,7 +65,7 @@ class DefaultExpectationStore @Inject()(randomStringGenerator: RandomStringGener
   : RegisterExpectationResponseReturnValue = this.synchronized {
 
     val (expectation, response) = expectationResponse
-    val headerParamRegistry = getHeaderParamRegistry(expectation)
+    val headerParamRegistry = expectationKeyToHeaderParamRegistry.getOrElseUpdate(expectation, TrieMap.empty)
     val oldExpectationId = headerParamRegistry.get(expectation.headerParameters)
     val oldExpectationResponse = oldExpectationId.flatMap(idToExpectationResponse.get)
 
@@ -75,7 +80,7 @@ class DefaultExpectationStore @Inject()(randomStringGenerator: RandomStringGener
   }
 
   override def getIdsForMatchingExpectations(request: Request): Set[ExpectationId] = this.synchronized {
-    getHeaderParamRegistry(request).collect { // find valid options
+    expectationKeyToHeaderParamRegistry.getOrElse(request, TrieMap.empty).collect { // find valid options
       case (HeaderParameters(included, excluded), expectationId)
         if included.subsetOf(request.headers) && excluded.intersect(request.headers).isEmpty => expectationId
     }.toSet
@@ -100,7 +105,7 @@ class DefaultExpectationStore @Inject()(randomStringGenerator: RandomStringGener
   }
 
   override def clearAllExpectations(): Unit = this.synchronized {
-    methodRegistry.clear()
+    expectationKeyToHeaderParamRegistry.clear()
     idToExpectationResponse.clear()
   }
 
@@ -108,21 +113,12 @@ class DefaultExpectationStore @Inject()(randomStringGenerator: RandomStringGener
     expectationIds.foreach { id =>
       idToExpectationResponse.remove(id).foreach {
         case (expectation, _) =>
-          val headerParamRegistry = getHeaderParamRegistry(expectation)
-          headerParamRegistry.remove(expectation.headerParameters)
+          expectationKeyToHeaderParamRegistry.getOrElse(expectation, TrieMap.empty).remove(expectation.headerParameters)
       }
     }
   }
 
   override def getAllExpectations: Set[(ExpectationId, ExpectationResponse)] = this.synchronized {
     idToExpectationResponse.toSet
-  }
-
-  private def getHeaderParamRegistry(expectationStoreParameters: ExpectationStoreParameters): HeaderParamRegistry = {
-    val pathRegistry = methodRegistry.getOrElseUpdate(expectationStoreParameters.method, TrieMap.empty)
-    val queryParamRegistry = pathRegistry.getOrElseUpdate(expectationStoreParameters.path, TrieMap.empty)
-    val contentRegistry = queryParamRegistry.getOrElseUpdate(expectationStoreParameters.queryParams, TrieMap.empty)
-    val headerParamRegistry = contentRegistry.getOrElseUpdate(expectationStoreParameters.content, TrieMap.empty)
-    headerParamRegistry
   }
 }

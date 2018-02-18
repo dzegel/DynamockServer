@@ -103,15 +103,15 @@ class MockControllerTests extends FeatureTest with MockFactory with Matchers {
     val excludedHeaders = expectation.headerParameters.excluded
     (mockExpectationService.getResponse _)
       .expects(new FunctionAdapter1[Request, Boolean](req =>
-        compareExpectationStoreParameters(expectation, req) &&
+        compareExpectationToRequest(expectation, req) &&
           includedHeaders.subsetOf(req.headers) &&
           excludedHeaders.intersect(req.headers).isEmpty))
       .returning(returnValue)
   }
 
-  private def compareExpectationStoreParameters(left: ExpectationStoreParameters, right: ExpectationStoreParameters) =
-    left.path == right.path &&
-      left.method == right.method &&
-      left.queryParams == right.queryParams &&
-      left.content == right.content
+  private def compareExpectationToRequest(expectation: Expectation, request: Request) =
+    expectation.path == request.path &&
+      expectation.method == request.method &&
+      expectation.queryParams == request.queryParams &&
+      expectation.content == request.content
 }
