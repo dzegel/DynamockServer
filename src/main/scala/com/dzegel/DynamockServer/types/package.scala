@@ -8,12 +8,6 @@ package object types {
   type QueryParams = Map[String, String]
   type HeaderSet = Set[(String, String)]
   type ExpectationId = String
-
-  type MethodRegistry = TrieMap[Method, PathRegistry]
-  type PathRegistry = TrieMap[Path, QueryParamRegistry]
-  type QueryParamRegistry = TrieMap[QueryParams, ContentRegistry]
-  type ContentRegistry = TrieMap[Content, HeaderParamRegistry]
   type HeaderParamRegistry = TrieMap[HeaderParameters, ExpectationId]
-
   type ExpectationResponse = (Expectation, Response)
 }
