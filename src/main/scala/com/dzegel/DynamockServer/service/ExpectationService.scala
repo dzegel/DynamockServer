@@ -1,7 +1,6 @@
 package com.dzegel.DynamockServer.service
 
 import com.dzegel.DynamockServer.service.ExpectationService._
-import com.dzegel.DynamockServer.service.ExpectationStore.RegisterExpectationResponseReturnValue
 import com.dzegel.DynamockServer.types._
 import com.google.inject.{ImplementedBy, Inject, Singleton}
 
@@ -35,7 +34,9 @@ object ExpectationService {
 
   case class GetExpectationsOutput(expectationId: ExpectationId, expectation: Expectation, response: Response)
 
-  case class LoadExpectationsOutput(expectationId: ExpectationId, didOverwriteResponse: Boolean)
+  case class LoadExpectationsOverwriteInfo(oldExpectationId: ExpectationId, didOverwriteResponse: Boolean)
+
+  case class LoadExpectationsOutput(expectationId: ExpectationId, overwriteInfo: Option[LoadExpectationsOverwriteInfo])
 
 }
 
@@ -87,7 +88,7 @@ class DefaultExpectationService @Inject()(expectationStore: ExpectationStore, fi
     this.synchronized {
       savedExpectations.toSeq.map { case (expectationId, expectationResponse) =>
         val output = expectationStore.registerExpectationResponseWithId(expectationResponse, expectationId)
-        LoadExpectationsOutput(output.expectationId, output.isResponseUpdated)
+        LoadExpectationsOutput(expectationId, output.map(x => LoadExpectationsOverwriteInfo(x.oldExpectationId, x.isResponseUpdated)))
       }
     }
   }

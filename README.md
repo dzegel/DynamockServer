@@ -14,6 +14,7 @@
       - [ExpectationInfo Object](#expectationinfo-object)
       - [ExpectationResponse Object](#expectationresponse-object)
       - [LoadInfo Object](#loadinfo-object)
+      - [LoadInfoExpectationOverwrite](#loadinfoexpectationoverwrite-object) Object
       - [Expectation Object](#expectation-object)
       - [Response Object](#response-object)
 - [Planned work](#planned-work)
@@ -206,10 +207,21 @@ Registered expectations which are identical to expectations in the loaded suite 
         - type: String
         - required: true
         - description: The unique expectation id loaded from the expectation suite.
+    - overwrite_info:
+        - type: [LoadInfoExpectationOverwrite](#loadinfoexpectationoverwrite-object) Object
+        - required: false
+        - description: When the expectation loaded from the suite matches an expectation previously registered, this object indicates exactly how that expectation was overwritten.
+
+##### LoadInfoExpectationOverwrite Object:
+- properties:
+    - old_expectation_id
+        - type: string
+        - required: true
+        - description: The expectation id previously assigned to the expectation loaded from the suite. 
     - did_overwrite_response:
         - type: boolean
         - required: true
-        - description: Indicates if the response registered with the expectation that is associated with the expectation id overwrites a response previously registered with the expectation.
+        - description: Indicates if the response, previously registered with the expectation, is identical to the response loaded from the suite or if it was overwritten.
 
 ##### Expectation Object:
 - properties:

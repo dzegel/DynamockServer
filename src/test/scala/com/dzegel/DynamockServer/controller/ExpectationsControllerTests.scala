@@ -291,13 +291,42 @@ class ExpectationsControllerTests extends FeatureTest with MockFactory with Matc
 
   test("POST /test/expectations-suite/load should call load expectations and return 200 on success") {
     val suiteName = "SomeName"
-    setup_ExpectationService_LoadExpectations(suiteName, Success(Seq(LoadExpectationsOutput(expectationId, didOverwriteResponse = true))))
+    val expectationId1 = "id_1"
+    val expectationId2 = "id_2"
+    val expectationId3 = "id_3"
+    val oldExpectationId1 = "old_id_1"
+    val oldExpectationId2 = "old_id_2"
+    setup_ExpectationService_LoadExpectations(
+      suiteName,
+      Success(Seq(
+        LoadExpectationsOutput(expectationId1, Some(LoadExpectationsOverwriteInfo(oldExpectationId1, didOverwriteResponse = true))),
+        LoadExpectationsOutput(expectationId2, Some(LoadExpectationsOverwriteInfo(oldExpectationId2, didOverwriteResponse = false))),
+        LoadExpectationsOutput(expectationId3, None)
+      ))
+    )
 
     server.httpPost(
       path = s"/test/expectations-suite/load?suite_name=$suiteName",
       postBody = "",
       andExpect = Status.Ok,
-      withJsonBody = s"""{ "suite_load_info": [{ "expectation_id": "$expectationId", "did_overwrite_response": true }] }"""
+      withJsonBody =
+        s"""{
+           |"suite_load_info": [{
+           |    "expectation_id": "$expectationId1",
+           |    "overwrite_info": {
+           |      "old_expectation_id": "$oldExpectationId1",
+           |      "did_overwrite_response": true
+           |    }
+           |  },{
+           |    "expectation_id": "$expectationId2",
+           |    "overwrite_info": {
+           |      "old_expectation_id": "$oldExpectationId2",
+           |      "did_overwrite_response": false
+           |    }
+           |  },{
+           |    "expectation_id": "$expectationId3"
+           |  }]
+           |}""".stripMargin
     )
   }
 

@@ -1,7 +1,7 @@
 package com.dzegel.DynamockServer.service
 
 import com.dzegel.DynamockServer.service.ExpectationService._
-import com.dzegel.DynamockServer.service.ExpectationStore.RegisterExpectationResponseReturnValue
+import com.dzegel.DynamockServer.service.ExpectationStore._
 import com.dzegel.DynamockServer.types._
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.{FunSuite, Matchers}
@@ -149,20 +149,28 @@ class ExpectationServiceTests extends FunSuite with MockFactory with Matchers {
   }
 
   test("loadExpectations returns Success") {
+    val oldExpectationId = "some old id"
+    val expectationId3 = "id_3"
     val expectation2 = Expectation("2", "2", Map(), null, null)
+    val expectation3 = Expectation("3", "3", Map(), null, null)
     val response2 = Response(200, "some content", Map())
+    val response3 = Response(300, "some content", Map())
     val expectationResponse2 = expectation2 -> response2
-    val expectationResponses = Set(expectationId1 -> expectationResponse, expectationId2 -> (expectation2 -> response2))
-    val storeReturnValue1 = RegisterExpectationResponseReturnValue(expectationId1, isResponseUpdated = false)
-    val storeReturnValue2 = RegisterExpectationResponseReturnValue(expectationId2, isResponseUpdated = true)
-    val serviceReturnValue1 = LoadExpectationsOutput(expectationId1, didOverwriteResponse = false)
-    val serviceReturnValue2 = LoadExpectationsOutput(expectationId2, didOverwriteResponse = true)
+    val expectationResponse3 = expectation3 -> response3
+    val expectationResponses = Set(expectationId1 -> expectationResponse, expectationId2 -> expectationResponse2, expectationId3 -> expectationResponse3)
+    val storeReturnValue1 = None
+    val storeReturnValue2 = Some(RegisterExpectationResponseWithIdReturnValue(oldExpectationId, isResponseUpdated = true))
+    val storeReturnValue3 = Some(RegisterExpectationResponseWithIdReturnValue(oldExpectationId, isResponseUpdated = false))
+    val serviceReturnValue1 = LoadExpectationsOutput(expectationId1, None)
+    val serviceReturnValue2 = LoadExpectationsOutput(expectationId2, Some(LoadExpectationsOverwriteInfo(oldExpectationId, didOverwriteResponse = true)))
+    val serviceReturnValue3 = LoadExpectationsOutput(expectationId3, Some(LoadExpectationsOverwriteInfo(oldExpectationId, didOverwriteResponse = false)))
 
     setup_ExpectationsFileService_LoadExpectationsFromJson(expectationSuiteName, Right(expectationResponses))
     setup_ExpectationStore_RegisterExpectationResponseWithId(expectationId1, expectationResponse, Right(storeReturnValue1))
     setup_ExpectationStore_RegisterExpectationResponseWithId(expectationId2, expectationResponse2, Right(storeReturnValue2))
+    setup_ExpectationStore_RegisterExpectationResponseWithId(expectationId3, expectationResponse3, Right(storeReturnValue3))
 
-    expectationService.loadExpectations(expectationSuiteName) shouldBe Success(Seq(serviceReturnValue1, serviceReturnValue2))
+    expectationService.loadExpectations(expectationSuiteName) shouldBe Success(Seq(serviceReturnValue1, serviceReturnValue2, serviceReturnValue3))
   }
 
   test("loadExpectations returns Failure when load object from json fails") {
@@ -176,10 +184,9 @@ class ExpectationServiceTests extends FunSuite with MockFactory with Matchers {
     val response2 = Response(200, "some content", Map())
     val expectationResponse2 = expectation2 -> response2
     val expectationResponses = Set(expectationId1 -> expectationResponse, expectationId2 -> (expectation2 -> response2))
-    val returnValue1 = RegisterExpectationResponseReturnValue(expectationId1, isResponseUpdated = false)
 
     setup_ExpectationsFileService_LoadExpectationsFromJson(expectationSuiteName, Right(expectationResponses))
-    setup_ExpectationStore_RegisterExpectationResponseWithId(expectationId1, expectationResponse, Right(returnValue1))
+    setup_ExpectationStore_RegisterExpectationResponseWithId(expectationId1, expectationResponse, Right(None))
     setup_ExpectationStore_RegisterExpectationResponseWithId(expectationId2, expectationResponse2, Left(exception))
 
     expectationService.loadExpectations(expectationSuiteName) should equal(Failure(exception))
@@ -200,7 +207,7 @@ class ExpectationServiceTests extends FunSuite with MockFactory with Matchers {
   private def setup_ExpectationStore_RegisterExpectationResponseWithId(
     expectationId: ExpectationId,
     expectationResponse: ExpectationResponse,
-    exceptionOrReturnValue: Either[Exception, RegisterExpectationResponseReturnValue]
+    exceptionOrReturnValue: Either[Exception, Option[RegisterExpectationResponseWithIdReturnValue]]
   ): Unit = {
     val callHandler = (mockExpectationStore.registerExpectationResponseWithId _).expects(expectationResponse, expectationId)
     exceptionOrReturnValue match {
