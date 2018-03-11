@@ -11,7 +11,7 @@ trait ExpectationStore {
 
   def registerExpectationResponse(expectationResponse: ExpectationResponse): RegisterExpectationResponseReturnValue
 
-  def registerExpectationResponseWithId(expectationResponse: ExpectationResponse, id: ExpectationId): RegisterExpectationResponseReturnValue
+  def registerExpectationResponseWithId(expectationResponse: ExpectationResponse, id: ExpectationId): Option[RegisterExpectationResponseWithIdReturnValue]
 
   def getIdsForMatchingExpectations(request: Request): Set[ExpectationId]
 
@@ -27,6 +27,8 @@ trait ExpectationStore {
 object ExpectationStore {
 
   case class RegisterExpectationResponseReturnValue(expectationId: ExpectationId, isResponseUpdated: Boolean)
+
+  case class RegisterExpectationResponseWithIdReturnValue(oldExpectationId: ExpectationId, isResponseUpdated: Boolean)
 
   private[service] case class ExpectationKey(method: Method, path: Path, queryParams: QueryParams, content: Content)
 
@@ -62,7 +64,7 @@ class DefaultExpectationStore @Inject()(randomStringGenerator: RandomStringGener
   }
 
   override def registerExpectationResponseWithId(expectationResponse: ExpectationResponse, expectationId: ExpectationId)
-  : RegisterExpectationResponseReturnValue = this.synchronized {
+  : Option[RegisterExpectationResponseWithIdReturnValue] = this.synchronized {
 
     val (expectation, response) = expectationResponse
     val headerParamRegistry = expectationKeyToHeaderParamRegistry.getOrElseUpdate(expectation, TrieMap.empty)
@@ -73,10 +75,12 @@ class DefaultExpectationStore @Inject()(randomStringGenerator: RandomStringGener
     oldExpectationId.foreach(idToExpectationResponse.remove)
     idToExpectationResponse.put(expectationId, expectationResponse)
 
-    RegisterExpectationResponseReturnValue(
-      expectationId,
-      isResponseUpdated = oldExpectationResponse.exists { case (_, oldResponse) => oldResponse != response }
-    )
+    oldExpectationId.map { oldId =>
+      RegisterExpectationResponseWithIdReturnValue(
+        oldId,
+        isResponseUpdated = oldExpectationResponse.exists { case (_, oldResponse) => oldResponse != response }
+      )
+    }
   }
 
   override def getIdsForMatchingExpectations(request: Request): Set[ExpectationId] = this.synchronized {

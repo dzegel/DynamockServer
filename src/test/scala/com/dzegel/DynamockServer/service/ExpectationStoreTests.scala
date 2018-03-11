@@ -1,6 +1,6 @@
 package com.dzegel.DynamockServer.service
 
-import com.dzegel.DynamockServer.service.ExpectationStore.RegisterExpectationResponseReturnValue
+import com.dzegel.DynamockServer.service.ExpectationStore._
 import com.dzegel.DynamockServer.types._
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.{BeforeAndAfterEach, FunSuite, Matchers}
@@ -281,18 +281,25 @@ class ExpectationStoreTests extends FunSuite with MockFactory with Matchers with
     expectationStore.getAllExpectations shouldBe Set(expectationResponseWithId2)
   }
 
-  test("registerExpectationResponseWithId adds/overrides expectation with provided id") {
+  test("registerExpectationResponseWithId adds/overrides expectation with provided id and returns correct value") {
     val expectation = getExpectation(path = "path1", method = "GET", queryParams = Map("param1" -> "value2"), content = Content("Some Content"))
 
     expectationStore.getAllExpectations shouldBe empty
 
-    expectationStore.registerExpectationResponseWithId(expectation -> response100, id1)
+    val response1 = expectationStore.registerExpectationResponseWithId(expectation -> response100, id1)
+    response1 shouldBe None
 
     expectationStore.getAllExpectations shouldBe Set(id1 -> (expectation -> response100))
 
-    expectationStore.registerExpectationResponseWithId(expectation -> response200, id2)
+    val response2 = expectationStore.registerExpectationResponseWithId(expectation -> response200, id2)
+    response2 should contain(RegisterExpectationResponseWithIdReturnValue(oldExpectationId = id1, isResponseUpdated = true))
 
     expectationStore.getAllExpectations shouldBe Set(id2 -> (expectation -> response200))
+
+    val response3 = expectationStore.registerExpectationResponseWithId(expectation -> response200, id3)
+    response3 should contain(RegisterExpectationResponseWithIdReturnValue(oldExpectationId = id2, isResponseUpdated = false))
+
+    expectationStore.getAllExpectations shouldBe Set(id3 -> (expectation -> response200))
   }
 
   private def testMultipleRegistrationsWork(expectation1: Expectation, request1: Request, expectation2: Expectation, request2: Request) {
