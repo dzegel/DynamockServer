@@ -313,18 +313,21 @@ class ExpectationsControllerTests extends FeatureTest with MockFactory with Matc
         s"""{
            |"suite_load_info": [{
            |    "expectation_id": "$expectationId1",
+           |    "did_overwrite_response": true,
            |    "overwrite_info": {
            |      "old_expectation_id": "$oldExpectationId1",
            |      "did_overwrite_response": true
            |    }
            |  },{
            |    "expectation_id": "$expectationId2",
+           |    "did_overwrite_response": false,
            |    "overwrite_info": {
            |      "old_expectation_id": "$oldExpectationId2",
            |      "did_overwrite_response": false
            |    }
            |  },{
-           |    "expectation_id": "$expectationId3"
+           |    "expectation_id": "$expectationId3",
+           |    "did_overwrite_response": false
            |  }]
            |}""".stripMargin
     )

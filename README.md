@@ -207,6 +207,10 @@ Registered expectations which are identical to expectations in the loaded suite 
         - type: String
         - required: true
         - description: The unique expectation id loaded from the expectation suite.
+    - did_overwrite_response:
+        - type: boolean
+        - required: true
+        - description: DEPRECATED this will be removed in a future release. When `overwrite_info` is provided this contains the same value as `overwrite_info.did_overwrite_response` otherwise it contains false.
     - overwrite_info:
         - type: [LoadInfoExpectationOverwrite](#loadinfoexpectationoverwrite-object) Object
         - required: false
