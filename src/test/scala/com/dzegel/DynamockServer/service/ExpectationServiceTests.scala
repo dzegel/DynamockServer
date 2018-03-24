@@ -192,7 +192,6 @@ class ExpectationServiceTests extends FunSuite with MockFactory with Matchers {
 
   test("loadExpectations returns Success") {
     val oldExpectationId2 = "some old id 2"
-    val oldExpectationId3 = "some old id 3"
     val expectationId3 = "id_3"
     val expectation2 = Expectation("2", "2", Map(), null, null)
     val expectation3 = Expectation("3", "3", Map(), null, null)
@@ -203,16 +202,16 @@ class ExpectationServiceTests extends FunSuite with MockFactory with Matchers {
     val expectationResponses = Set(expectationId1 -> expectationResponse, expectationId2 -> expectationResponse2, expectationId3 -> expectationResponse3)
     val storeReturnValue1 = None
     val storeReturnValue2 = Some(RegisterExpectationResponseWithIdReturnValue(oldExpectationId2, isResponseUpdated = true))
-    val storeReturnValue3 = Some(RegisterExpectationResponseWithIdReturnValue(oldExpectationId3, isResponseUpdated = false))
-    val serviceReturnValue1 = LoadExpectationsOutput(expectationId1, None)
-    val serviceReturnValue2 = LoadExpectationsOutput(expectationId2, Some(LoadExpectationsOverwriteInfo(oldExpectationId2, didOverwriteResponse = true)))
-    val serviceReturnValue3 = LoadExpectationsOutput(expectationId3, Some(LoadExpectationsOverwriteInfo(oldExpectationId3, didOverwriteResponse = false)))
+    val storeReturnValue3 = Some(RegisterExpectationResponseWithIdReturnValue(expectationId3, isResponseUpdated = false))
+    val serviceReturnValue1 = LoadExpectationsOutput(expectationId1, None) //register previously unregistered expectation
+    val serviceReturnValue2 = LoadExpectationsOutput(expectationId2, Some(LoadExpectationsOverwriteInfo(oldExpectationId2, didOverwriteResponse = true))) //register previously registered expectation with a new id
+    val serviceReturnValue3 = LoadExpectationsOutput(expectationId3, Some(LoadExpectationsOverwriteInfo(expectationId3, didOverwriteResponse = false))) //register previously registered expectation with the old id
 
     setup_ExpectationsFileService_LoadExpectationsFromJson(expectationSuiteName, Right(expectationResponses))
     setup_ExpectationStore_RegisterExpectationResponseWithId(expectationId1, expectationResponse, Right(storeReturnValue1))
     setup_ExpectationStore_RegisterExpectationResponseWithId(expectationId2, expectationResponse2, Right(storeReturnValue2))
     setup_ExpectationStore_RegisterExpectationResponseWithId(expectationId3, expectationResponse3, Right(storeReturnValue3))
-    setup_HitCountService_Delete(Seq(oldExpectationId2, oldExpectationId3))
+    setup_HitCountService_Delete(Seq(oldExpectationId2))
     setup_HitCountService_Register(Seq(expectationId1, expectationId2, expectationId3))
 
     expectationService.loadExpectations(expectationSuiteName) shouldBe Success(Seq(serviceReturnValue1, serviceReturnValue2, serviceReturnValue3))
