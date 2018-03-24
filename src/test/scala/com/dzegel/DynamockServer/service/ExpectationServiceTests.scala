@@ -12,7 +12,8 @@ class ExpectationServiceTests extends FunSuite with MockFactory with Matchers {
 
   private val mockExpectationStore = mock[ExpectationStore]
   private val mockExpectationsFileService = mock[ExpectationsFileService]
-  private val expectationService = new DefaultExpectationService(mockExpectationStore, mockExpectationsFileService)
+  private val mockHitCountService = mock[HitCountService]
+  private val expectationService = new DefaultExpectationService(mockExpectationStore, mockExpectationsFileService, mockHitCountService)
 
   private val expectation = Expectation("POST", "somePath", Map.empty, HeaderParameters(Set.empty, Set.empty), Content(""))
   private val request = Request(expectation.method, expectation.path, expectation.queryParams, expectation.headerParameters.included, expectation.content)
@@ -42,6 +43,8 @@ class ExpectationServiceTests extends FunSuite with MockFactory with Matchers {
       Right(RegisterExpectationResponseReturnValue(expectationId2, isResponseUpdated = true))
     )
 
+    setup_HitCountService_Register(Seq(expectationId1, expectationId2))
+
     expectationService.registerExpectations(Set(
       RegisterExpectationsInput(expectation, response, clientName1),
       RegisterExpectationsInput(expectation2, response, clientName2)
@@ -51,7 +54,7 @@ class ExpectationServiceTests extends FunSuite with MockFactory with Matchers {
     ))
   }
 
-  test("registerExpectation returns Failure on Exception") {
+  test("registerExpectation returns Failure on Exception from ExpectationStore") {
     val exception = new Exception()
     setup_ExpectationStore_RegisterExpectationResponse(expectation, response, Left(exception))
 
@@ -59,8 +62,22 @@ class ExpectationServiceTests extends FunSuite with MockFactory with Matchers {
       Failure(exception)
   }
 
+  test("registerExpectation returns Failure on Exception from HitCountService") {
+    val exception = new Exception()
+    setup_ExpectationStore_RegisterExpectationResponse(
+      expectation,
+      response,
+      Right(RegisterExpectationResponseReturnValue(expectationId1, isResponseUpdated = false)))
+
+    setup_HitCountService_Register(Seq(expectationId1), Some(exception))
+
+    expectationService.registerExpectations(Set(RegisterExpectationsInput(expectation, response, clientName1))) shouldBe
+      Failure(exception)
+  }
+
   test("getResponse returns Success of response") {
     setup_ExpectationStore_GetIdsForMatchingExpectations(request, Right(expectationIds))
+    setup_HitCountService_Increment(expectationIds.toSeq)
     setup_ExpectationStore_GetMostConstrainedExpectationWithId(expectationIds, Right(Some(expectationId1 -> expectationResponse)))
 
     expectationService.getResponse(request) should equal(Success(Some(response)))
@@ -68,6 +85,7 @@ class ExpectationServiceTests extends FunSuite with MockFactory with Matchers {
 
   test("getResponse returns Success of None") {
     setup_ExpectationStore_GetIdsForMatchingExpectations(request, Right(expectationIds))
+    setup_HitCountService_Increment(expectationIds.toSeq)
     setup_ExpectationStore_GetMostConstrainedExpectationWithId(expectationIds, Right(None))
 
     expectationService.getResponse(request) should equal(Success(None))
@@ -79,33 +97,57 @@ class ExpectationServiceTests extends FunSuite with MockFactory with Matchers {
     expectationService.getResponse(request) should equal(Failure(exception))
   }
 
+  test("getResponse returns Failure when HitCountService.Increment fails") {
+    setup_ExpectationStore_GetIdsForMatchingExpectations(request, Right(expectationIds))
+    setup_HitCountService_Increment(expectationIds.toSeq, Some(exception))
+
+    expectationService.getResponse(request) should equal(Failure(exception))
+  }
+
   test("getResponse returns Failure when ExpectationStore.getMostConstrainedExpectationWithId fails") {
     setup_ExpectationStore_GetIdsForMatchingExpectations(request, Right(expectationIds))
+    setup_HitCountService_Increment(expectationIds.toSeq)
     setup_ExpectationStore_GetMostConstrainedExpectationWithId(expectationIds, Left(exception))
 
     expectationService.getResponse(request) should equal(Failure(exception))
   }
 
-  test("clearExpectations(None) returns Success") {
+  test("clearAllExpectations(None) returns Success") {
     setup_ExpectationStore_ClearAllExpectations()
+    setup_HitCountService_DeleteAll()
 
     expectationService.clearExpectations(None) should equal(Success(()))
   }
 
-  test("clearAllExpectations(None) returns Failure") {
+  test("clearAllExpectations(None) returns Failure when ExpectationStore.clearAllExpectations fails") {
     setup_ExpectationStore_ClearAllExpectations(Some(exception))
+
+    expectationService.clearExpectations(None) should equal(Failure(exception))
+  }
+
+  test("clearAllExpectations(None) returns Failure when HitCountService.deleteAll fails") {
+    setup_ExpectationStore_ClearAllExpectations()
+    setup_HitCountService_DeleteAll(Some(exception))
 
     expectationService.clearExpectations(None) should equal(Failure(exception))
   }
 
   test("clearExpectations(Some) returns Success") {
     setup_ExpectationStore_ClearExpectations(expectationIds)
+    setup_HitCountService_Delete(expectationIds.toSeq)
 
     expectationService.clearExpectations(Some(expectationIds)) should equal(Success(()))
   }
 
-  test("clearAllExpectations(Some) returns Failure") {
+  test("clearExpectations(Some) returns Failure when ExpectationStore.clearExpectations fails") {
     setup_ExpectationStore_ClearExpectations(expectationIds, Some(exception))
+
+    expectationService.clearExpectations(Some(expectationIds)) should equal(Failure(exception))
+  }
+
+  test("clearExpectations(Some) returns Failure when HitCountService.delete fails") {
+    setup_ExpectationStore_ClearExpectations(expectationIds)
+    setup_HitCountService_Delete(expectationIds.toSeq, Some(exception))
 
     expectationService.clearExpectations(Some(expectationIds)) should equal(Failure(exception))
   }
@@ -149,7 +191,8 @@ class ExpectationServiceTests extends FunSuite with MockFactory with Matchers {
   }
 
   test("loadExpectations returns Success") {
-    val oldExpectationId = "some old id"
+    val oldExpectationId2 = "some old id 2"
+    val oldExpectationId3 = "some old id 3"
     val expectationId3 = "id_3"
     val expectation2 = Expectation("2", "2", Map(), null, null)
     val expectation3 = Expectation("3", "3", Map(), null, null)
@@ -159,16 +202,18 @@ class ExpectationServiceTests extends FunSuite with MockFactory with Matchers {
     val expectationResponse3 = expectation3 -> response3
     val expectationResponses = Set(expectationId1 -> expectationResponse, expectationId2 -> expectationResponse2, expectationId3 -> expectationResponse3)
     val storeReturnValue1 = None
-    val storeReturnValue2 = Some(RegisterExpectationResponseWithIdReturnValue(oldExpectationId, isResponseUpdated = true))
-    val storeReturnValue3 = Some(RegisterExpectationResponseWithIdReturnValue(oldExpectationId, isResponseUpdated = false))
+    val storeReturnValue2 = Some(RegisterExpectationResponseWithIdReturnValue(oldExpectationId2, isResponseUpdated = true))
+    val storeReturnValue3 = Some(RegisterExpectationResponseWithIdReturnValue(oldExpectationId3, isResponseUpdated = false))
     val serviceReturnValue1 = LoadExpectationsOutput(expectationId1, None)
-    val serviceReturnValue2 = LoadExpectationsOutput(expectationId2, Some(LoadExpectationsOverwriteInfo(oldExpectationId, didOverwriteResponse = true)))
-    val serviceReturnValue3 = LoadExpectationsOutput(expectationId3, Some(LoadExpectationsOverwriteInfo(oldExpectationId, didOverwriteResponse = false)))
+    val serviceReturnValue2 = LoadExpectationsOutput(expectationId2, Some(LoadExpectationsOverwriteInfo(oldExpectationId2, didOverwriteResponse = true)))
+    val serviceReturnValue3 = LoadExpectationsOutput(expectationId3, Some(LoadExpectationsOverwriteInfo(oldExpectationId3, didOverwriteResponse = false)))
 
     setup_ExpectationsFileService_LoadExpectationsFromJson(expectationSuiteName, Right(expectationResponses))
     setup_ExpectationStore_RegisterExpectationResponseWithId(expectationId1, expectationResponse, Right(storeReturnValue1))
     setup_ExpectationStore_RegisterExpectationResponseWithId(expectationId2, expectationResponse2, Right(storeReturnValue2))
     setup_ExpectationStore_RegisterExpectationResponseWithId(expectationId3, expectationResponse3, Right(storeReturnValue3))
+    setup_HitCountService_Delete(Seq(oldExpectationId2, oldExpectationId3))
+    setup_HitCountService_Register(Seq(expectationId1, expectationId2, expectationId3))
 
     expectationService.loadExpectations(expectationSuiteName) shouldBe Success(Seq(serviceReturnValue1, serviceReturnValue2, serviceReturnValue3))
   }
@@ -188,6 +233,37 @@ class ExpectationServiceTests extends FunSuite with MockFactory with Matchers {
     setup_ExpectationsFileService_LoadExpectationsFromJson(expectationSuiteName, Right(expectationResponses))
     setup_ExpectationStore_RegisterExpectationResponseWithId(expectationId1, expectationResponse, Right(None))
     setup_ExpectationStore_RegisterExpectationResponseWithId(expectationId2, expectationResponse2, Left(exception))
+
+    expectationService.loadExpectations(expectationSuiteName) should equal(Failure(exception))
+  }
+
+  test("loadExpectations returns Failure when HitCountService.Delete fails") {
+    val oldExpectationId2 = "some old id"
+    val expectation2 = Expectation("2", "2", Map(), null, null)
+    val response2 = Response(200, "some content", Map())
+    val expectationResponse2 = expectation2 -> response2
+    val expectationResponses = Set(expectationId1 -> expectationResponse, expectationId2 -> (expectation2 -> response2))
+    val storeReturnValue2 = Some(RegisterExpectationResponseWithIdReturnValue(oldExpectationId2, isResponseUpdated = true))
+
+    setup_ExpectationsFileService_LoadExpectationsFromJson(expectationSuiteName, Right(expectationResponses))
+    setup_ExpectationStore_RegisterExpectationResponseWithId(expectationId1, expectationResponse, Right(None))
+    setup_ExpectationStore_RegisterExpectationResponseWithId(expectationId2, expectationResponse2, Right(storeReturnValue2))
+    setup_HitCountService_Delete(Seq(oldExpectationId2), Some(exception))
+
+    expectationService.loadExpectations(expectationSuiteName) should equal(Failure(exception))
+  }
+
+  test("loadExpectations returns Failure when HitCountService.Register fails") {
+    val expectation2 = Expectation("2", "2", Map(), null, null)
+    val response2 = Response(200, "some content", Map())
+    val expectationResponse2 = expectation2 -> response2
+    val expectationResponses = Set(expectationId1 -> expectationResponse, expectationId2 -> (expectation2 -> response2))
+
+    setup_ExpectationsFileService_LoadExpectationsFromJson(expectationSuiteName, Right(expectationResponses))
+    setup_ExpectationStore_RegisterExpectationResponseWithId(expectationId1, expectationResponse, Right(None))
+    setup_ExpectationStore_RegisterExpectationResponseWithId(expectationId2, expectationResponse2, Right(None))
+    setup_HitCountService_Delete(Seq())
+    setup_HitCountService_Register(Seq(expectationId1, expectationId2), Some(exception))
 
     expectationService.loadExpectations(expectationSuiteName) should equal(Failure(exception))
   }
@@ -289,6 +365,38 @@ class ExpectationServiceTests extends FunSuite with MockFactory with Matchers {
     exceptionOrReturnValue match {
       case Right(returnValue) => callHandler.returning(returnValue)
       case Left(ex) => callHandler.throwing(ex)
+    }
+  }
+
+  private def setup_HitCountService_Register(expectationIds: Seq[ExpectationId], exception: Option[Exception] = None): Unit = {
+    val callHandler = (mockHitCountService.register _).expects(expectationIds)
+    exception match {
+      case None => callHandler.returning(())
+      case Some(ex) => callHandler.throwing(ex)
+    }
+  }
+
+  private def setup_HitCountService_DeleteAll(exception: Option[Exception] = None) = {
+    val callHandler = (mockHitCountService.deleteAll _).expects()
+    exception match {
+      case None => callHandler.returning(())
+      case Some(ex) => callHandler.throwing(ex)
+    }
+  }
+
+  private def setup_HitCountService_Delete(expectationIds: Seq[ExpectationId], exception: Option[Exception] = None) = {
+    val callHandler = (mockHitCountService.delete _).expects(expectationIds)
+    exception match {
+      case None => callHandler.returning(())
+      case Some(ex) => callHandler.throwing(ex)
+    }
+  }
+
+  private def setup_HitCountService_Increment(expectationIds: Seq[ExpectationId], exception: Option[Exception] = None) = {
+    val callHandler = (mockHitCountService.increment _).expects(expectationIds)
+    exception match {
+      case None => callHandler.returning(())
+      case Some(ex) => callHandler.throwing(ex)
     }
   }
 }

@@ -41,22 +41,28 @@ object ExpectationService {
 }
 
 @Singleton
-class DefaultExpectationService @Inject()(expectationStore: ExpectationStore, fileService: ExpectationsFileService)
-  extends ExpectationService {
+class DefaultExpectationService @Inject()(
+  expectationStore: ExpectationStore,
+  fileService: ExpectationsFileService,
+  hitCountService: HitCountService
+) extends ExpectationService {
 
   override def registerExpectations(expectationResponses: Set[RegisterExpectationsInput])
   : Try[Seq[RegisterExpectationsOutput]] = Try {
     this.synchronized {
-      expectationResponses.toSeq.map { x =>
+      val outputs = expectationResponses.toSeq.map { x =>
         val output = expectationStore.registerExpectationResponse(x.expectationResponse)
         RegisterExpectationsOutput(output.expectationId, x.clientName, output.isResponseUpdated)
       }
+      hitCountService.register(outputs.map(output => output.expectationId))
+      outputs
     }
   }
 
   override def getResponse(request: Request): Try[Option[Response]] = Try {
     this.synchronized {
       val matchingIds = expectationStore.getIdsForMatchingExpectations(request)
+      hitCountService.increment(matchingIds.toSeq)
       expectationStore.getMostConstrainedExpectationWithId(matchingIds)
     }.map { case (_, (_, response)) => response }
   }
@@ -70,8 +76,12 @@ class DefaultExpectationService @Inject()(expectationStore: ExpectationStore, fi
   override def clearExpectations(expectationIds: Option[Set[ExpectationId]]): Try[Unit] = Try {
     this.synchronized {
       expectationIds match {
-        case None => expectationStore.clearAllExpectations()
-        case Some(ids) => expectationStore.clearExpectations(ids)
+        case None =>
+          expectationStore.clearAllExpectations()
+          hitCountService.deleteAll()
+        case Some(ids) =>
+          expectationStore.clearExpectations(ids)
+          hitCountService.delete(ids.toSeq)
       }
     }
   }
@@ -86,10 +96,17 @@ class DefaultExpectationService @Inject()(expectationStore: ExpectationStore, fi
   override def loadExpectations(suiteName: String): Try[Seq[LoadExpectationsOutput]] = Try {
     val savedExpectations = fileService.loadExpectationsFromJson(suiteName)
     this.synchronized {
-      savedExpectations.toSeq.map { case (expectationId, expectationResponse) =>
+      val outputs = savedExpectations.toSeq.map { case (expectationId, expectationResponse) =>
         val output = expectationStore.registerExpectationResponseWithId(expectationResponse, expectationId)
         LoadExpectationsOutput(expectationId, output.map(x => LoadExpectationsOverwriteInfo(x.oldExpectationId, x.isResponseUpdated)))
       }
+
+      val overwrittenIds = outputs.flatMap(output => output.overwriteInfo.map(info => info.oldExpectationId))
+      val writtenIds = outputs.map(output => output.expectationId)
+      hitCountService.delete(overwrittenIds)
+      hitCountService.register(writtenIds)
+
+      outputs
     }
   }
 }
