@@ -318,7 +318,6 @@ Reset hit-counts to 0.
 ## Planned work
 - `/expectation-suite/list` endpoint
 - `/expectation-suite` DELETE endpoint
-- Expectation hit-count support, for validating the number of times an expectation is matched.
 - Regex matching on expectation matching.
 
 ## Bug Reports / Feature Requests
