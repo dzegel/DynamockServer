@@ -21,6 +21,8 @@ trait ExpectationService {
   def loadExpectations(suiteName: String): Try[Seq[LoadExpectationsOutput]]
 
   def getHitCounts(expectationIds: Set[ExpectationId]): Try[Map[ExpectationId, Int]]
+
+  def resetHitCounts(expectationIds: Option[Set[ExpectationId]]): Try[Unit]
 }
 
 object ExpectationService {
@@ -114,5 +116,19 @@ class DefaultExpectationService @Inject()(
 
   override def getHitCounts(expectationIds: Set[ExpectationId]) = Try {
     hitCountService.get(expectationIds.toSeq)
+  }
+
+  override def resetHitCounts(expectationIds: Option[Set[ExpectationId]]) = Try {
+    this.synchronized {
+      val allRegisteredIds = expectationStore.getAllExpectations.map {
+        case (expectationId, _) => expectationId
+      }
+      val idsToReset = expectationIds match {
+        case None => allRegisteredIds.toSeq
+        case Some(ids) => allRegisteredIds.intersect(ids).toSeq
+      }
+      hitCountService.delete(idsToReset)
+      hitCountService.register(idsToReset)
+    }
   }
 }

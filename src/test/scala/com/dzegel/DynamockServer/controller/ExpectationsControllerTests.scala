@@ -378,6 +378,46 @@ class ExpectationsControllerTests extends FeatureTest with MockFactory with Matc
     )
   }
 
+  test("POST /test/hit-counts/reset when specifying expectation_ids should call resetHitCounts and return 204 on success") {
+    setup_ExpectationService_ResetHitCounts(Some(Set(expectationId)), Success(()))
+
+    server.httpPost(
+      path = "/test/hit-counts/reset",
+      postBody =
+        s"""{
+           |  "expectation_ids": ["$expectationId"]
+           |}""".stripMargin,
+      andExpect = Status.NoContent
+    )
+  }
+
+  test("POST /test/hit-counts/reset when not specifying expectation_ids should call resetHitCounts and return 204 on success") {
+    setup_ExpectationService_ResetHitCounts(None, Success(()))
+
+    server.httpPost(
+      path = "/test/hit-counts/reset",
+      postBody =
+        """{
+          |  "expectation_ids": null
+          |}""".stripMargin,
+      andExpect = Status.NoContent
+    )
+  }
+
+  test("POST /test/hit-counts/reset should call resetHitCounts and return 500 on failure") {
+    setup_ExpectationService_ResetHitCounts(Some(Set(expectationId)), Failure(new Exception(errorMessage)))
+
+    server.httpPost(
+      path = "/test/hit-counts/reset",
+      postBody =
+        s"""{
+           |  "expectation_ids": ["$expectationId"]
+           |}""".stripMargin,
+      withBody = errorMessage,
+      andExpect = Status.InternalServerError
+    )
+  }
+
   private def setup_ExpectationService_RegisterExpectations(
     expectation: Expectation,
     response: Response,
@@ -412,8 +452,14 @@ class ExpectationsControllerTests extends FeatureTest with MockFactory with Matc
       .returning(returnValue)
   }
 
-  private def setup_ExpectationService_GetHitCounts(expectationIds: Set[ExpectationId], returnValue: Try[Map[Path, Int]]): Unit = {
+  private def setup_ExpectationService_GetHitCounts(expectationIds: Set[ExpectationId], returnValue: Try[Map[ExpectationId, Int]]): Unit = {
     (mockExpectationService.getHitCounts _)
+      .expects(expectationIds)
+      .returning(returnValue)
+  }
+
+  private def setup_ExpectationService_ResetHitCounts(expectationIds: Option[Set[ExpectationId]], returnValue: Try[Unit]): Unit = {
+    (mockExpectationService.resetHitCounts _)
       .expects(expectationIds)
       .returning(returnValue)
   }

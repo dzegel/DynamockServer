@@ -271,17 +271,68 @@ class ExpectationServiceTests extends FunSuite with MockFactory with Matchers {
   test("getHitCounts returns Success") {
     setup_HitCountService_Get(expectationIds.toSeq, Right(Map(expectationId1 -> 3)))
 
-    val actual = expectationService.getHitCounts(expectationIds)
-
-    actual shouldBe Success(Map(expectationId1 -> 3))
+    expectationService.getHitCounts(expectationIds) shouldBe Success(Map(expectationId1 -> 3))
   }
 
   test("getHitCounts returns Failure when HitCountService.get fails") {
     setup_HitCountService_Get(expectationIds.toSeq, Left(exception))
 
-    val actual = expectationService.getHitCounts(expectationIds)
+    expectationService.getHitCounts(expectationIds) shouldBe Failure(exception)
+  }
 
-    actual shouldBe Failure(exception)
+  test("resetHitCounts resets for all registered ids and returns Success for None input") {
+    setup_ExpectationStore_GetAllExpectations(Right(Set(expectationId1 -> expectationResponse, expectationId2 -> expectationResponse)))
+    setup_HitCountService_Delete(expectationIds.toSeq)
+    setup_HitCountService_Register(expectationIds.toSeq)
+
+    expectationService.resetHitCounts(None) shouldBe Success(())
+  }
+
+  test("resetHitCounts only resets only requested ids and returns Success for Some input") {
+    setup_ExpectationStore_GetAllExpectations(Right(Set(expectationId1 -> expectationResponse, expectationId2 -> expectationResponse)))
+    setup_HitCountService_Delete(Seq(expectationId1))
+    setup_HitCountService_Register(Seq(expectationId1))
+
+    expectationService.resetHitCounts(Some(Set(expectationId1))) shouldBe Success(())
+  }
+
+  test("resetHitCounts does not reset unregistered ids and returns Success for Some input") {
+    val unregisteredId = "not registered"
+    setup_ExpectationStore_GetAllExpectations(Right(Set(expectationId1 -> expectationResponse, expectationId2 -> expectationResponse)))
+    setup_HitCountService_Delete(Seq())
+    setup_HitCountService_Register(Seq())
+
+    expectationService.resetHitCounts(Some(Set(unregisteredId))) shouldBe Success(())
+  }
+
+  test("resetHitCounts resets only registered requested ids and returns Success for Some input") {
+    val unregisteredId = "not registered"
+    setup_ExpectationStore_GetAllExpectations(Right(Set(expectationId1 -> expectationResponse, expectationId2 -> expectationResponse)))
+    setup_HitCountService_Delete(Seq(expectationId1))
+    setup_HitCountService_Register(Seq(expectationId1))
+
+    expectationService.resetHitCounts(Some(Set(unregisteredId, expectationId1))) shouldBe Success(())
+  }
+
+  test("resetHitCounts returns Failure when ExpectationStore.getAllExpectations fails") {
+    setup_ExpectationStore_GetAllExpectations(Left(exception))
+
+    expectationService.resetHitCounts(Some(Set(expectationId1))) shouldBe Failure(exception)
+  }
+
+  test("resetHitCounts returns Failure when HitCountService.delete fails") {
+    setup_ExpectationStore_GetAllExpectations(Right(Set(expectationId1 -> expectationResponse, expectationId2 -> expectationResponse)))
+    setup_HitCountService_Delete(Seq(expectationId1), Some(exception))
+
+    expectationService.resetHitCounts(Some(Set(expectationId1))) shouldBe Failure(exception)
+  }
+
+  test("resetHitCounts returns Failure when HitCountService.register fails") {
+    setup_ExpectationStore_GetAllExpectations(Right(Set(expectationId1 -> expectationResponse, expectationId2 -> expectationResponse)))
+    setup_HitCountService_Delete(Seq(expectationId1))
+    setup_HitCountService_Register(Seq(expectationId1), Some(exception))
+
+    expectationService.resetHitCounts(Some(Set(expectationId1))) shouldBe Failure(exception)
   }
 
   private def setup_ExpectationStore_RegisterExpectationResponse(
