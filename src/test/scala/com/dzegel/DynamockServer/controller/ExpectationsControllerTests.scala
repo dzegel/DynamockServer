@@ -345,37 +345,76 @@ class ExpectationsControllerTests extends FeatureTest with MockFactory with Matc
     )
   }
 
+  test("POST /test/hit-counts/get should call getHitCounts and return 200 on success") {
+    setup_ExpectationService_GetHitCounts(Set(expectationId), Success(Map(expectationId -> 2)))
+
+    server.httpPost(
+      path = "/test/hit-counts/get",
+      postBody =
+        s"""{
+           |  "expectation_ids": ["$expectationId"]
+           |}""".stripMargin,
+      withJsonBody =
+        s"""{
+           |  "expectation_id_to_hit_count": {
+           |    "$expectationId": 2
+           |  }
+           |}""".stripMargin,
+      andExpect = Status.Ok
+    )
+  }
+
+  test("POST /test/hit-counts/get should call getHitCounts and return 500 on failure") {
+    setup_ExpectationService_GetHitCounts(Set(expectationId), Failure(new Exception(errorMessage)))
+
+    server.httpPost(
+      path = "/test/hit-counts/get",
+      postBody =
+        s"""{
+           |  "expectation_ids": ["$expectationId"]
+           |}""".stripMargin,
+      withBody = errorMessage,
+      andExpect = Status.InternalServerError
+    )
+  }
+
   private def setup_ExpectationService_RegisterExpectations(
     expectation: Expectation,
     response: Response,
     returnValue: Try[Seq[RegisterExpectationsOutput]]
-  ) = {
+  ): Unit = {
     (mockExpectationService.registerExpectations _)
       .expects(Set(RegisterExpectationsInput(expectation, response, expectationName)))
       .returning(returnValue)
   }
 
-  private def setup_ExpectationService_GetAllExpectations(returnValue: Try[Set[GetExpectationsOutput]]) = {
+  private def setup_ExpectationService_GetAllExpectations(returnValue: Try[Set[GetExpectationsOutput]]): Unit = {
     (mockExpectationService.getAllExpectations _)
       .expects()
       .returning(returnValue)
   }
 
-  private def setup_ExpectationService_ClearExpectations(expectationIds: Option[Set[ExpectationId]], returnValue: Try[Unit]) = {
+  private def setup_ExpectationService_ClearExpectations(expectationIds: Option[Set[ExpectationId]], returnValue: Try[Unit]): Unit = {
     (mockExpectationService.clearExpectations _)
       .expects(expectationIds)
       .returning(returnValue)
   }
 
-  private def setup_ExpectationService_StoreExpectations(suiteName: String, returnValue: Try[Unit]) = {
+  private def setup_ExpectationService_StoreExpectations(suiteName: String, returnValue: Try[Unit]): Unit = {
     (mockExpectationService.storeExpectations _)
       .expects(suiteName)
       .returning(returnValue)
   }
 
-  private def setup_ExpectationService_LoadExpectations(suiteName: String, returnValue: Try[Seq[LoadExpectationsOutput]]) = {
+  private def setup_ExpectationService_LoadExpectations(suiteName: String, returnValue: Try[Seq[LoadExpectationsOutput]]): Unit = {
     (mockExpectationService.loadExpectations _)
       .expects(suiteName)
+      .returning(returnValue)
+  }
+
+  private def setup_ExpectationService_GetHitCounts(expectationIds: Set[ExpectationId], returnValue: Try[Map[Path, Int]]): Unit = {
+    (mockExpectationService.getHitCounts _)
+      .expects(expectationIds)
       .returning(returnValue)
   }
 }

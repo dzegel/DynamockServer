@@ -268,6 +268,22 @@ class ExpectationServiceTests extends FunSuite with MockFactory with Matchers {
     expectationService.loadExpectations(expectationSuiteName) should equal(Failure(exception))
   }
 
+  test("getHitCounts returns Success") {
+    setup_HitCountService_Get(expectationIds.toSeq, Right(Map(expectationId1 -> 3)))
+
+    val actual = expectationService.getHitCounts(expectationIds)
+
+    actual shouldBe Success(Map(expectationId1 -> 3))
+  }
+
+  test("getHitCounts returns Failure when HitCountService.get fails") {
+    setup_HitCountService_Get(expectationIds.toSeq, Left(exception))
+
+    val actual = expectationService.getHitCounts(expectationIds)
+
+    actual shouldBe Failure(exception)
+  }
+
   private def setup_ExpectationStore_RegisterExpectationResponse(
     expectation: Expectation,
     response: Response,
@@ -376,7 +392,7 @@ class ExpectationServiceTests extends FunSuite with MockFactory with Matchers {
     }
   }
 
-  private def setup_HitCountService_DeleteAll(exception: Option[Exception] = None) = {
+  private def setup_HitCountService_DeleteAll(exception: Option[Exception] = None): Unit = {
     val callHandler = (mockHitCountService.deleteAll _).expects()
     exception match {
       case None => callHandler.returning(())
@@ -384,7 +400,7 @@ class ExpectationServiceTests extends FunSuite with MockFactory with Matchers {
     }
   }
 
-  private def setup_HitCountService_Delete(expectationIds: Seq[ExpectationId], exception: Option[Exception] = None) = {
+  private def setup_HitCountService_Delete(expectationIds: Seq[ExpectationId], exception: Option[Exception] = None): Unit = {
     val callHandler = (mockHitCountService.delete _).expects(expectationIds)
     exception match {
       case None => callHandler.returning(())
@@ -392,11 +408,22 @@ class ExpectationServiceTests extends FunSuite with MockFactory with Matchers {
     }
   }
 
-  private def setup_HitCountService_Increment(expectationIds: Seq[ExpectationId], exception: Option[Exception] = None) = {
+  private def setup_HitCountService_Increment(expectationIds: Seq[ExpectationId], exception: Option[Exception] = None): Unit = {
     val callHandler = (mockHitCountService.increment _).expects(expectationIds)
     exception match {
       case None => callHandler.returning(())
       case Some(ex) => callHandler.throwing(ex)
+    }
+  }
+
+  def setup_HitCountService_Get(
+    expectationIds: Seq[ExpectationId],
+    exceptionOrReturnValue: Either[Exception, Map[ExpectationId, Int]]
+  ): Unit = {
+    val callHandler = (mockHitCountService.get _).expects(expectationIds)
+    exceptionOrReturnValue match {
+      case Right(returnValue) => callHandler.returning(returnValue)
+      case Left(ex) => callHandler.throwing(ex)
     }
   }
 }

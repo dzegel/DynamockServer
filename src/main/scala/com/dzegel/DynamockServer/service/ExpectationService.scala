@@ -19,6 +19,8 @@ trait ExpectationService {
   def storeExpectations(suiteName: String): Try[Unit]
 
   def loadExpectations(suiteName: String): Try[Seq[LoadExpectationsOutput]]
+
+  def getHitCounts(expectationIds: Set[ExpectationId]): Try[Map[ExpectationId, Int]]
 }
 
 object ExpectationService {
@@ -108,5 +110,9 @@ class DefaultExpectationService @Inject()(
 
       outputs
     }
+  }
+
+  override def getHitCounts(expectationIds: Set[ExpectationId]) = Try {
+    hitCountService.get(expectationIds.toSeq)
   }
 }

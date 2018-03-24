@@ -49,6 +49,10 @@ object ExpectationsController {
 
   private case class ExpectationsSuiteLoadPostResponse(suiteLoadInfo: Seq[ExpectationsSuiteLoadPostResponseItemDto])
 
+  private case class HitCountsGetPostRequest(expectationIds: Set[String])
+
+  private case class HitCountsGetPostResponse(expectationIdToHitCount: Map[String, Int])
+
   private implicit def dtoFromExpectation(expectation: Expectation): ExpectationDto = ExpectationDto(
     expectation.method,
     expectation.path,
@@ -123,6 +127,13 @@ class ExpectationsController @Inject()(
             x.overwriteInfo.exists(y => y.didOverwriteResponse),
             x.overwriteInfo.map(y => ExpectationsSuiteLoadPostResponseOverwriteInfo(y.oldExpectationId, y.didOverwriteResponse)))
         }))
+      case Failure(exception) => response.internalServerError(exception.getMessage)
+    }
+  }
+
+  post(s"$pathBase/hit-counts/get") { request: HitCountsGetPostRequest =>
+    expectationService.getHitCounts(request.expectationIds) match {
+      case Success(expectationIdToHitCount) => response.ok(body = HitCountsGetPostResponse(expectationIdToHitCount))
       case Failure(exception) => response.internalServerError(exception.getMessage)
     }
   }
