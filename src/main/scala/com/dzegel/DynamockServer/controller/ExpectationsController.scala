@@ -37,7 +37,7 @@ object ExpectationsController {
 
   private case class ExpectationsGetResponse(expectationResponses: Set[ExpectationsGetResponseItemDto])
 
-  private case class ExpectationsDeleteRequest(expectation_ids: Option[Set[String]])
+  private case class ExpectationsDeleteRequest(expectationIds: Option[Set[String]])
 
   private case class ExpectationsSuiteStorePostRequest(@QueryParam suiteName: String)
 
@@ -48,6 +48,12 @@ object ExpectationsController {
   private case class ExpectationsSuiteLoadPostRequest(@QueryParam suiteName: String)
 
   private case class ExpectationsSuiteLoadPostResponse(suiteLoadInfo: Seq[ExpectationsSuiteLoadPostResponseItemDto])
+
+  private case class HitCountsGetPostRequest(expectationIds: Set[String])
+
+  private case class HitCountsGetPostResponse(expectationIdToHitCount: Map[String, Int])
+
+  private case class HitCountsResetPostRequest(expectationIds: Option[Set[String]])
 
   private implicit def dtoFromExpectation(expectation: Expectation): ExpectationDto = ExpectationDto(
     expectation.method,
@@ -83,8 +89,11 @@ class ExpectationsController @Inject()(
   dynamockUrlPathBaseRegistry: DynamockUrlPathBaseRegistry
 ) extends Controller {
   private val pathBase = dynamockUrlPathBaseRegistry.pathBase
+  private val expectationsPathBase = s"$pathBase/expectations"
+  private val expectationsSuitePathBase = s"$pathBase/expectations-suite"
+  private val hitCountsPathBase = s"$pathBase/hit-counts"
 
-  put(s"$pathBase/expectations") { request: ExpectationsPutRequest =>
+  put(expectationsPathBase) { request: ExpectationsPutRequest =>
     expectationService.registerExpectations(
       request.expectationResponses.map(x => RegisterExpectationsInput(x.expectation: Expectation, x.response: Response, x.expectationName))
     ) match {
@@ -96,11 +105,11 @@ class ExpectationsController @Inject()(
     }
   }
 
-  delete(s"$pathBase/expectations") { request: ExpectationsDeleteRequest =>
-    makeNoContentResponse(expectationService.clearExpectations(request.expectation_ids))
+  delete(expectationsPathBase) { request: ExpectationsDeleteRequest =>
+    makeNoContentResponse(expectationService.clearExpectations(request.expectationIds))
   }
 
-  get(s"$pathBase/expectations") { _: Request =>
+  get(expectationsPathBase) { _: Request =>
     expectationService.getAllExpectations match {
       case Success(expectationResponses) =>
         response.ok(body = ExpectationsGetResponse(expectationResponses.map(
@@ -110,11 +119,11 @@ class ExpectationsController @Inject()(
     }
   }
 
-  post(s"$pathBase/expectations-suite/store") { request: ExpectationsSuiteStorePostRequest =>
+  post(s"$expectationsSuitePathBase/store") { request: ExpectationsSuiteStorePostRequest =>
     makeNoContentResponse(expectationService.storeExpectations(request.suiteName))
   }
 
-  post(s"$pathBase/expectations-suite/load") { request: ExpectationsSuiteLoadPostRequest =>
+  post(s"$expectationsSuitePathBase/load") { request: ExpectationsSuiteLoadPostRequest =>
     expectationService.loadExpectations(request.suiteName) match {
       case Success(registerExpectationsOutputs) =>
         response.ok(body = ExpectationsSuiteLoadPostResponse(registerExpectationsOutputs.map { x =>
@@ -125,6 +134,17 @@ class ExpectationsController @Inject()(
         }))
       case Failure(exception) => response.internalServerError(exception.getMessage)
     }
+  }
+
+  post(s"$hitCountsPathBase/get") { request: HitCountsGetPostRequest =>
+    expectationService.getHitCounts(request.expectationIds) match {
+      case Success(expectationIdToHitCount) => response.ok(body = HitCountsGetPostResponse(expectationIdToHitCount))
+      case Failure(exception) => response.internalServerError(exception.getMessage)
+    }
+  }
+
+  post(s"$hitCountsPathBase/reset") { request: HitCountsResetPostRequest =>
+    makeNoContentResponse(expectationService.resetHitCounts(request.expectationIds))
   }
 
   private def makeNoContentResponse(`try`: Try[Unit]) = `try` match {

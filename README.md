@@ -4,19 +4,21 @@
 - [Deployment](#deployment)
 - [Mocked API](#mocked-api)
 - [Dynamock API](#dynamock-api)
-  * [PUT `/expectations`](#put-dynamock-path-baseexpectations)
-  * [DELETE `/expectations`](#delete-dynamock-path-baseexpectations)
-  * [GET `/expectations`](#get-dynamock-path-baseexpectations)
-  * [POST `/expectations-suite/store`](#post-dynamock-path-baseexpectations-suitestore)
-  * [POST `/expectations-suite/load`](#post-dynamock-path-baseexpectations-suiteload)
-  * [Definitions](#definitions)
-      - [NamedExpectationResponse Object](#namedexpectationresponse-object)
-      - [ExpectationInfo Object](#expectationinfo-object)
-      - [ExpectationResponse Object](#expectationresponse-object)
-      - [LoadInfo Object](#loadinfo-object)
-      - [LoadInfoExpectationOverwrite](#loadinfoexpectationoverwrite-object) Object
-      - [Expectation Object](#expectation-object)
-      - [Response Object](#response-object)
+  - [PUT `/expectations`](#put-dynamock-path-baseexpectations)
+  - [DELETE `/expectations`](#delete-dynamock-path-baseexpectations)
+  - [GET `/expectations`](#get-dynamock-path-baseexpectations)
+  - [POST `/expectations-suite/store`](#post-dynamock-path-baseexpectations-suitestore)
+  - [POST `/expectations-suite/load`](#post-dynamock-path-baseexpectations-suiteload)
+  - [POST `/hit-counts/get`](#post-dynamock-path-basehit-countsget)
+  - [POST `/hit-counts/reset`](#post-dynamock-path-basehit-countsreset)
+  - [Definitions](#definitions)
+     - [NamedExpectationResponse Object](#namedexpectationresponse-object)
+     - [ExpectationInfo Object](#expectationinfo-object)
+     - [ExpectationResponse Object](#expectationresponse-object)
+     - [LoadInfo Object](#loadinfo-object)
+     - [LoadInfoExpectationOverwrite](#loadinfoexpectationoverwrite-object) Object
+     - [Expectation Object](#expectation-object)
+     - [Response Object](#response-object)
 - [Planned work](#planned-work)
 - [Bug Reports / Feature Requests](#bug-reports--feature-requests)
 
@@ -145,6 +147,7 @@ Save the state of registered expectations into an expectations-suite that can be
 ### POST `<dynamock-path-base>/expectations-suite/load`
 Register expectations stored in an expectations-suite with their original expectation ids.
 Registered expectations which are identical to expectations in the loaded suite will have their ids and responses overridden with the respective values in the suite.
+In the event that an expectation id loaded from the suite is identical to a pre-registered expectation id, the hit-count will retain its value and not be reset.
 
 **Query Parameters:**
 - suite_name:
@@ -157,6 +160,36 @@ Registered expectations which are identical to expectations in the loaded suite 
     - type: Array of [LoadInfo](#loadinfo-object) Objects
     - required: true
 
+### POST `<dynamock-path-base>/hit-counts/get`
+Get the hit-counts of the specified expectation ids; where an expectation id's hit-count is the number of times a request was made that matched the expectation associated with the expectation id.
+If a request matches multiple registered expectations, though only one of their responses' is used for the API response, all of their hit-counts are incremented.
+
+**Content-Type:** application/json
+
+**Request Body Parameters:**
+- expectation_ids:
+    - type: Array of String
+    - required: true
+    - description: Ids of the expectations for which to get hit-counts.
+
+**ResponseBody**
+- expectation_id_to_hit_count:
+    - type: Map of String to Integer
+    - required: true
+    - description: A map specifying the hit count for all requested registered expectation ids.
+    Non-registered requested expectation ids are not present.
+
+### POST `<dynamock-path-base>/hit-counts/reset`
+Reset hit-counts to 0.
+
+**Content-Type:** application/json
+
+**Request Body Parameters:**
+- expectation_ids:
+    - type: Array of String
+    - required: false
+    - description: Ids of the expectations for which to reset hit-counts to 0. 
+    When `null` or not provided resets the hit-count for all expectations.
 ----------------------------------------------
 
 ### Definitions
@@ -285,7 +318,6 @@ Registered expectations which are identical to expectations in the loaded suite 
 ## Planned work
 - `/expectation-suite/list` endpoint
 - `/expectation-suite` DELETE endpoint
-- Expectation hit-count support, for validating the number of times an expectation is matched.
 - Regex matching on expectation matching.
 
 ## Bug Reports / Feature Requests
