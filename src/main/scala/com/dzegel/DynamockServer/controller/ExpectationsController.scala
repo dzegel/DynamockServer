@@ -137,14 +137,12 @@ class ExpectationsController @Inject()(
     expectationService.resetHitCounts(request.expectationIds).mapToNoContentResponse()
   }
 
-  implicit private class ImplicitEnrichedContentResponse[T](`try`: Try[T]) {
+  implicit private class ImplicitEnrichedResponseMapper[T](`try`: Try[T]) {
     def mapToContentResponse[O](responseFunc: T => O): ResponseBuilder#EnrichedResponse = `try` match {
       case Success(in) => response.ok(body = responseFunc(in))
       case Failure(exception) => response.internalServerError(exception.getMessage)
     }
-  }
 
-  implicit private class ImplicitEnrichedNoContentResponse(`try`: Try[_]) {
     def mapToNoContentResponse(): ResponseBuilder#EnrichedResponse = `try` match {
       case Success(_) => response.noContent
       case Failure(exception) => response.internalServerError(exception.getMessage)
