@@ -97,7 +97,7 @@ class ExpectationsController @Inject()(
   put(expectationsPathBase) { request: ExpectationsPutRequest =>
     expectationService.registerExpectations(
       request.expectationResponses.map(x => RegisterExpectationsInput(x.expectation: Expectation, x.response: Response, x.expectationName))
-    ).mapToContentResponse(registerExpectationsOutputs =>
+    ).mapToOkResponse(registerExpectationsOutputs =>
       ExpectationsPutResponse(
         registerExpectationsOutputs.map(x => ExpectationsPutResponseItemDto(x.expectationId, x.clientName, x.didOverwriteResponse))
       ))
@@ -108,7 +108,7 @@ class ExpectationsController @Inject()(
   }
 
   get(expectationsPathBase) { _: Request =>
-    expectationService.getAllExpectations.mapToContentResponse(expectationResponses =>
+    expectationService.getAllExpectations.mapToOkResponse(expectationResponses =>
       ExpectationsGetResponse(expectationResponses.map {
         x => ExpectationsGetResponseItemDto(x.expectation, x.response, x.expectationId)
       }))
@@ -119,7 +119,7 @@ class ExpectationsController @Inject()(
   }
 
   post(s"$expectationsSuitePathBase/load") { request: ExpectationsSuiteLoadPostRequest =>
-    expectationService.loadExpectations(request.suiteName).mapToContentResponse(registerExpectationsOutputs =>
+    expectationService.loadExpectations(request.suiteName).mapToOkResponse(registerExpectationsOutputs =>
       ExpectationsSuiteLoadPostResponse(registerExpectationsOutputs.map { x =>
         ExpectationsSuiteLoadPostResponseItemDto(
           x.expectationId,
@@ -130,7 +130,7 @@ class ExpectationsController @Inject()(
 
   post(s"$hitCountsPathBase/get") { request: HitCountsGetPostRequest =>
     expectationService.getHitCounts(request.expectationIds)
-      .mapToContentResponse(expectationIdToHitCount => HitCountsGetPostResponse(expectationIdToHitCount))
+      .mapToOkResponse(expectationIdToHitCount => HitCountsGetPostResponse(expectationIdToHitCount))
   }
 
   post(s"$hitCountsPathBase/reset") { request: HitCountsResetPostRequest =>
@@ -138,7 +138,7 @@ class ExpectationsController @Inject()(
   }
 
   implicit private class ImplicitEnrichedResponseMapper[T](`try`: Try[T]) {
-    def mapToContentResponse[O](responseFunc: T => O): ResponseBuilder#EnrichedResponse = `try` match {
+    def mapToOkResponse[O](responseFunc: T => O): ResponseBuilder#EnrichedResponse = `try` match {
       case Success(in) => response.ok(body = responseFunc(in))
       case Failure(exception) => response.internalServerError(exception.getMessage)
     }
