@@ -71,7 +71,7 @@ To avoid collisions between the Mocked API and the [Dynamock API](#dynamock-api)
 
 ### PUT `<dynamock-path-base>/expectations`
 Setup a mocked response by registering an expectation and the response to return when the expectation is positively matched.
-An expectation name is provided to be used by the client to associate the returned expectation ids to their respective registered expectations.
+An expectation name is provided to be used by the client to associate the returned expectation-ids to their respective registered expectations.
 Previously registered expectations which are identical to expectations provided will have their respective responses overridden with the responses provided and will keep the ids the expectations were originally registered with.
 
 **Content-Type:** application/json
@@ -137,6 +137,7 @@ List all registered mock setups.
 
 ### POST `<dynamock-path-base>/expectations-suite/store`
 Save the state of registered expectations into an expectations-suite that can be restored at a later point in time.
+The saved state includes the expectation-id, expectation and response but not the hit-count.
 
 **Query Parameters:**
 - suite_name:
@@ -145,9 +146,9 @@ Save the state of registered expectations into an expectations-suite that can be
     - description: Name of the expectations-suite.
 
 ### POST `<dynamock-path-base>/expectations-suite/load`
-Register expectations stored in an expectations-suite with their original expectation ids.
+Register expectations stored in an expectations-suite with their original expectation-ids.
 Registered expectations which are identical to expectations in the loaded suite will have their ids and responses overridden with the respective values in the suite.
-In the event that an expectation id loaded from the suite is identical to a pre-registered expectation id, the hit-count will retain its value and not be reset.
+In the event that an expectation-id loaded from the suite is identical to a pre-registered expectation id, the hit-count will retain its value and not be reset.
 
 **Query Parameters:**
 - suite_name:
@@ -161,7 +162,7 @@ In the event that an expectation id loaded from the suite is identical to a pre-
     - required: true
 
 ### POST `<dynamock-path-base>/hit-counts/get`
-Get the hit-counts of the specified expectation ids; where an expectation id's hit-count is the number of times a request was made that matched the expectation associated with the expectation id.
+Get the hit-counts of the specified expectation-ids; where an expectation-id's hit-count is the number of times a request was made that matched the expectation associated with the expectation-id.
 If a request matches multiple registered expectations, though only one of their responses' is used for the API response, all of their hit-counts are incremented.
 
 **Content-Type:** application/json
@@ -176,8 +177,8 @@ If a request matches multiple registered expectations, though only one of their 
 - expectation_id_to_hit_count:
     - type: Map of String to Integer
     - required: true
-    - description: A map specifying the hit count for all requested registered expectation ids.
-    Non-registered requested expectation ids are not present.
+    - description: A map specifying the hit count for all requested registered expectation-ids.
+    Non-registered requested expectation-ids are not present.
 
 ### POST `<dynamock-path-base>/hit-counts/reset`
 Reset hit-counts to 0.
@@ -198,7 +199,7 @@ Reset hit-counts to 0.
     - expectation_name:
         - type: String
         - required: true
-        - description: A value for the client to associate the resulting expectation id with the provided expectation.  
+        - description: A value for the client to associate the resulting expectation-id with the provided expectation.
     - expectation:
         - type: [Expectation](#expectation-object) Object
         - required: true
@@ -239,7 +240,7 @@ Reset hit-counts to 0.
     - expectation_id:
         - type: String
         - required: true
-        - description: The unique expectation id loaded from the expectation suite.
+        - description: The unique expectation-id loaded from the expectation suite.
     - did_overwrite_response:
         - type: boolean
         - required: true
@@ -254,7 +255,7 @@ Reset hit-counts to 0.
     - old_expectation_id
         - type: string
         - required: true
-        - description: The expectation id previously assigned to the expectation loaded from the suite. 
+        - description: The expectation-id previously assigned to the expectation loaded from the suite.
     - did_overwrite_response:
         - type: boolean
         - required: true
