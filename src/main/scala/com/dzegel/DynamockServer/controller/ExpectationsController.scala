@@ -8,6 +8,7 @@ import com.dzegel.DynamockServer.types._
 import com.google.inject.Inject
 import com.twitter.finagle.http.Request
 import com.twitter.finatra.http.Controller
+import com.twitter.finatra.http.response.ResponseBuilder
 import com.twitter.finatra.request.QueryParam
 
 import scala.language.implicitConversions
@@ -96,59 +97,56 @@ class ExpectationsController @Inject()(
   put(expectationsPathBase) { request: ExpectationsPutRequest =>
     expectationService.registerExpectations(
       request.expectationResponses.map(x => RegisterExpectationsInput(x.expectation: Expectation, x.response: Response, x.expectationName))
-    ) match {
-      case Success(registerExpectationsOutputs) =>
-        response.ok(body = ExpectationsPutResponse(
-          registerExpectationsOutputs.map(x => ExpectationsPutResponseItemDto(x.expectationId, x.clientName, x.didOverwriteResponse))
-        ))
-      case Failure(exception) => response.internalServerError(exception.getMessage)
-    }
+    ).mapToOkResponse(registerExpectationsOutputs =>
+      ExpectationsPutResponse(
+        registerExpectationsOutputs.map(x => ExpectationsPutResponseItemDto(x.expectationId, x.clientName, x.didOverwriteResponse))
+      ))
   }
 
   delete(expectationsPathBase) { request: ExpectationsDeleteRequest =>
-    makeNoContentResponse(expectationService.clearExpectations(request.expectationIds))
+    expectationService.clearExpectations(request.expectationIds).mapToNoContentResponse()
   }
 
   get(expectationsPathBase) { _: Request =>
-    expectationService.getAllExpectations match {
-      case Success(expectationResponses) =>
-        response.ok(body = ExpectationsGetResponse(expectationResponses.map(
-          x => ExpectationsGetResponseItemDto(x.expectation, x.response, x.expectationId)
-        )))
-      case Failure(exception) => response.internalServerError(exception.getMessage)
-    }
+    expectationService.getAllExpectations.mapToOkResponse(expectationResponses =>
+      ExpectationsGetResponse(expectationResponses.map {
+        x => ExpectationsGetResponseItemDto(x.expectation, x.response, x.expectationId)
+      }))
   }
 
   post(s"$expectationsSuitePathBase/store") { request: ExpectationsSuiteStorePostRequest =>
-    makeNoContentResponse(expectationService.storeExpectations(request.suiteName))
+    expectationService.storeExpectations(request.suiteName).mapToNoContentResponse()
   }
 
   post(s"$expectationsSuitePathBase/load") { request: ExpectationsSuiteLoadPostRequest =>
-    expectationService.loadExpectations(request.suiteName) match {
-      case Success(registerExpectationsOutputs) =>
-        response.ok(body = ExpectationsSuiteLoadPostResponse(registerExpectationsOutputs.map { x =>
-          ExpectationsSuiteLoadPostResponseItemDto(
-            x.expectationId,
-            x.overwriteInfo.exists(y => y.didOverwriteResponse),
-            x.overwriteInfo.map(y => ExpectationsSuiteLoadPostResponseOverwriteInfo(y.oldExpectationId, y.didOverwriteResponse)))
-        }))
-      case Failure(exception) => response.internalServerError(exception.getMessage)
-    }
+    expectationService.loadExpectations(request.suiteName).mapToOkResponse(registerExpectationsOutputs =>
+      ExpectationsSuiteLoadPostResponse(registerExpectationsOutputs.map { x =>
+        ExpectationsSuiteLoadPostResponseItemDto(
+          x.expectationId,
+          x.overwriteInfo.exists(y => y.didOverwriteResponse),
+          x.overwriteInfo.map(y => ExpectationsSuiteLoadPostResponseOverwriteInfo(y.oldExpectationId, y.didOverwriteResponse)))
+      }))
   }
 
   post(s"$hitCountsPathBase/get") { request: HitCountsGetPostRequest =>
-    expectationService.getHitCounts(request.expectationIds) match {
-      case Success(expectationIdToHitCount) => response.ok(body = HitCountsGetPostResponse(expectationIdToHitCount))
+    expectationService.getHitCounts(request.expectationIds)
+      .mapToOkResponse(expectationIdToHitCount => HitCountsGetPostResponse(expectationIdToHitCount))
+  }
+
+  post(s"$hitCountsPathBase/reset") { request: HitCountsResetPostRequest =>
+    expectationService.resetHitCounts(request.expectationIds).mapToNoContentResponse()
+  }
+
+  implicit private class ImplicitEnrichedResponseMapper[T](`try`: Try[T]) {
+    def mapToOkResponse[O](responseFunc: T => O): ResponseBuilder#EnrichedResponse = `try` match {
+      case Success(in) => response.ok(body = responseFunc(in))
+      case Failure(exception) => response.internalServerError(exception.getMessage)
+    }
+
+    def mapToNoContentResponse(): ResponseBuilder#EnrichedResponse = `try` match {
+      case Success(_) => response.noContent
       case Failure(exception) => response.internalServerError(exception.getMessage)
     }
   }
 
-  post(s"$hitCountsPathBase/reset") { request: HitCountsResetPostRequest =>
-    makeNoContentResponse(expectationService.resetHitCounts(request.expectationIds))
-  }
-
-  private def makeNoContentResponse(`try`: Try[Unit]) = `try` match {
-    case Success(()) => response.noContent
-    case Failure(exception) => response.internalServerError(exception.getMessage)
-  }
 }
