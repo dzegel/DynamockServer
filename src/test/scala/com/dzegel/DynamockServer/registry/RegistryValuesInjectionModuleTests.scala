@@ -8,12 +8,12 @@ class RegistryValuesInjectionModuleTests extends FunSuite with Matchers {
 
   test("""fileRootRegistry(":65534") works""") {
     RegistryValuesInjectionModule.fileRootRegistry(":65534").fileRoot shouldBe
-      s"${File.listRoots.head.getCanonicalPath}${File.separator}Dynamock${File.separator}65534"
+      s"${File.listRoots.head.getCanonicalPath}${File.separator}DynamockServer${File.separator}65534"
   }
 
   test("""fileRootRegistry(":002") strips leading 0s""") {
     RegistryValuesInjectionModule.fileRootRegistry(":002").fileRoot shouldBe
-      s"${File.listRoots.head.getCanonicalPath}${File.separator}Dynamock${File.separator}2"
+      s"${File.listRoots.head.getCanonicalPath}${File.separator}DynamockServer${File.separator}2"
   }
 
   test("""fileRootRegistry(":1") throws""") {

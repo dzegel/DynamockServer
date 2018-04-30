@@ -10,7 +10,7 @@ import scala.util.Random
 
 class ExpectationsFileServiceTests extends FunSuite with Matchers with BeforeAndAfterEach {
   private val fileRootRegistry = new FileRootRegistry {
-    override val fileRoot = s"${File.listRoots.head.getCanonicalPath}${File.separator}Dynamock${File.separator}test"
+    override val fileRoot = s"${File.listRoots.head.getCanonicalPath}${File.separator}DynamockServer${File.separator}test"
   }
   private val expectationsFileService = new DefaultExpectationsFileService(fileRootRegistry)
 

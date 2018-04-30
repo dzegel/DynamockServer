@@ -7,6 +7,6 @@ trait FileRootRegistry {
 }
 
 class DefaultFileRootRegistry(port: String) extends FileRootRegistry {
-  override val fileRoot: String = s"${File.listRoots.head.getCanonicalPath}${File.separator}Dynamock${File.separator}$port"
+  override val fileRoot: String = s"${File.listRoots.head.getCanonicalPath}${File.separator}DynamockServer${File.separator}$port"
   new File(fileRoot).mkdirs()
 }
