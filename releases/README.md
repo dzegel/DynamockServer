@@ -10,7 +10,7 @@ Release version notation is made of three integers `x`, `y` and `z` delimited by
 
 |Version|JAR|Release Notes|
 |---|---|---|
-|[3.0.0]()|Not Released|<ul><li>Remove deprecated `did_overwrite_response` property from `POST /expectations-suite/load` response.</li></ul>|
+|[3.0.0]()|Not Released|<ul><li>Remove deprecated `did_overwrite_response` property from `POST /expectations-suite/load` response.</li><li>Update default value of `dynamock.path.base` JAR argument to `dynamock`.</li></ul>|
 |[2.1.1]()|Not Released|<ul><li>Rename file root from`Dynamock` to `DynamockServer`</li></ul>|
 |[2.1.0](https://github.com/dzegel/DynamockServer/tree/Version_2.1.0)|[Dynamock Server 2.1.0 JAR](DynamockServer-2.1.0.jar)|<ul><li>Update `POST /expectation-suite/load` response to include overwritten expectation ids.</li><li>Add `POST /hit-counts/get` and `POST /hit-counts/reset` endpoints.</li></ul> |
 |[2.0.1](https://github.com/dzegel/DynamockServer/tree/Version_2.0.1)|[Dynamock Server 2.0.1 JAR](DynamockServer-2.0.1.jar)|<ul><li>Minor updates.</li><li>Memory leak fix.</li></ul>|

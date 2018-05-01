@@ -49,8 +49,8 @@ The arguments are as follows:
     For example, providing `-http.port=:1234` deploys a Dynamock instance listening on port `1234`.
     If not provided this value defaults to `:8888`. This feature can be used to deploy multiple Dynamock Server instances for different consumers, to avoid collisions. 
     - **dynamock.path.base**: This value prefixes Dynamock API url-paths.
-    For example, `-dynamock.path.base=dynamock/test` or `-dynamock.path.base=/dynamock/test` both result in a net url path `/dynamock/test/expectations` for the Dynamock API url-path `<dynamock-path-base>/expectations`.
-    If not provided the net url-path would be `/expectations`.
+    For example, `-dynamock.path.base=my/test` or `-dynamock.path.base=/my/test` both result in a net url path `/my/test/expectations` for the Dynamock API url-path `<dynamock-path-base>/expectations`.
+    If not provided `dynamock.path.base` defaults to the value `dynamock`, resulting in the net url-path being `/dynamock/expectations`.
     This feature can be used to avoid collisions on mocked http requests and the dynamock API.  
 
 ## Mocked API
