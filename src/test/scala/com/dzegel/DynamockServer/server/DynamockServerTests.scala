@@ -252,8 +252,7 @@ class DynamockServerTests extends FeatureTest with Matchers with BeforeAndAfterE
       withJsonBody =
         s"""{
            |  "suite_load_info": [{
-           |    "expectation_id": "$expectationId",
-           |    "did_overwrite_response": false
+           |    "expectation_id": "$expectationId"
            |  }]
            |}""".stripMargin)
 
