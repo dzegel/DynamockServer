@@ -51,7 +51,7 @@ The arguments are as follows:
     - **dynamock.path.base**: This value prefixes Dynamock API url-paths.
     For example, `-dynamock.path.base=my/test` or `-dynamock.path.base=/my/test` both result in a net url path `/my/test/expectations` for the Dynamock API url-path `<dynamock-path-base>/expectations`.
     If not provided `dynamock.path.base` defaults to the value `dynamock`, resulting in the net url-path being `/dynamock/expectations`.
-    This feature can be used to avoid collisions on mocked http requests and the dynamock API.  
+    You should only need to use this feature, in the unlikely case that the API being mocked has `dynamock` in its url paths, to avoid collisions on mocked http requests and the dynamock API.
 
 ## Mocked API
 Any API call made to Dynamock Server is included in the Mocked API, except for API calls that would collide with the [Dynamock API](#dynamock-api).
