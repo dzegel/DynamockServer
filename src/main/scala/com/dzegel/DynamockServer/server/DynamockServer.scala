@@ -8,6 +8,7 @@ import com.twitter.finatra.http.routing.HttpRouter
 class DynamockServer extends HttpServer {
   override protected lazy val disableAdminHttpServer = true
   override protected lazy val failfastOnFlagsNotParsed: Boolean = true
+  override lazy val defaultAdminPort = 0
 
   override protected lazy val modules = Seq(RegistryValuesInjectionModule)
 

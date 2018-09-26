@@ -316,6 +316,7 @@ Reset hit-counts to 0.
 - `/expectation-suite/list` endpoint
 - `/expectation-suite` DELETE endpoint
 - Regex matching on expectation matching.
+- Remove the requirement that an exclusion must have a response.
 
 ## Bug Reports / Feature Requests
 To report a bug, feature request or any other constructive comment, please create a detailed GitHub issue with a mention of **@dzegel**. 
