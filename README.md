@@ -49,9 +49,9 @@ The arguments are as follows:
     For example, providing `-http.port=:1234` deploys a Dynamock instance listening on port `1234`.
     If not provided this value defaults to `:8888`. This feature can be used to deploy multiple Dynamock Server instances for different consumers, to avoid collisions. 
     - **dynamock.path.base**: This value prefixes Dynamock API url-paths.
-    For example, `-dynamock.path.base=dynamock/test` or `-dynamock.path.base=/dynamock/test` both result in a net url path `/dynamock/test/expectations` for the Dynamock API url-path `<dynamock-path-base>/expectations`.
-    If not provided the net url-path would be `/expectations`.
-    This feature can be used to avoid collisions on mocked http requests and the dynamock API.  
+    For example, `-dynamock.path.base=my/test` or `-dynamock.path.base=/my/test` both result in a net url path `/my/test/expectations` for the Dynamock API url-path `<dynamock-path-base>/expectations`.
+    If not provided `dynamock.path.base` defaults to the value `dynamock`, resulting in the net url-path being `/dynamock/expectations`.
+    You should only need to use this feature, in the unlikely case that the API being mocked has `dynamock` in its url paths, to avoid collisions on mocked http requests and the dynamock API.
 
 ## Mocked API
 Any API call made to Dynamock Server is included in the Mocked API, except for API calls that would collide with the [Dynamock API](#dynamock-api).
@@ -241,10 +241,6 @@ Reset hit-counts to 0.
         - type: String
         - required: true
         - description: The unique expectation-id loaded from the expectation suite.
-    - did_overwrite_response:
-        - type: boolean
-        - required: true
-        - description: DEPRECATED this will be removed in a future release. When `overwrite_info` is provided this contains the same value as `overwrite_info.did_overwrite_response` otherwise it contains false.
     - overwrite_info:
         - type: [LoadInfoExpectationOverwrite](#loadinfoexpectationoverwrite-object) Object
         - required: false

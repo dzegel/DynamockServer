@@ -44,7 +44,7 @@ object ExpectationsController {
 
   private case class ExpectationsSuiteLoadPostResponseOverwriteInfo(oldExpectationId: String, didOverwriteResponse: Boolean)
 
-  private case class ExpectationsSuiteLoadPostResponseItemDto(expectationId: String, didOverwriteResponse: Boolean, overwriteInfo: Option[ExpectationsSuiteLoadPostResponseOverwriteInfo])
+  private case class ExpectationsSuiteLoadPostResponseItemDto(expectationId: String, overwriteInfo: Option[ExpectationsSuiteLoadPostResponseOverwriteInfo])
 
   private case class ExpectationsSuiteLoadPostRequest(@QueryParam suiteName: String)
 
@@ -123,7 +123,6 @@ class ExpectationsController @Inject()(
       ExpectationsSuiteLoadPostResponse(registerExpectationsOutputs.map { x =>
         ExpectationsSuiteLoadPostResponseItemDto(
           x.expectationId,
-          x.overwriteInfo.exists(y => y.didOverwriteResponse),
           x.overwriteInfo.map(y => ExpectationsSuiteLoadPostResponseOverwriteInfo(y.oldExpectationId, y.didOverwriteResponse)))
       }))
   }

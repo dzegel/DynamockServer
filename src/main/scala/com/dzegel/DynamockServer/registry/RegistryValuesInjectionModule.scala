@@ -6,7 +6,7 @@ import com.twitter.inject.annotations.Flag
 
 object RegistryValuesInjectionModule extends TwitterModule {
   //http.port flag is built into finatra
-  flag("dynamock.path.base", "", "Url base path for the Dynamock API.")
+  flag("dynamock.path.base", "dynamock", "Url base path for the Dynamock API.")
 
   @Singleton
   @Provides def fileRootRegistry(@Flag("http.port") port: String): FileRootRegistry =
