@@ -7,7 +7,7 @@ import scala.collection.concurrent.TrieMap
 
 @ImplementedBy(classOf[DefaultResponseStore])
 trait ResponseStore {
-  def registerResponses(expectationIdToResponse: Map[ExpectationId, Response]): Map[ExpectationId, DidOverwriteResponse]
+  def registerResponse(expectationId:ExpectationId, response:Response): DidOverwriteResponse
 
   def getResponses(expectationIds: Set[ExpectationId]): Map[ExpectationId, Response]
 
@@ -18,13 +18,10 @@ trait ResponseStore {
 class DefaultResponseStore extends ResponseStore {
   private val expectationIdToResponse = TrieMap.empty[ExpectationId, Response]
 
-  override def registerResponses(expectationIdToResponse: Map[ExpectationId, Response])
-  : Map[ExpectationId, DidOverwriteResponse] = this.synchronized {
-    expectationIdToResponse.map { case (expectationId, response) =>
-      val overwritingResponse = this.expectationIdToResponse.get(expectationId).exists(_ != response)
-      this.expectationIdToResponse.put(expectationId, response)
-      (expectationId, overwritingResponse)
-    }
+  override def registerResponse(expectationId: ExpectationId, response: Response): DidOverwriteResponse = this.synchronized {
+    val overwritingResponse = this.expectationIdToResponse.get(expectationId).exists(_ != response)
+    this.expectationIdToResponse.put(expectationId, response)
+    overwritingResponse
   }
 
   override def getResponses(expectationIds: Set[ExpectationId]): Map[ExpectationId, Response] = this.synchronized {

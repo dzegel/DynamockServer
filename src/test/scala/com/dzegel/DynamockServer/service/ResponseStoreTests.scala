@@ -17,29 +17,26 @@ class ResponseStoreTests extends FunSuite with BeforeAndAfterEach with Matchers 
     responseStore = new DefaultResponseStore()
   }
 
-  test("registerResponses and getResponses work") {
-    val registerResult = responseStore.registerResponses(Map(expectationId1 -> response1, expectationId2 -> response2))
-    val getResult = responseStore.getResponses(expectationIds)
-
-    registerResult shouldBe Map(expectationId1 -> false, expectationId2 -> false)
-    getResult shouldBe Map(expectationId1 -> response1, expectationId2 -> response2)
+  test("registerResponse and getResponses work") {
+    responseStore.registerResponse(expectationId1, response1) shouldBe false
+    responseStore.getResponses(expectationIds) shouldBe Map(expectationId1 -> response1)
+    responseStore.registerResponse(expectationId2, response2) shouldBe false
+    responseStore.getResponses(expectationIds) shouldBe Map(expectationId1 -> response1, expectationId2 -> response2)
   }
 
-  test("registerResponses and getResponses work for overwritten response") {
-    val registerResult1 = responseStore.registerResponses(Map(expectationId1 -> response1, expectationId2 -> response2))
-    val getResult1 = responseStore.getResponses(expectationIds)
-    val registerResult2 = responseStore.registerResponses(Map(expectationId1 -> response1, expectationId2 -> response3))
-    val getResult2 = responseStore.getResponses(expectationIds)
-
-    registerResult1 shouldBe Map(expectationId1 -> false, expectationId2 -> false)
-    getResult1 shouldBe Map(expectationId1 -> response1, expectationId2 -> response2)
-    registerResult2 shouldBe Map(expectationId1 -> false, expectationId2 -> true)
-    getResult2 shouldBe Map(expectationId1 -> response1, expectationId2 -> response3)
+  test("registerResponse and getResponses work for overwritten response") {
+    responseStore.getResponses(expectationIds) shouldBe empty
+    responseStore.registerResponse(expectationId1, response1) shouldBe false
+    responseStore.getResponses(expectationIds) shouldBe Map(expectationId1 -> response1)
+    responseStore.registerResponse(expectationId1, response1) shouldBe false
+    responseStore.getResponses(expectationIds) shouldBe Map(expectationId1 -> response1)
+    responseStore.registerResponse(expectationId1, response2) shouldBe true
+    responseStore.getResponses(expectationIds) shouldBe Map(expectationId1 -> response2)
   }
 
   test("getResponses safely handles non-registered expectationIds") {
     val getResult1 = responseStore.getResponses(expectationIds)
-    responseStore.registerResponses(Map(expectationId1 -> response1))
+    responseStore.registerResponse(expectationId1, response1)
     val getResult2 = responseStore.getResponses(expectationIds)
 
     getResult1 shouldBe empty
@@ -51,12 +48,14 @@ class ResponseStoreTests extends FunSuite with BeforeAndAfterEach with Matchers 
 
     responseStore.getResponses(expectationIds) shouldBe empty
 
-    responseStore.registerResponses(expectationIdToResponse)
+    responseStore.registerResponse(expectationId1, response1)
+    responseStore.registerResponse(expectationId2, response2)
     responseStore.getResponses(expectationIds) shouldBe expectationIdToResponse
     responseStore.deleteResponses(expectationIds)
     responseStore.getResponses(expectationIds) shouldBe empty
 
-    responseStore.registerResponses(expectationIdToResponse)
+    responseStore.registerResponse(expectationId1, response1)
+    responseStore.registerResponse(expectationId2, response2)
     responseStore.getResponses(expectationIds) shouldBe expectationIdToResponse
     responseStore.deleteResponses(Set(expectationId2))
     responseStore.getResponses(expectationIds) shouldBe Map(expectationId1 -> response1)
