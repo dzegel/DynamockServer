@@ -5,6 +5,7 @@ import com.dzegel.DynamockServer.types._
 import com.google.inject.{ImplementedBy, Inject, Singleton}
 
 import scala.collection.concurrent.TrieMap
+import scala.language.implicitConversions
 
 @ImplementedBy(classOf[DefaultExpectationStore])
 trait ExpectationStore {
