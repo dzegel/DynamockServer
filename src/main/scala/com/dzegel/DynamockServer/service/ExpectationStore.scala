@@ -2,7 +2,7 @@ package com.dzegel.DynamockServer.service
 
 import com.dzegel.DynamockServer.service.ExpectationStore._
 import com.dzegel.DynamockServer.types._
-import com.google.inject.{ImplementedBy, Inject, Singleton}
+import com.google.inject.{ImplementedBy, Singleton}
 
 import scala.collection.concurrent.TrieMap
 import scala.language.implicitConversions
@@ -10,28 +10,22 @@ import scala.language.implicitConversions
 @ImplementedBy(classOf[DefaultExpectationStore])
 trait ExpectationStore {
 
-  def registerExpectationResponse(expectationResponse: ExpectationResponse): RegisterExpectationResponseReturnValue
-
-  def registerExpectationResponseWithId(expectationResponse: ExpectationResponse, id: ExpectationId): Option[RegisterExpectationResponseWithIdReturnValue]
+  def registerExpectation(expectation: Expectation): ExpectationId
 
   def getIdsForMatchingExpectations(request: Request): Set[ExpectationId]
 
-  def getMostConstrainedExpectationWithId(expectationIds: Set[ExpectationId]): Option[(ExpectationId, ExpectationResponse)]
+  def getMostConstrainedExpectationWithId(expectationIds: Set[ExpectationId]): Option[(ExpectationId, Expectation)]
 
   def clearAllExpectations(): Unit
 
   def clearExpectations(expectationIds: Set[ExpectationId]): Unit
 
-  def getAllExpectations: Set[(ExpectationId, ExpectationResponse)]
+  def getAllExpectations: Map[ExpectationId, Expectation]
 }
 
-object ExpectationStore {
+private [service] object ExpectationStore {
 
-  case class RegisterExpectationResponseReturnValue(expectationId: ExpectationId, isResponseUpdated: Boolean)
-
-  case class RegisterExpectationResponseWithIdReturnValue(oldExpectationId: ExpectationId, isResponseUpdated: Boolean)
-
-  private[service] case class ExpectationKey(method: Method, path: Path, queryParams: QueryParams, content: Content)
+  case class ExpectationKey(method: Method, path: Path, queryParams: QueryParams, content: Content)
 
   object ExpectationKey {
     implicit def apply(expectation: Expectation): ExpectationKey = ExpectationKey(expectation.method, expectation.path, expectation.queryParams, expectation.content)
@@ -42,47 +36,22 @@ object ExpectationStore {
 }
 
 @Singleton
-class DefaultExpectationStore @Inject()(randomStringGenerator: RandomStringGenerator) extends ExpectationStore {
+class DefaultExpectationStore extends ExpectationStore {
 
-  private val idToExpectationResponse = TrieMap.empty[ExpectationId, ExpectationResponse]
+  private val idToExpectation = TrieMap.empty[ExpectationId, Expectation]
   private val expectationKeyToHeaderParamRegistry = TrieMap.empty[ExpectationKey, HeaderParamRegistry]
 
-  override def registerExpectationResponse(expectationResponse: ExpectationResponse)
-  : RegisterExpectationResponseReturnValue = this.synchronized {
-
-    val (expectation, response) = expectationResponse
+  override def registerExpectation(expectation: Expectation): ExpectationId = this.synchronized {
     val headerParamRegistry = expectationKeyToHeaderParamRegistry.getOrElseUpdate(expectation, TrieMap.empty)
-    val expectationId = headerParamRegistry.getOrElseUpdate(expectation.headerParameters, randomStringGenerator.next())
-    val oldExpectationResponse = idToExpectationResponse.get(expectationId)
+    val expectationId = headerParamRegistry.getOrElseUpdate(expectation.headerParameters, getExpectationId(expectation))
 
-    idToExpectationResponse.put(expectationId, expectationResponse)
+    idToExpectation.put(expectationId, expectation)
     headerParamRegistry.put(expectation.headerParameters, expectationId)
 
-    RegisterExpectationResponseReturnValue(
-      expectationId,
-      isResponseUpdated = oldExpectationResponse.exists { case (_, oldResponse) => oldResponse != response }
-    )
+    expectationId
   }
 
-  override def registerExpectationResponseWithId(expectationResponse: ExpectationResponse, expectationId: ExpectationId)
-  : Option[RegisterExpectationResponseWithIdReturnValue] = this.synchronized {
-
-    val (expectation, response) = expectationResponse
-    val headerParamRegistry = expectationKeyToHeaderParamRegistry.getOrElseUpdate(expectation, TrieMap.empty)
-    val oldExpectationId = headerParamRegistry.get(expectation.headerParameters)
-    val oldExpectationResponse = oldExpectationId.flatMap(idToExpectationResponse.get)
-
-    headerParamRegistry.put(expectation.headerParameters, expectationId)
-    oldExpectationId.foreach(idToExpectationResponse.remove)
-    idToExpectationResponse.put(expectationId, expectationResponse)
-
-    oldExpectationId.map { oldId =>
-      RegisterExpectationResponseWithIdReturnValue(
-        oldId,
-        isResponseUpdated = oldExpectationResponse.exists { case (_, oldResponse) => oldResponse != response }
-      )
-    }
-  }
+  private def getExpectationId(expectation: Expectation): String = expectation.hashCode().toString
 
   override def getIdsForMatchingExpectations(request: Request): Set[ExpectationId] = this.synchronized {
     expectationKeyToHeaderParamRegistry.getOrElse(request, TrieMap.empty).collect { // find valid options
@@ -92,12 +61,12 @@ class DefaultExpectationStore @Inject()(randomStringGenerator: RandomStringGener
   }
 
   override def getMostConstrainedExpectationWithId(expectationIds: Set[ExpectationId])
-  : Option[(ExpectationId, ExpectationResponse)] = this.synchronized {
-    expectationIds.map(id => (id, idToExpectationResponse(id))).reduceOption[(ExpectationId, ExpectationResponse)] {
+  : Option[(ExpectationId, Expectation)] = this.synchronized {
+    expectationIds.map(id => (id, idToExpectation(id))).reduceOption[(ExpectationId, Expectation)] {
       case (left, right) =>
-        val (_, (Expectation(_, _, _, leftHeaderParameters, _), _)) = left
+        val (_, Expectation(_, _, _, leftHeaderParameters, _)) = left
         val HeaderParameters(leftIncluded, leftExcluded) = leftHeaderParameters
-        val (_, (Expectation(_, _, _, rightHeaderParameters, _), _)) = right
+        val (_, Expectation(_, _, _, rightHeaderParameters, _)) = right
         val HeaderParameters(rightIncluded, rightExcluded) = rightHeaderParameters
 
         val leftConstraintSize = leftIncluded.size + leftExcluded.size
@@ -111,23 +80,22 @@ class DefaultExpectationStore @Inject()(randomStringGenerator: RandomStringGener
 
   override def clearAllExpectations(): Unit = this.synchronized {
     expectationKeyToHeaderParamRegistry.clear()
-    idToExpectationResponse.clear()
+    idToExpectation.clear()
   }
 
   override def clearExpectations(expectationIds: Set[ExpectationId]): Unit = this.synchronized {
     expectationIds.foreach { id =>
-      idToExpectationResponse.remove(id).foreach {
-        case (expectation, _) =>
-          val headerParamRegistry = expectationKeyToHeaderParamRegistry.getOrElse(expectation, TrieMap.empty)
-          headerParamRegistry.remove(expectation.headerParameters)
-          if (headerParamRegistry.isEmpty) {
-            expectationKeyToHeaderParamRegistry.remove(expectation)
-          }
+      idToExpectation.remove(id).foreach { expectation =>
+        val headerParamRegistry = expectationKeyToHeaderParamRegistry.getOrElse(expectation, TrieMap.empty)
+        headerParamRegistry.remove(expectation.headerParameters)
+        if (headerParamRegistry.isEmpty) {
+          expectationKeyToHeaderParamRegistry.remove(expectation)
+        }
       }
     }
   }
 
-  override def getAllExpectations: Set[(ExpectationId, ExpectationResponse)] = this.synchronized {
-    idToExpectationResponse.toSet
+  override def getAllExpectations: Map[ExpectationId, Expectation] = this.synchronized {
+    idToExpectation.toMap
   }
 }

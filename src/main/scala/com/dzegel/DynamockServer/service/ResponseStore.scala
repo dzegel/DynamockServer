@@ -7,11 +7,13 @@ import scala.collection.concurrent.TrieMap
 
 @ImplementedBy(classOf[DefaultResponseStore])
 trait ResponseStore {
-  def registerResponse(expectationId:ExpectationId, response:Response): DidOverwriteResponse
+  def registerResponse(expectationId: ExpectationId, response: Response): DidOverwriteResponse
 
   def getResponses(expectationIds: Set[ExpectationId]): Map[ExpectationId, Response]
 
   def deleteResponses(expectationIds: Set[ExpectationId]): Unit
+
+  def clearAllResponses(): Unit
 }
 
 @Singleton
@@ -33,5 +35,9 @@ class DefaultResponseStore extends ResponseStore {
 
   override def deleteResponses(expectationIds: Set[ExpectationId]): Unit = this.synchronized {
     expectationIds.foreach(expectationIdToResponse.remove)
+  }
+
+  override def clearAllResponses(): Unit = this.synchronized {
+    expectationIdToResponse.clear()
   }
 }
