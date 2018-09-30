@@ -23,7 +23,7 @@ trait ExpectationStore {
   def getAllExpectations: Map[ExpectationId, Expectation]
 }
 
-private [service] object ExpectationStore {
+private[service] object ExpectationStore {
 
   case class ExpectationKey(method: Method, path: Path, queryParams: QueryParams, content: Content)
 
@@ -43,15 +43,13 @@ class DefaultExpectationStore extends ExpectationStore {
 
   override def registerExpectation(expectation: Expectation): ExpectationId = this.synchronized {
     val headerParamRegistry = expectationKeyToHeaderParamRegistry.getOrElseUpdate(expectation, TrieMap.empty)
-    val expectationId = headerParamRegistry.getOrElseUpdate(expectation.headerParameters, getExpectationId(expectation))
+    val expectationId = headerParamRegistry.getOrElseUpdate(expectation.headerParameters, expectation.expectationId)
 
     idToExpectation.put(expectationId, expectation)
     headerParamRegistry.put(expectation.headerParameters, expectationId)
 
     expectationId
   }
-
-  private def getExpectationId(expectation: Expectation): String = expectation.hashCode().toString
 
   override def getIdsForMatchingExpectations(request: Request): Set[ExpectationId] = this.synchronized {
     expectationKeyToHeaderParamRegistry.getOrElse(request, TrieMap.empty).collect { // find valid options

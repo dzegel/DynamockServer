@@ -11,4 +11,9 @@ package object types {
   type HeaderParamRegistry = TrieMap[HeaderParameters, ExpectationId]
   type ExpectationResponse = (Expectation, Response)
   type DidOverwriteResponse = Boolean
+
+  implicit class RichExpectation(expectation: Expectation) {
+    def expectationId: String = expectation.hashCode.toString
+  }
+
 }
