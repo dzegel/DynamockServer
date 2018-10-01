@@ -10,4 +10,5 @@ package object types {
   type ExpectationId = String
   type HeaderParamRegistry = TrieMap[HeaderParameters, ExpectationId]
   type ExpectationResponse = (Expectation, Response)
+  type DidOverwriteResponse = Boolean
 }
