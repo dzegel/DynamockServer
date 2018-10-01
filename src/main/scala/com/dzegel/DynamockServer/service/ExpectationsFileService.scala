@@ -3,7 +3,7 @@ package com.dzegel.DynamockServer.service
 import java.io._
 
 import com.dzegel.DynamockServer.registry.FileRootRegistry
-import com.dzegel.DynamockServer.service.DefaultExpectationsFileService.Wrapper
+import com.dzegel.DynamockServer.service.DefaultExpectationsFileService._
 import com.dzegel.DynamockServer.types.{Expectation, Response}
 import com.fasterxml.jackson.databind.{DeserializationFeature, ObjectMapper}
 import com.fasterxml.jackson.module.scala.DefaultScalaModule
@@ -27,16 +27,16 @@ class DefaultExpectationsFileService @Inject()(fileRootRegistry: FileRootRegistr
   new File(fileRoot).mkdirs()
 
   override def storeExpectationsAsJson(fileName: String, obj: Set[(Expectation, Option[Response])]): Unit =
-    objectMapper.writeValue(makeFile(fileName), obj.map { case (expectation, response) => Wrapper(expectation, response) })
+    objectMapper.writeValue(makeFile(fileName), obj.map { case (expectation, response) => SerializationWrapper(expectation, response) })
 
   override def loadExpectationsFromJson(fileName: String): Set[(Expectation, Option[Response])] =
-    objectMapper.readValue[Set[Wrapper]](makeFile(fileName)).map(wrapper => (wrapper.expectation, wrapper.response))
+    objectMapper.readValue[Set[SerializationWrapper]](makeFile(fileName)).map(wrapper => (wrapper.expectation, wrapper.response))
 
   private def makeFile(fileName: String): File = new File(fileRoot, fileName + ".expectations.json")
 }
 
-private[service] object DefaultExpectationsFileService {
+private object DefaultExpectationsFileService {
 
-  case class Wrapper(expectation: Expectation, response: Option[Response])
+  private case class SerializationWrapper(expectation: Expectation, response: Option[Response])
 
 }

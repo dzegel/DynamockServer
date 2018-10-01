@@ -60,14 +60,14 @@ class ExpectationStoreTests extends FunSuite with MockFactory with Matchers with
   test("registerExpectation works for included header params") {
     val keyValue1 = "key1" -> "value1"
     val expectation1 = getExpectation(includedHeaders = Set(keyValue1))
-    val id1 = expectation1.expectationId
+    val id1 = expectation1.hashCode.toString
     val request1 = getRequest(headers = expectation1.headerParameters.included)
     val expectation2 = getExpectation(includedHeaders = Set(keyValue1, "key2" -> "value2"))
-    val id2 = expectation2.expectationId
+    val id2 = expectation2.hashCode.toString
     val request2 = getRequest(headers = expectation2.headerParameters.included)
 
     expectationStore.registerExpectation(expectation1) shouldBe id1
-    expectationStore.getAllExpectations shouldBe Map(id1-> expectation1)
+    expectationStore.getAllExpectations shouldBe Map(id1 -> expectation1)
 
     expectationStore.registerExpectation(expectation2) shouldBe id2
     expectationStore.getAllExpectations shouldBe Map(id1 -> expectation1, id2 -> expectation2)
@@ -83,8 +83,8 @@ class ExpectationStoreTests extends FunSuite with MockFactory with Matchers with
     val keyValue1 = "key1" -> "value1"
     val expectation1 = getExpectation(excludedHeaders = Set(keyValue1))
     val expectation2 = getExpectation(excludedHeaders = Set(keyValue1, "key2" -> "value2"))
-    val id1 = expectation1.expectationId
-    val id2 = expectation2.expectationId
+    val id1 = expectation1.hashCode.toString
+    val id2 = expectation2.hashCode.toString
     val request1 = getRequest(headers = Set(keyValue1))
     val request2 = getRequest(headers = Set("key3" -> "value3"))
     val request3 = getRequest(headers = Set())
@@ -110,9 +110,9 @@ class ExpectationStoreTests extends FunSuite with MockFactory with Matchers with
     val expectation1 = getExpectation(includedHeaders = Set(included1), excludedHeaders = Set(excluded1, excluded2))
     val expectation2 = getExpectation(includedHeaders = Set(included1, included2), excludedHeaders = Set(excluded1))
     val expectation3 = getExpectation(includedHeaders = Set(included1, included2), excludedHeaders = Set(excluded1, excluded3))
-    val id1 = expectation1.expectationId
-    val id2 = expectation2.expectationId
-    val id3 = expectation3.expectationId
+    val id1 = expectation1.hashCode.toString
+    val id2 = expectation2.hashCode.toString
+    val id3 = expectation3.hashCode.toString
 
     expectationStore.registerExpectation(expectation1) shouldBe id1
     expectationStore.registerExpectation(expectation2) shouldBe id2
@@ -138,7 +138,7 @@ class ExpectationStoreTests extends FunSuite with MockFactory with Matchers with
       Map("QueryParam" -> "QueryValue"),
       HeaderParameters(Set("IncludedHeader" -> "IncludedValue"), Set("ExcludedHeader" -> "ExcludedValue")),
       Content("Some Content"))
-    val id = expectation.expectationId
+    val id = expectation.hashCode.toString
 
     expectationStore.getAllExpectations shouldBe empty
 
@@ -149,11 +149,11 @@ class ExpectationStoreTests extends FunSuite with MockFactory with Matchers with
 
   test("clearAllExpectations clears all expectations") {
     val expectation1 = getExpectation(path = "path1", method = "GET")
-    val id1 = expectation1.expectationId
+    val id1 = expectation1.hashCode.toString
     val request1 = getRequest(path = expectation1.path, method = expectation1.method)
     val expectation2 = getExpectation(path = "path2", method = "PUT")
     val request2 = getRequest(path = expectation2.path, method = expectation2.method)
-    val id2 = expectation2.expectationId
+    val id2 = expectation2.hashCode.toString
 
     expectationStore.registerExpectation(expectation1) shouldBe id1
     expectationStore.getAllExpectations shouldBe Map(id1 -> expectation1)
@@ -177,10 +177,10 @@ class ExpectationStoreTests extends FunSuite with MockFactory with Matchers with
 
   test("clearExpectations clears targeted expectations") {
     val expectation1 = getExpectation(path = "path1", method = "GET")
-    val id1 = expectation1.expectationId
+    val id1 = expectation1.hashCode.toString
     val request1 = getRequest(path = expectation1.path, method = expectation1.method)
     val expectation2 = getExpectation(path = "path2", method = "PUT")
-    val id2 = expectation2.expectationId
+    val id2 = expectation2.hashCode.toString
     val request2 = getRequest(path = expectation2.path, method = expectation2.method)
 
     expectationStore.registerExpectation(expectation1) shouldBe id1
@@ -204,8 +204,8 @@ class ExpectationStoreTests extends FunSuite with MockFactory with Matchers with
   }
 
   private def testMultipleRegistrationsWork(expectation1: Expectation, request1: Request, expectation2: Expectation, request2: Request) {
-    val id1 = expectation1.expectationId
-    val id2 = expectation2.expectationId
+    val id1 = expectation1.hashCode.toString
+    val id2 = expectation2.hashCode.toString
 
     expectationStore.registerExpectation(expectation1) shouldBe id1
     expectationStore.getAllExpectations shouldBe Map(id1 -> expectation1)

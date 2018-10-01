@@ -126,12 +126,7 @@ class DefaultExpectationService @Inject()(
           else None)
       }
 
-      val overwrittenIds = outputs.collect {
-        case LoadExpectationsOutput(expectationId, Some(LoadExpectationsOverwriteInfo(oldExpectationId, _)))
-          if expectationId != oldExpectationId => oldExpectationId
-      }
       val writtenIds = outputs.map(output => output.expectationId)
-      hitCountService.delete(overwrittenIds)
       hitCountService.register(writtenIds)
 
       outputs

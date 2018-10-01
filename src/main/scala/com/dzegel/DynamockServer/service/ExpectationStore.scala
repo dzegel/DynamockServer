@@ -1,5 +1,6 @@
 package com.dzegel.DynamockServer.service
 
+import com.dzegel.DynamockServer.service.DefaultExpectationStore._
 import com.dzegel.DynamockServer.service.ExpectationStore._
 import com.dzegel.DynamockServer.types._
 import com.google.inject.{ImplementedBy, Singleton}
@@ -31,6 +32,14 @@ private[service] object ExpectationStore {
     implicit def apply(expectation: Expectation): ExpectationKey = ExpectationKey(expectation.method, expectation.path, expectation.queryParams, expectation.content)
 
     implicit def apply(request: Request): ExpectationKey = ExpectationKey(request.method, request.path, request.queryParams, request.content)
+  }
+
+}
+
+private object DefaultExpectationStore {
+
+  implicit class RichExpectation(expectation: Expectation) {
+    def expectationId: String = expectation.hashCode.toString
   }
 
 }
