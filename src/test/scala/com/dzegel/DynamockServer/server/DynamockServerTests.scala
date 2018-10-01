@@ -22,7 +22,7 @@ class DynamockServerTests extends FeatureTest with Matchers with BeforeAndAfterE
   private val response2 = Response(203, "SomeOtherContent2", Map("SomeKey2" -> "SomeValue2"))
   private val expectationName = "expectation name"
 
-  private def expectationPutRequestJson(response: Response): String =
+  private def expectationPutRequestJson(response: Option[Response]): String =
     s"""
 {
   "expectation_responses": [{
@@ -31,23 +31,38 @@ class DynamockServerTests extends FeatureTest with Matchers with BeforeAndAfterE
       "path": "${expectation.path}",
       "method": "${expectation.method}",
       "content": "${expectation.content.stringValue}"
-    },
+    } ${
+      response.map(res =>
+        s""",
     "response": {
-      "status": ${response.status},
-      "content": "${response.content}",
+      "status": ${res.status},
+      "content": "${res.content}",
       "header_map": {
-        "${response.headerMap.head._1}": "${response.headerMap.head._2}"
+        "${res.headerMap.head._1}": "${res.headerMap.head._2}"
       }
+    }""").getOrElse("")
     }
   }]
 }"""
 
   override protected def beforeEach: Unit = server.httpDelete("/DynamockTest/expectations")
 
+  test("PUT /DynamockTest/expectations - mocked expectation with no response works"){
+    server.httpPut(
+      path = "/DynamockTest/expectations",
+      putBody = expectationPutRequestJson(None),
+      andExpect = Status.Ok)
+
+    server.httpPut(
+      expectation.path,
+      putBody = expectation.content.stringValue,
+      andExpect = Status(551))
+  }
+
   test("PUT /DynamockTest/expectations - mocked expectation - DELETE /DynamockTest/expectations - mocked expectation returns the expected response") {
     val putExpectationsResponse = server.httpPut(
       path = "/DynamockTest/expectations",
-      putBody = expectationPutRequestJson(response),
+      putBody = expectationPutRequestJson(Some(response)),
       andExpect = Status.Ok)
 
     val responseMap = parse(putExpectationsResponse.contentString).filterField(_ => true).toMap
@@ -92,7 +107,7 @@ class DynamockServerTests extends FeatureTest with Matchers with BeforeAndAfterE
   test("PUT /DynamockTest/expectations - mocked expectation - PUT /DynamockTest/expectations with new response - mocked expectation returns the expected response") {
     val putExpectationsResponse = server.httpPut(
       path = "/DynamockTest/expectations",
-      putBody = expectationPutRequestJson(response),
+      putBody = expectationPutRequestJson(Some(response)),
       andExpect = Status.Ok)
 
     val responseMap = parse(putExpectationsResponse.contentString).filterField(_ => true).toMap
@@ -117,7 +132,7 @@ class DynamockServerTests extends FeatureTest with Matchers with BeforeAndAfterE
 
     server.httpPut(
       path = "/DynamockTest/expectations",
-      putBody = expectationPutRequestJson(response2),
+      putBody = expectationPutRequestJson(Some(response2)),
       andExpect = Status.Ok,
       withJsonBody =
         s"""{
@@ -140,7 +155,7 @@ class DynamockServerTests extends FeatureTest with Matchers with BeforeAndAfterE
   test("PUT - GET - DELETE - GET /DynamockTest/expectations returns the expected output") {
     val putExpectationsResponse = server.httpPut(
       path = "/DynamockTest/expectations",
-      putBody = expectationPutRequestJson(response),
+      putBody = expectationPutRequestJson(Some(response)),
       andExpect = Status.Ok)
 
     val responseMap = parse(putExpectationsResponse.contentString).filterField(_ => true).toMap
@@ -194,7 +209,7 @@ class DynamockServerTests extends FeatureTest with Matchers with BeforeAndAfterE
   test("Expectations suite works") {
     val putExpectationsResponse = server.httpPut(
       path = "/DynamockTest/expectations",
-      putBody = expectationPutRequestJson(response),
+      putBody = expectationPutRequestJson(Some(response)),
       andExpect = Status.Ok)
 
     val responseMap = parse(putExpectationsResponse.contentString).filterField(_ => true).toMap
@@ -252,7 +267,8 @@ class DynamockServerTests extends FeatureTest with Matchers with BeforeAndAfterE
       withJsonBody =
         s"""{
            |  "suite_load_info": [{
-           |    "expectation_id": "$expectationId"
+           |    "expectation_id": "$expectationId",
+           |    "did_overwrite_response": false
            |  }]
            |}""".stripMargin)
 
@@ -285,7 +301,7 @@ class DynamockServerTests extends FeatureTest with Matchers with BeforeAndAfterE
   test("Hit-count works") {
     val putExpectationsResponse = server.httpPut(
       path = "/DynamockTest/expectations",
-      putBody = expectationPutRequestJson(response),
+      putBody = expectationPutRequestJson(Some(response)),
       andExpect = Status.Ok)
 
     val responseMap = parse(putExpectationsResponse.contentString).filterField(_ => true).toMap
@@ -316,7 +332,7 @@ class DynamockServerTests extends FeatureTest with Matchers with BeforeAndAfterE
   test("Hit-count reset works") {
     val putExpectationsResponse = server.httpPut(
       path = "/DynamockTest/expectations",
-      putBody = expectationPutRequestJson(response),
+      putBody = expectationPutRequestJson(Some(response)),
       andExpect = Status.Ok)
 
     val responseMap = parse(putExpectationsResponse.contentString).filterField(_ => true).toMap
@@ -354,7 +370,7 @@ class DynamockServerTests extends FeatureTest with Matchers with BeforeAndAfterE
   test("Hit-count does not reset for new response") {
     val putExpectationsResponse = server.httpPut(
       path = "/DynamockTest/expectations",
-      putBody = expectationPutRequestJson(response),
+      putBody = expectationPutRequestJson(Some(response)),
       andExpect = Status.Ok)
 
     val responseMap = parse(putExpectationsResponse.contentString).filterField(_ => true).toMap
@@ -375,7 +391,7 @@ class DynamockServerTests extends FeatureTest with Matchers with BeforeAndAfterE
 
     server.httpPut(
       path = "/DynamockTest/expectations",
-      putBody = expectationPutRequestJson(response2),
+      putBody = expectationPutRequestJson(Some(response2)),
       andExpect = Status.Ok)
 
     getAndVerifyHitCount(expectationId, 1)
