@@ -21,9 +21,7 @@ class DefaultResponseStore extends ResponseStore {
   private val expectationIdToResponse = TrieMap.empty[ExpectationId, Response]
 
   override def registerResponse(expectationId: ExpectationId, response: Response): DidOverwriteResponse = this.synchronized {
-    val overwritingResponse = this.expectationIdToResponse.get(expectationId).exists(_ != response)
-    this.expectationIdToResponse.put(expectationId, response)
-    overwritingResponse
+    expectationIdToResponse.put(expectationId, response).exists(_ != response)
   }
 
   override def getResponses(expectationIds: Set[ExpectationId]): Map[ExpectationId, Response] = this.synchronized {
