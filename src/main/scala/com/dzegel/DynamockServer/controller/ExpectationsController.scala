@@ -42,9 +42,7 @@ object ExpectationsController {
 
   private case class ExpectationsSuiteStorePostRequest(@QueryParam suiteName: String)
 
-  private case class ExpectationsSuiteLoadPostResponseOverwriteInfo(oldExpectationId: String, didOverwriteResponse: Boolean)
-
-  private case class ExpectationsSuiteLoadPostResponseItemDto(expectationId: String, overwriteInfo: Option[ExpectationsSuiteLoadPostResponseOverwriteInfo])
+  private case class ExpectationsSuiteLoadPostResponseItemDto(expectationId: String, didOverwriteResponse: Option[Boolean])
 
   private case class ExpectationsSuiteLoadPostRequest(@QueryParam suiteName: String)
 
@@ -118,9 +116,7 @@ class ExpectationsController @Inject()(
   post(s"$expectationsSuitePathBase/load") { request: ExpectationsSuiteLoadPostRequest =>
     expectationService.loadExpectations(request.suiteName).mapToOkResponse(registerExpectationsOutputs =>
       ExpectationsSuiteLoadPostResponse(registerExpectationsOutputs.map { x =>
-        ExpectationsSuiteLoadPostResponseItemDto(
-          x.expectationId,
-          x.overwriteInfo.map(y => ExpectationsSuiteLoadPostResponseOverwriteInfo(y.oldExpectationId, y.didOverwriteResponse)))
+        ExpectationsSuiteLoadPostResponseItemDto(x.expectationId, x.didOverwriteResponse)
       }))
   }
 

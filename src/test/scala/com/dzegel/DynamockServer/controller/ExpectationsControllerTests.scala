@@ -329,8 +329,8 @@ class ExpectationsControllerTests extends FeatureTest with MockFactory with Matc
     setup_ExpectationService_LoadExpectations(
       suiteName,
       Success(Seq(
-        LoadExpectationsOutput(expectationId1, Some(LoadExpectationsOverwriteInfo(oldExpectationId1, didOverwriteResponse = true))),
-        LoadExpectationsOutput(expectationId2, Some(LoadExpectationsOverwriteInfo(oldExpectationId2, didOverwriteResponse = false))),
+        LoadExpectationsOutput(expectationId1, Some(true)),
+        LoadExpectationsOutput(expectationId2, Some(false)),
         LoadExpectationsOutput(expectationId3, None)
       ))
     )
@@ -343,16 +343,10 @@ class ExpectationsControllerTests extends FeatureTest with MockFactory with Matc
         s"""{
            |"suite_load_info": [{
            |    "expectation_id": "$expectationId1",
-           |    "overwrite_info": {
-           |      "old_expectation_id": "$oldExpectationId1",
-           |      "did_overwrite_response": true
-           |    }
+           |    "did_overwrite_response": true
            |  },{
            |    "expectation_id": "$expectationId2",
-           |    "overwrite_info": {
-           |      "old_expectation_id": "$oldExpectationId2",
-           |      "did_overwrite_response": false
-           |    }
+           |    "did_overwrite_response": false
            |  },{
            |    "expectation_id": "$expectationId3"
            |  }]

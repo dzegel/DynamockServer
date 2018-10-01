@@ -33,9 +33,7 @@ object ExpectationService {
 
   case class GetExpectationsOutput(expectationId: ExpectationId, expectation: Expectation, response: Option[Response])
 
-  case class LoadExpectationsOverwriteInfo(oldExpectationId: ExpectationId, didOverwriteResponse: Boolean)
-
-  case class LoadExpectationsOutput(expectationId: ExpectationId, overwriteInfo: Option[LoadExpectationsOverwriteInfo])
+  case class LoadExpectationsOutput(expectationId: ExpectationId, didOverwriteResponse: Option[DidOverwriteResponse])
 
 }
 
@@ -113,12 +111,7 @@ class DefaultExpectationService @Inject()(
     this.synchronized {
       val outputs = savedExpectations.toSeq.map { case (expectation, optionResponse) =>
         val expectationId = expectationStore.registerExpectation(expectation)
-        val didOverwriteResponse = optionResponse.exists(responseStore.registerResponse(expectationId, _))
-        LoadExpectationsOutput(
-          expectationId,
-          if (didOverwriteResponse)
-            Some(LoadExpectationsOverwriteInfo(expectationId, didOverwriteResponse = true)) //TODO dont need oldExpectationId now that the id is deterministic
-          else None)
+        LoadExpectationsOutput(expectationId, optionResponse.map(responseStore.registerResponse(expectationId, _)))
       }
 
       val writtenIds = outputs.map(output => output.expectationId)

@@ -247,9 +247,9 @@ class ExpectationServiceTests extends FunSuite with MockFactory with Matchers {
       expectation2 -> Some(response2),
       expectation3 -> Some(response3),
       expectation4 -> None)
-    val serviceReturnValue1 = LoadExpectationsOutput(expectationId1, None) //register previously unregistered expectation
-    val serviceReturnValue2 = LoadExpectationsOutput(expectationId2, Some(LoadExpectationsOverwriteInfo(expectationId2, didOverwriteResponse = true))) //register previously registered expectation with a new id
-    val serviceReturnValue3 = LoadExpectationsOutput(expectationId3, None) //register previously registered expectation with the old id
+    val serviceReturnValue1 = LoadExpectationsOutput(expectationId1, Some(false)) //register previously unregistered expectation
+    val serviceReturnValue2 = LoadExpectationsOutput(expectationId2, Some(true))
+    val serviceReturnValue3 = LoadExpectationsOutput(expectationId3, Some(false))
     val serviceReturnValue4 = LoadExpectationsOutput(expectationId4, None)
 
     setup_ExpectationsFileService_LoadExpectationsFromJson(expectationSuiteName, Right(expectationResponses))
