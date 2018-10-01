@@ -27,14 +27,9 @@ trait ExpectationService {
 
 object ExpectationService {
 
-  case class RegisterExpectationsInput(expectationResponse: ExpectationResponse, clientName: String)
+  case class RegisterExpectationsInput(expectation: Expectation, response: Option[Response], clientName: String)
 
-  object RegisterExpectationsInput {
-    def apply(expectation: Expectation, response: Response, clientName: String): RegisterExpectationsInput =
-      RegisterExpectationsInput(expectation -> response, clientName)
-  }
-
-  case class RegisterExpectationsOutput(expectationId: ExpectationId, clientName: String, didOverwriteResponse: Boolean)
+  case class RegisterExpectationsOutput(expectationId: ExpectationId, clientName: String, didOverwriteResponse: Option[Boolean])
 
   case class GetExpectationsOutput(expectationId: ExpectationId, expectation: Expectation, response: Response)
 
@@ -55,9 +50,9 @@ class DefaultExpectationService @Inject()(
   override def registerExpectations(expectationResponses: Set[RegisterExpectationsInput])
   : Try[Seq[RegisterExpectationsOutput]] = Try {
     this.synchronized {
-      val outputs = expectationResponses.toSeq.map { case RegisterExpectationsInput((expectation, response), clientName) =>
+      val outputs = expectationResponses.toSeq.map { case RegisterExpectationsInput(expectation, optionResponse, clientName) =>
         val expectationId = expectationStore.registerExpectation(expectation)
-        val didOverwriteResponse = responseStore.registerResponse(expectationId, response)
+        val didOverwriteResponse = optionResponse.map(responseStore.registerResponse(expectationId, _))
         RegisterExpectationsOutput(expectationId, clientName, didOverwriteResponse)
       }
       hitCountService.register(outputs.map(output => output.expectationId))

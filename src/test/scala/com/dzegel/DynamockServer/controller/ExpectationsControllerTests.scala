@@ -38,7 +38,7 @@ class ExpectationsControllerTests extends FeatureTest with MockFactory with Matc
     queryParams: Option[Map[String, String]],
     includedHeaderParams: Option[Set[(String, String)]],
     excludedHeaderParams: Option[Set[(String, String)]],
-    response: Response) =
+    response: Option[Response]) =
     s"""
 {
   "expectation_responses": [{
@@ -73,26 +73,33 @@ class ExpectationsControllerTests extends FeatureTest with MockFactory with Matc
       "excluded_header_parameters":{${params.map(param => s""""${param._1}":"${param._2}"""").mkString(",")}}"""
         case None => ""
       }
-    }},
-    "response": {
-      "status": ${response.status}
-    }
+    }}${response.map(res => s""", "response": { "status": ${res.status} }""").getOrElse("")}
   }]
 }"""
 
   val response = Response(200, "", Map.empty)
 
   test("PUT /test/expectations should call register expectations with ExpectationService and return 204 on success") {
-    expectationSetupShouldSucceed("some-path", "POST", Some(Map("query" -> "param")), Some(Set("included" -> "includedValue")), Some(Set("excluded" -> "excludedValue")), Some("Content"))
-    expectationSetupShouldSucceed("some-path", "POST", Some(Map("query" -> "param")), Some(Set("included" -> "includedValue")), None, Some("Content"))
-    expectationSetupShouldSucceed("some-path", "POST", Some(Map("query" -> "param")), Some(Set("included" -> "includedValue")), Some(Set("excluded" -> "excludedValue")), None)
-    expectationSetupShouldSucceed("some-path", "POST", Some(Map("query" -> "param")), Some(Set("included" -> "includedValue")), None, None)
-    expectationSetupShouldSucceed("some-path", "POST", Some(Map("query" -> "param")), None, Some(Set("excluded" -> "excludedValue")), Some("Content"))
-    expectationSetupShouldSucceed("some-path", "POST", Some(Map("query" -> "param")), None, None, Some("Content"))
-    expectationSetupShouldSucceed("some-path", "POST", None, Some(Set("included" -> "includedValue")), Some(Set("excluded" -> "excludedValue")), Some("Content"))
-    expectationSetupShouldSucceed("some-path", "POST", None, Some(Set("included" -> "includedValue")), None, Some("Content"))
-    expectationSetupShouldSucceed("some-path", "POST", None, None, Some(Set("excluded" -> "excludedValue")), None)
-    expectationSetupShouldSucceed("some-path", "POST", None, None, None, None)
+    expectationSetupShouldSucceed("some-path", "POST", Some(Map("query" -> "param")), Some(Set("included" -> "includedValue")), Some(Set("excluded" -> "excludedValue")), Some("Content"), Some(response))
+    expectationSetupShouldSucceed("some-path", "POST", Some(Map("query" -> "param")), Some(Set("included" -> "includedValue")), None, Some("Content"), Some(response))
+    expectationSetupShouldSucceed("some-path", "POST", Some(Map("query" -> "param")), Some(Set("included" -> "includedValue")), Some(Set("excluded" -> "excludedValue")), None, Some(response))
+    expectationSetupShouldSucceed("some-path", "POST", Some(Map("query" -> "param")), Some(Set("included" -> "includedValue")), None, None, Some(response))
+    expectationSetupShouldSucceed("some-path", "POST", Some(Map("query" -> "param")), None, Some(Set("excluded" -> "excludedValue")), Some("Content"), Some(response))
+    expectationSetupShouldSucceed("some-path", "POST", Some(Map("query" -> "param")), None, None, Some("Content"), Some(response))
+    expectationSetupShouldSucceed("some-path", "POST", None, Some(Set("included" -> "includedValue")), Some(Set("excluded" -> "excludedValue")), Some("Content"), Some(response))
+    expectationSetupShouldSucceed("some-path", "POST", None, Some(Set("included" -> "includedValue")), None, Some("Content"), Some(response))
+    expectationSetupShouldSucceed("some-path", "POST", None, None, Some(Set("excluded" -> "excludedValue")), None, Some(response))
+    expectationSetupShouldSucceed("some-path", "POST", None, None, None, None, Some(response))
+    expectationSetupShouldSucceed("some-path", "POST", Some(Map("query" -> "param")), Some(Set("included" -> "includedValue")), Some(Set("excluded" -> "excludedValue")), Some("Content"), None)
+    expectationSetupShouldSucceed("some-path", "POST", Some(Map("query" -> "param")), Some(Set("included" -> "includedValue")), None, Some("Content"), None)
+    expectationSetupShouldSucceed("some-path", "POST", Some(Map("query" -> "param")), Some(Set("included" -> "includedValue")), Some(Set("excluded" -> "excludedValue")), None, None)
+    expectationSetupShouldSucceed("some-path", "POST", Some(Map("query" -> "param")), Some(Set("included" -> "includedValue")), None, None, None)
+    expectationSetupShouldSucceed("some-path", "POST", Some(Map("query" -> "param")), None, Some(Set("excluded" -> "excludedValue")), Some("Content"), None)
+    expectationSetupShouldSucceed("some-path", "POST", Some(Map("query" -> "param")), None, None, Some("Content"), None)
+    expectationSetupShouldSucceed("some-path", "POST", None, Some(Set("included" -> "includedValue")), Some(Set("excluded" -> "excludedValue")), Some("Content"), None)
+    expectationSetupShouldSucceed("some-path", "POST", None, Some(Set("included" -> "includedValue")), None, Some("Content"), None)
+    expectationSetupShouldSucceed("some-path", "POST", None, None, Some(Set("excluded" -> "excludedValue")), None, None)
+    expectationSetupShouldSucceed("some-path", "POST", None, None, None, None, None)
   }
 
   private def expectationSetupShouldSucceed(
@@ -101,7 +108,8 @@ class ExpectationsControllerTests extends FeatureTest with MockFactory with Matc
     expectationQueryParams: Option[QueryParams],
     expectationIncludedHeaderParams: Option[HeaderSet],
     expectationExcludedHeaderParams: Option[HeaderSet],
-    expectationContent: Option[String]
+    expectationContent: Option[String],
+    response: Option[Response]
   ): Unit = {
     setup_ExpectationService_RegisterExpectations(
       Expectation(
@@ -111,7 +119,7 @@ class ExpectationsControllerTests extends FeatureTest with MockFactory with Matc
         HeaderParameters(expectationIncludedHeaderParams.getOrElse(Set.empty), expectationExcludedHeaderParams.getOrElse(Set.empty)),
         Content(expectationContent.getOrElse(""))),
       response,
-      Success(Seq(RegisterExpectationsOutput(expectationId, expectationName, didOverwriteResponse = false))))
+      Success(Seq(RegisterExpectationsOutput(expectationId, expectationName, didOverwriteResponse = response.map(_ => false)))))
 
     server.httpPut(
       path = "/test/expectations",
@@ -129,8 +137,7 @@ class ExpectationsControllerTests extends FeatureTest with MockFactory with Matc
            |  "expectations_info" : [
            |    {
            |      "expectation_id" : "$expectationId",
-           |      "expectation_name" : "$expectationName",
-           |      "did_overwrite_response" : false
+           |      "expectation_name" : "$expectationName" ${response.map(_ => ""","did_overwrite_response" : false""").getOrElse("")}
            |    }
            |  ]
            |}""".stripMargin)
@@ -138,7 +145,7 @@ class ExpectationsControllerTests extends FeatureTest with MockFactory with Matc
 
   test("PUT /test/expectations should call register expectation with ExpectationService and return 500 on failure") {
     val expectation = Expectation("POST", "some-path", Map("query" -> "param"), HeaderParameters(Set("included" -> "includedValue"), Set("excluded" -> "excludedValue")), Content(""))
-    setup_ExpectationService_RegisterExpectations(expectation, response, Failure(new Exception(errorMessage)))
+    setup_ExpectationService_RegisterExpectations(expectation, Some(response), Failure(new Exception(errorMessage)))
 
     server.httpPut(
       path = "/test/expectations",
@@ -149,7 +156,7 @@ class ExpectationsControllerTests extends FeatureTest with MockFactory with Matc
         Some(expectation.queryParams),
         Some(expectation.headerParameters.included),
         Some(expectation.headerParameters.excluded),
-        response),
+        Some(response)),
       andExpect = Status.InternalServerError,
       withBody = errorMessage)
   }
@@ -417,7 +424,7 @@ class ExpectationsControllerTests extends FeatureTest with MockFactory with Matc
 
   private def setup_ExpectationService_RegisterExpectations(
     expectation: Expectation,
-    response: Response,
+    response: Option[Response],
     returnValue: Try[Seq[RegisterExpectationsOutput]]
   ): Unit = {
     (mockExpectationService.registerExpectations _)

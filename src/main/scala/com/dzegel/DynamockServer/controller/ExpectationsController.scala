@@ -26,9 +26,9 @@ object ExpectationsController {
 
   private case class ResponseDto(status: Int, content: Option[String], headerMap: Option[Map[String, String]])
 
-  private case class ExpectationsPutRequestItemDto(expectation: ExpectationDto, response: ResponseDto, expectationName: String)
+  private case class ExpectationsPutRequestItemDto(expectation: ExpectationDto, response: Option[ResponseDto], expectationName: String)
 
-  private case class ExpectationsPutResponseItemDto(expectationId: String, expectationName: String, didOverwriteResponse: Boolean)
+  private case class ExpectationsPutResponseItemDto(expectationId: String, expectationName: String, didOverwriteResponse: Option[Boolean])
 
   private case class ExpectationsPutRequest(expectationResponses: Set[ExpectationsPutRequestItemDto])
 
@@ -81,8 +81,8 @@ object ExpectationsController {
         dto.excludedHeaderParameters.getOrElse(Map.empty).toSet),
       Content(dto.content.getOrElse("")))
 
-  private implicit def dtoToResponse(dto: ResponseDto): Response =
-    Response(dto.status, dto.content.getOrElse(""), dto.headerMap.getOrElse(Map.empty))
+  private implicit def dtoToResponse(optionDto: Option[ResponseDto]): Option[Response] =
+    optionDto.map(dto => Response(dto.status, dto.content.getOrElse(""), dto.headerMap.getOrElse(Map.empty)))
 }
 
 class ExpectationsController @Inject()(
@@ -96,7 +96,7 @@ class ExpectationsController @Inject()(
 
   put(expectationsPathBase) { request: ExpectationsPutRequest =>
     expectationService.registerExpectations(
-      request.expectationResponses.map(x => RegisterExpectationsInput(x.expectation: Expectation, x.response: Response, x.expectationName))
+      request.expectationResponses.map(x => RegisterExpectationsInput(x.expectation, x.response, x.expectationName))
     ).mapToOkResponse(registerExpectationsOutputs =>
       ExpectationsPutResponse(
         registerExpectationsOutputs.map(x => ExpectationsPutResponseItemDto(x.expectationId, x.clientName, x.didOverwriteResponse))

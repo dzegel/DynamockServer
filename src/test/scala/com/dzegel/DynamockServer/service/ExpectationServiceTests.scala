@@ -25,33 +25,39 @@ class ExpectationServiceTests extends FunSuite with MockFactory with Matchers {
 
   private val expectationId1 = "id_1"
   private val expectationId2 = "id_2"
+  private val expectationId3 = "id_3"
   private val expectationIds = Set(expectationId1, expectationId2)
 
   private val clientName1 = "client name 1"
   private val clientName2 = "client name 2"
+  private val clientName3 = "client name 3"
 
   test("registerExpectation returns Success when no Exception is thrown") {
-    val expectation2 = expectation.copy(path = "someOtherPath")
+    val expectation2 = expectation.copy(path = "someOtherPath 2")
+    val expectation3 = expectation.copy(path = "someOtherPath 3")
     setup_ExpectationStore_RegisterExpectation(expectation, Right(expectationId1))
     setup_ExpectationStore_RegisterExpectation(expectation2, Right(expectationId2))
+    setup_ExpectationStore_RegisterExpectation(expectation3, Right(expectationId3))
     setup_ResponseStore_RegisterResponse(expectationId1, response, Right(false))
     setup_ResponseStore_RegisterResponse(expectationId2, response, Right(true))
 
-    setup_HitCountService_Register(Seq(expectationId1, expectationId2))
+    setup_HitCountService_Register(Seq(expectationId1, expectationId2, expectationId3))
 
     expectationService.registerExpectations(Set(
-      RegisterExpectationsInput(expectation, response, clientName1),
-      RegisterExpectationsInput(expectation2, response, clientName2)
+      RegisterExpectationsInput(expectation, Some(response), clientName1),
+      RegisterExpectationsInput(expectation2, Some(response), clientName2),
+      RegisterExpectationsInput(expectation3, None, clientName3)
     )) shouldBe Success(Seq(
-      RegisterExpectationsOutput(expectationId1, clientName1, didOverwriteResponse = false),
-      RegisterExpectationsOutput(expectationId2, clientName2, didOverwriteResponse = true)
+      RegisterExpectationsOutput(expectationId1, clientName1, didOverwriteResponse = Some(false)),
+      RegisterExpectationsOutput(expectationId2, clientName2, didOverwriteResponse = Some(true)),
+      RegisterExpectationsOutput(expectationId3, clientName3, didOverwriteResponse = None)
     ))
   }
 
   test("registerExpectation returns Failure on Exception from ExpectationStore") {
     setup_ExpectationStore_RegisterExpectation(expectation, Left(exception))
 
-    expectationService.registerExpectations(Set(RegisterExpectationsInput(expectation, response, clientName1))) shouldBe
+    expectationService.registerExpectations(Set(RegisterExpectationsInput(expectation, Some(response), clientName1))) shouldBe
       Failure(exception)
   }
 
@@ -59,7 +65,7 @@ class ExpectationServiceTests extends FunSuite with MockFactory with Matchers {
     setup_ExpectationStore_RegisterExpectation(expectation, Right(expectationId1))
     setup_ResponseStore_RegisterResponse(expectationId1, response, Left(exception))
 
-    expectationService.registerExpectations(Set(RegisterExpectationsInput(expectation, response, clientName1))) shouldBe
+    expectationService.registerExpectations(Set(RegisterExpectationsInput(expectation, Some(response), clientName1))) shouldBe
       Failure(exception)
   }
 
@@ -68,7 +74,7 @@ class ExpectationServiceTests extends FunSuite with MockFactory with Matchers {
     setup_ResponseStore_RegisterResponse(expectationId1, response, Right(false))
     setup_HitCountService_Register(Seq(expectationId1), Some(exception))
 
-    expectationService.registerExpectations(Set(RegisterExpectationsInput(expectation, response, clientName1))) shouldBe
+    expectationService.registerExpectations(Set(RegisterExpectationsInput(expectation, Some(response), clientName1))) shouldBe
       Failure(exception)
   }
 
@@ -227,7 +233,6 @@ class ExpectationServiceTests extends FunSuite with MockFactory with Matchers {
   }
 
   test("loadExpectations returns Success") {
-    val expectationId3 = "id_3"
     val expectationId4 = "id_4"
     val expectation2 = Expectation("2", "2", Map(), null, null)
     val expectation3 = Expectation("3", "3", Map(), null, null)
