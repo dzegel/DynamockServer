@@ -31,7 +31,7 @@ object ExpectationService {
 
   case class RegisterExpectationsOutput(expectationId: ExpectationId, clientName: String, didOverwriteResponse: Option[Boolean])
 
-  case class GetExpectationsOutput(expectationId: ExpectationId, expectation: Expectation, response: Response)
+  case class GetExpectationsOutput(expectationId: ExpectationId, expectation: Expectation, response: Option[Response])
 
   case class LoadExpectationsOverwriteInfo(oldExpectationId: ExpectationId, didOverwriteResponse: Boolean)
 
@@ -72,7 +72,7 @@ class DefaultExpectationService @Inject()(
 
   override def getAllExpectations: Try[Set[GetExpectationsOutput]] = Try {
     getAllExpectationResponses.map { case (expectationId, expectation, response) =>
-      GetExpectationsOutput(expectationId, expectation, response.get)
+      GetExpectationsOutput(expectationId, expectation, response)
     }
   }
 

@@ -184,10 +184,13 @@ class ExpectationServiceTests extends FunSuite with MockFactory with Matchers {
   }
 
   test("getAllExpectations returns Success") {
-    setup_ExpectationStore_GetAllExpectations(Right(Map(expectationId1 -> expectation)))
-    setup_ResponseStore_GetResponses(Set(expectationId1), Right(Map(expectationId1 -> response)))
+    setup_ExpectationStore_GetAllExpectations(Right(Map(expectationId1 -> expectation, expectationId2 -> expectation)))
+    setup_ResponseStore_GetResponses(Set(expectationId1, expectationId2), Right(Map(expectationId1 -> response)))
 
-    expectationService.getAllExpectations shouldBe Success(Set(GetExpectationsOutput(expectationId1, expectation, response)))
+    expectationService.getAllExpectations shouldBe Success(Set(
+      GetExpectationsOutput(expectationId1, expectation, Some(response)),
+      GetExpectationsOutput(expectationId2, expectation, None)
+    ))
   }
 
   test("getAllExpectations returns Failure when ExpectationStore.getAllExpectations fails") {

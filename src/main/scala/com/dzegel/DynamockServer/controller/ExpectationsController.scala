@@ -34,7 +34,7 @@ object ExpectationsController {
 
   private case class ExpectationsPutResponse(expectationsInfo: Seq[ExpectationsPutResponseItemDto])
 
-  private case class ExpectationsGetResponseItemDto(expectation: ExpectationDto, response: ResponseDto, expectationId: String)
+  private case class ExpectationsGetResponseItemDto(expectation: ExpectationDto, response: Option[ResponseDto], expectationId: String)
 
   private case class ExpectationsGetResponse(expectationResponses: Set[ExpectationsGetResponseItemDto])
 
@@ -65,11 +65,8 @@ object ExpectationsController {
     Some(expectation.content.stringValue)
   )
 
-  private implicit def dtoFromResponse(response: Response): ResponseDto = ResponseDto(
-    response.status,
-    Some(response.content),
-    Some(response.headerMap)
-  )
+  private implicit def dtoFromResponse(optionResponse: Option[Response]): Option[ResponseDto] =
+    optionResponse.map(response => ResponseDto(response.status, Some(response.content), Some(response.headerMap)))
 
   private implicit def dtoToExpectation(dto: ExpectationDto): Expectation =
     Expectation(

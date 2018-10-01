@@ -221,9 +221,13 @@ class ExpectationsControllerTests extends FeatureTest with MockFactory with Matc
         Set("excluded1" -> "excludedValue1", "excluded2" -> "excludedValue2")),
       Content("Some Expectation Content")
     )
+    val expectationId2 = "expectation id 2"
 
     val response = Response(200, "Some Response Content", Map("responseParam" -> "value"))
-    setup_ExpectationService_GetAllExpectations(Success(Set(GetExpectationsOutput(expectationId, expectation, response))))
+    setup_ExpectationService_GetAllExpectations(Success(Set(
+      GetExpectationsOutput(expectationId, expectation, Some(response)),
+      GetExpectationsOutput(expectationId2, expectation, None)
+    )))
 
     val jsonResponse =
       s"""{
@@ -252,6 +256,25 @@ class ExpectationsControllerTests extends FeatureTest with MockFactory with Matc
          |        "header_map": {
          |          "responseParam": "value"
          |        }
+         |      }
+         |    },
+         |    {
+         |      "expectation_id": "$expectationId2",
+         |      "expectation": {
+         |        "method": "${expectation.method}",
+         |        "path": "${expectation.path}",
+         |        "query_parameters": {
+         |          "query": "param"
+         |        },
+         |        "included_header_parameters": {
+         |          "included1": "includedValue1",
+         |          "included2": "includedValue2"
+         |        },
+         |        "excluded_header_parameters": {
+         |          "excluded1": "excludedValue1",
+         |          "excluded2": "excludedValue2"
+         |        },
+         |        "content" : "${expectation.content.stringValue}"
          |      }
          |    }
          |  ]
