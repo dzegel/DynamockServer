@@ -81,8 +81,8 @@ class ExpectationServiceTests extends FunSuite with MockFactory with Matchers {
   test("getResponse returns Success of response") {
     setup_ExpectationStore_GetIdsForMatchingExpectations(request, Right(expectationIds))
     setup_HitCountService_Increment(expectationIds.toSeq)
-    setup_ExpectationStore_GetMostConstrainedExpectationWithId(expectationIds, Right(Some(expectationId1 -> expectation)))
-    setup_ResponseStore_GetResponses(Set(expectationId1), Right(Map(expectationId1 -> response)))
+    setup_ResponseStore_GetResponses(expectationIds, Right(Map(expectationId1 -> response)))
+    setup_ExpectationStore_GetMostConstrainedExpectationWithId(Set(expectationId1), Right(Some(expectationId1 -> expectation)))
 
     expectationService.getResponse(request) shouldBe Success(Some(response))
   }
@@ -90,7 +90,8 @@ class ExpectationServiceTests extends FunSuite with MockFactory with Matchers {
   test("getResponse returns Success of None") {
     setup_ExpectationStore_GetIdsForMatchingExpectations(request, Right(expectationIds))
     setup_HitCountService_Increment(expectationIds.toSeq)
-    setup_ExpectationStore_GetMostConstrainedExpectationWithId(expectationIds, Right(None))
+    setup_ResponseStore_GetResponses(expectationIds, Right(Map(expectationId1 -> response)))
+    setup_ExpectationStore_GetMostConstrainedExpectationWithId(Set(expectationId1), Right(None))
 
     expectationService.getResponse(request) shouldBe Success(None)
   }
@@ -111,7 +112,8 @@ class ExpectationServiceTests extends FunSuite with MockFactory with Matchers {
   test("getResponse returns Failure when ExpectationStore.getMostConstrainedExpectationWithId fails") {
     setup_ExpectationStore_GetIdsForMatchingExpectations(request, Right(expectationIds))
     setup_HitCountService_Increment(expectationIds.toSeq)
-    setup_ExpectationStore_GetMostConstrainedExpectationWithId(expectationIds, Left(exception))
+    setup_ResponseStore_GetResponses(expectationIds, Right(Map(expectationId1 -> response)))
+    setup_ExpectationStore_GetMostConstrainedExpectationWithId(Set(expectationId1), Left(exception))
 
     expectationService.getResponse(request) shouldBe Failure(exception)
   }
@@ -119,8 +121,7 @@ class ExpectationServiceTests extends FunSuite with MockFactory with Matchers {
   test("getResponse returns Failure when ResponseStore.getResponses fails") {
     setup_ExpectationStore_GetIdsForMatchingExpectations(request, Right(expectationIds))
     setup_HitCountService_Increment(expectationIds.toSeq)
-    setup_ExpectationStore_GetMostConstrainedExpectationWithId(expectationIds, Right(Some(expectationId1 -> expectation)))
-    setup_ResponseStore_GetResponses(Set(expectationId1), Left(exception))
+    setup_ResponseStore_GetResponses(expectationIds, Left(exception))
 
     expectationService.getResponse(request) shouldBe Failure(exception)
   }

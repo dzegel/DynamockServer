@@ -62,9 +62,9 @@ class DefaultExpectationService @Inject()(
     this.synchronized {
       val matchingIds = expectationStore.getIdsForMatchingExpectations(request)
       hitCountService.increment(matchingIds.toSeq)
-      expectationStore.getMostConstrainedExpectationWithId(matchingIds).flatMap { case (expectationId, _) =>
-        responseStore.getResponses(Set(expectationId)).get(expectationId)
-      }
+      val expectationIdToResponse = responseStore.getResponses(matchingIds)
+      expectationStore.getMostConstrainedExpectationWithId(expectationIdToResponse.keySet)
+        .flatMap { case (expectationId, _) => expectationIdToResponse.get(expectationId) }
     }
   }
 
