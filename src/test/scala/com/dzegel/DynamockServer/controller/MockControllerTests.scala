@@ -75,7 +75,7 @@ class MockControllerTests extends FeatureTest with MockFactory with Matchers {
       andExpect = Status(551))
 
     val responseMap = parse(response.contentString).filterField(x => true).toMap
-    responseMap("message") shouldBe JString("Dynamock Error: The request did not match any registered expectations.")
+    responseMap("message") shouldBe JString("Dynamock Error: The request did not match any expectation registered with a response.")
     val requestMap = responseMap("request").filterField(x => true).toMap
     requestMap("method") shouldBe JString(method)
     requestMap("path") shouldBe JString(s"/$urlResource")

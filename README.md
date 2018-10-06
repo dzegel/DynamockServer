@@ -39,9 +39,9 @@ Simply setup an API expectation and response and then when an API call matching 
 ###### Basic Usage
 When designing automated tests for a service with external web dependencies simply:
 1. [Spin-up](#deployment) a Dynamock Server instance.
-1. Configure the url base (aka host and port) of the dependent services on the service under test to point to the Dynamock Server.
+1. Configure the url base (i.e. host and port) of the dependent services on the service under test to point to the Dynamock Server.
 1. Setup the expected API calls with desired responses. (see [PUT /expectations](#put-dynamock-path-baseexpectations) or [POST /expectations-suite/load](#post-dynamock-path-baseexpectations-suiteload))
-1. Run your tests that make http requests to Dynamock Server as if it were the dependent service of interest. When a request matches an expectation that is setup, Dynamock Server will respond with the registered response. 
+1. Run your tests making http requests to Dynamock Server as if it were the dependent service of interest. When a request matches an expectation that is setup, Dynamock Server will respond with the registered response. 
 
 ## Deployment
 - Ensure Java 8 (or higher) is installed.
@@ -63,7 +63,7 @@ Any API call made to Dynamock Server is included in the Mocked API, except for A
 ### Matched Expectations and Mocked Responses
 When an API request is made, all expectations that positively match the request and that are registered with a response are considered (see [PUT /expectations](#put-dynamock-path-baseexpectations) for registering expectations).
 Of those considered, the response of the most constrained expectation is selected to be used for the mocked response.
-The most constrained expectation is defiled as, the expectation with the greatest number of included and excluded header parameters specified.
+The most constrained expectation is defined as, the expectation with the greatest number of included and excluded header parameters specified.
 In the event that there are multiple equally constrained expectations that positively match the API request, one of those expectations is selected arbitrarily but deterministically.
 Additionally, all registered expectations (including ones not registered with a response) that positively match the request have their hit-counts incremented (see [POST /hit-counts/get](#post-dynamock-path-basehit-countsget)).
 
