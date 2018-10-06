@@ -3,6 +3,9 @@
 - [Overview](#overview)
 - [Deployment](#deployment)
 - [Mocked API](#mocked-api)
+  - [Matched Expectations and Mocked Responses](#matched-expectations-and-mocked-responses)
+  - [NonMocked Responses](#nonmocked-responses)
+  - [Internal Errors](#internal-errors)
 - [Dynamock API](#dynamock-api)
   - [PUT `/expectations`](#put-dynamock-path-baseexpectations)
   - [DELETE `/expectations`](#delete-dynamock-path-baseexpectations)
@@ -30,42 +33,46 @@ Simply setup an API expectation and response and then when an API call matching 
 
 ###### Use Cases
 
-- Testing: Integration test, an application that relies on web APIs, with a classic unit-test mocking experience.
+- Testing: Integration test an application that relies on web APIs, with a classic unit-test mocking experience.
 - Development: Develop an application that relies on web APIs that are themselves in development or currently inaccessible. 
 
 ###### Basic Usage
 When designing automated tests for a service with external web dependencies simply:
 1. [Spin-up](#deployment) a Dynamock Server instance.
-1. Configure the hosts and ports for the dependent services on the service under test, to point to the Dynamock Server.
+1. Configure the url base (aka host and port) of the dependent services on the service under test to point to the Dynamock Server.
 1. Setup the expected API calls with desired responses. (see [PUT /expectations](#put-dynamock-path-baseexpectations) or [POST /expectations-suite/load](#post-dynamock-path-baseexpectations-suiteload))
-1. Run your tests, i.e. make http requests to Dynamock Server as if it were the dependent service of interest. When a request matches an expectation that is setup, Dynamock Server will respond with the registered response. 
+1. Run your tests that make http requests to Dynamock Server as if it were the dependent service of interest. When a request matches an expectation that is setup, Dynamock Server will respond with the registered response. 
 
 ## Deployment
-- Ensure Java 8 or higher is installed.
+- Ensure Java 8 (or higher) is installed.
 - Download the JAR file of the latest [release](releases/README.md).
-- Run `java -jar DynamockServer-x.y.z.jar [-http.port=:<port-number>] [-dynamock.path.base=<dynamock-path-base>]`, where `x.y.z` is the version number.
+- Run `java -jar DynamockServer-x.y.z.jar [-http.port=:<port-number>] [-dynamock.path.base=<dynamock-path-base>]`, where `x.y.z` is the release version number.
 The arguments are as follows:
     - **http.port**: An integer in the range [2, 65534], prefixed with `:`, specifying the http port the server runs on.
     For example, providing `-http.port=:1234` deploys a Dynamock instance listening on port `1234`.
-    If not provided this value defaults to `:8888`. This feature can be used to deploy multiple Dynamock Server instances for different consumers, to avoid collisions. 
+    If not provided this value defaults to `:8888`.
+    This feature can be used to deploy multiple Dynamock Server instances on the same computer for different consumers, to avoid collisions. 
     - **dynamock.path.base**: This value prefixes Dynamock API url-paths.
     For example, `-dynamock.path.base=my/test` or `-dynamock.path.base=/my/test` both result in a net url path `/my/test/expectations` for the Dynamock API url-path `<dynamock-path-base>/expectations`.
     If not provided `dynamock.path.base` defaults to the value `dynamock`, resulting in the net url-path being `/dynamock/expectations`.
-    You should only need to use this feature, in the unlikely case that the API being mocked has `dynamock` in its url paths, to avoid collisions on mocked http requests and the dynamock API.
+    You should only need to use this feature to avoid collisions on mocked http requests and the dynamock API, in the unlikely case that the API being mocked has `dynamock` in its url paths.
 
 ## Mocked API
 Any API call made to Dynamock Server is included in the Mocked API, except for API calls that would collide with the [Dynamock API](#dynamock-api).
 
-Given an API request that positively matches a registered expectation, the Mocked API will respond with the response registered with the expectation.
-See [PUT /expectations](#put-dynamock-path-baseexpectations) or [POST /expectations-suite/load](#post-dynamock-path-baseexpectations-suiteload) for registering expectations.
+### Matched Expectations and Mocked Responses
+When an API request is made, all expectations that positively match the request and that are registered with a response are considered (see [PUT /expectations](#put-dynamock-path-baseexpectations) for registering expectations).
+Of those considered, the response of the most constrained expectation is selected to be used for the mocked response.
+The most constrained expectation is defiled as, the expectation with the greatest number of included and excluded header parameters specified.
+In the event that there are multiple equally constrained expectations that positively match the API request, one of those expectations is selected arbitrarily but deterministically.
+Additionally, all registered expectations (including ones not registered with a response) that positively match the request have their hit-counts incremented (see [POST /hit-counts/get](#post-dynamock-path-basehit-countsget)).
 
-It is possible for an API request to positively match multiple registered expectations. This would occur when there are multiple expectations registered which are identical except for the included and excluded header parameters. In this scenario the most constrained expectation is selected; that is, the expectation with the greatest number of included and excluded header parameters specified. In the event that there are multiple equally constrained expectations that positively match the API request, one of those expectations is selected arbitrarily but deterministically.
+### NonMocked Responses
+Given an API request that does not positively match an expectation registered with a response, the Mocked API responds with a `551` status code along with details of the specific request made to the Mocked API.
 
-Given an API request that does not positively match a registered expectation, the Mocked API responds with a `551` status code along with details of the specific request made to the Mocked API.
-
-The Mocked API responds with a `550` error code for internal server errors, in order not to collide with more common `500` errors.
-
-To avoid collisions between the Mocked API and the [Dynamock API](#dynamock-api), set the `dynamock.path.base` argument to a unique value that will not collide on any APIs being mocked.
+### Internal Errors
+The Mocked API responds with a `550` error code for internal server errors, in order not to collide with more common `5xx` errors that may be intentionally set in a registered mock response.
+If you experience a `550` error we would greatly appreciate it if you would submit a thorough bug report, see [below](#bug-reports--feature-requests) for submission instructions.
 
 ## Dynamock API
 
@@ -319,4 +326,4 @@ Reset hit-counts to 0.
 - Remove the requirement that an exclusion must have a response.
 
 ## Bug Reports / Feature Requests
-To report a bug, feature request or any other constructive comment, please create a detailed GitHub issue with a mention of **@dzegel**. 
+To report a bug, feature request or any other constructive comment, please create a detailed GitHub issue [here](https://github.com/dzegel/DynamockServer/issues/new) with a mention of **@dzegel**. 
