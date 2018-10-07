@@ -29,11 +29,11 @@ object ExpectationService {
 
   case class RegisterExpectationsInput(expectation: Expectation, response: Option[Response], clientName: String)
 
-  case class RegisterExpectationsOutput(expectationId: ExpectationId, clientName: String, didOverwriteResponse: Option[Boolean])
+  case class RegisterExpectationsOutput(expectationId: ExpectationId, clientName: String, didOverwriteResponse: DidOverwriteResponse)
 
   case class GetExpectationsOutput(expectationId: ExpectationId, expectation: Expectation, response: Option[Response])
 
-  case class LoadExpectationsOutput(expectationId: ExpectationId, didOverwriteResponse: Option[DidOverwriteResponse])
+  case class LoadExpectationsOutput(expectationId: ExpectationId, didOverwriteResponse: DidOverwriteResponse)
 
 }
 
@@ -49,8 +49,7 @@ class DefaultExpectationService @Inject()(
   : Try[Seq[RegisterExpectationsOutput]] = Try {
     this.synchronized {
       val outputs = expectationResponses.toSeq.map { case RegisterExpectationsInput(expectation, optionResponse, clientName) =>
-        val expectationId = expectationStore.registerExpectation(expectation)
-        val didOverwriteResponse = optionResponse.map(responseStore.registerResponse(expectationId, _))
+        val (expectationId, didOverwriteResponse) = registerExpectation(expectation, optionResponse)
         RegisterExpectationsOutput(expectationId, clientName, didOverwriteResponse)
       }
       hitCountService.register(outputs.map(output => output.expectationId))
@@ -110,15 +109,24 @@ class DefaultExpectationService @Inject()(
     val savedExpectations = fileService.loadExpectationsFromJson(suiteName)
     this.synchronized {
       val outputs = savedExpectations.toSeq.map { case (expectation, optionResponse) =>
-        val expectationId = expectationStore.registerExpectation(expectation)
-        LoadExpectationsOutput(expectationId, optionResponse.map(responseStore.registerResponse(expectationId, _)))
+        val (expectationId, didOverwriteResponse) = registerExpectation(expectation, optionResponse)
+        LoadExpectationsOutput(expectationId, didOverwriteResponse)
       }
-
-      val writtenIds = outputs.map(output => output.expectationId)
-      hitCountService.register(writtenIds)
-
+      hitCountService.register(outputs.map(output => output.expectationId))
       outputs
     }
+  }
+
+  private def registerExpectation(expectation: Expectation, optionResponse: Option[Response]): (ExpectationId, DidOverwriteResponse) = {
+    val expectationId = expectationStore.registerExpectation(expectation)
+    val didOverwriteResponse = optionResponse match {
+      case Some(response) => responseStore.registerResponse(expectationId, response)
+      case None =>
+        val exists = responseStore.getResponses(Set(expectationId)).contains(expectationId)
+        responseStore.deleteResponses(Set(expectationId))
+        exists
+    }
+    (expectationId, didOverwriteResponse)
   }
 
   override def getHitCounts(expectationIds: Set[ExpectationId]) = Try {

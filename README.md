@@ -77,9 +77,10 @@ If you experience a `550` error we would greatly appreciate it if you would subm
 ## Dynamock API
 
 ### PUT `<dynamock-path-base>/expectations`
-Setup a mocked response by registering an expectation and the response to return when the expectation is positively matched.
+Setup an expectation with an optional mocked response to return when the expectation is positively matched.
+If no response is registered the expectation is used solely for hit-count validation.
 An expectation name is provided to be used by the client to associate the returned expectation-ids to their respective registered expectations.
-Previously registered expectations which are identical to expectations provided will have their respective responses overridden with the responses provided and will keep the ids the expectations were originally registered with.
+Previously registered expectations which are identical to expectations provided will have their respective responses overwritten if one is now provided or erased if one is not provided.
 
 **Content-Type:** application/json
 
@@ -144,7 +145,7 @@ List all registered mock setups.
 
 ### POST `<dynamock-path-base>/expectations-suite/store`
 Save the state of registered expectations into an expectations-suite that can be restored at a later point in time.
-The saved state includes the expectation-id, expectation and response but not the hit-count.
+The saved state includes the expectation and response but not the hit-count.
 
 **Query Parameters:**
 - suite_name:
@@ -153,9 +154,10 @@ The saved state includes the expectation-id, expectation and response but not th
     - description: Name of the expectations-suite.
 
 ### POST `<dynamock-path-base>/expectations-suite/load`
-Register expectations stored in an expectations-suite with their original expectation-ids.
-Registered expectations which are identical to expectations in the loaded suite will have their ids and responses overridden with the respective values in the suite.
-In the event that an expectation-id loaded from the suite is identical to a pre-registered expectation id, the hit-count will retain its value and not be reset.
+Register expectations stored in an expectations-suite.
+Being that expectation-ids are deterministically generated from an expectation, the expectation-ids will be the same as those originally assigned.
+Registered expectations which are identical to expectations in the loaded suite will have their responses overwritten with the responses stored in the suite.
+In the event that an expectation loaded from the suite is identical to a pre-registered expectation, the hit-count will retain its value and not be reset.
 
 **Query Parameters:**
 - suite_name:
@@ -169,7 +171,8 @@ In the event that an expectation-id loaded from the suite is identical to a pre-
     - required: true
 
 ### POST `<dynamock-path-base>/hit-counts/get`
-Get the hit-counts of the specified expectation-ids; where an expectation-id's hit-count is the number of times a request was made that matched the expectation associated with the expectation-id.
+Get the hit-counts of the specified expectation-ids.
+Where an expectation-id's hit-count is the number of times a request was made that matched the corresponding expectation.
 If a request matches multiple registered expectations, though only one of their responses' is used for the API response, all of their hit-counts are incremented.
 
 **Content-Type:** application/json
@@ -212,7 +215,7 @@ Reset hit-counts to 0.
         - required: true
     - response:
         - type: [Response](#response-object) Object
-        - required: true
+        - required: false
         
 ##### ExpectationInfo Object:
 - properties:
@@ -223,11 +226,11 @@ Reset hit-counts to 0.
     - expectation_id:
         - type: String
         - required: true
-        - description: The unique id assigned to the expectation provided in the request.
+        - description: The unique id deterministically generated from the expectation provided in the request.
     - did_overwrite_response:
         - type: boolean
         - required: true
-        - description: Indicates if the response provided overwrites a response previously registered with the expectation provided.
+        - description: Indicates if the response provided (or excluded) overwrote (or erased) a response previously registered with the expectation.
 
 ##### ExpectationResponse Object:
 - properties:  
@@ -240,7 +243,7 @@ Reset hit-counts to 0.
         - required: true
     - response:
         - type: [Response](#response-object) Object
-        - required: true
+        - required: false
         
 ##### LoadInfo Object:
 - properties:
@@ -248,21 +251,10 @@ Reset hit-counts to 0.
         - type: String
         - required: true
         - description: The unique expectation-id loaded from the expectation suite.
-    - overwrite_info:
-        - type: [LoadInfoExpectationOverwrite](#loadinfoexpectationoverwrite-object) Object
-        - required: false
-        - description: When the expectation loaded from the suite matches an expectation previously registered, this object indicates exactly how that expectation was overwritten.
-
-##### LoadInfoExpectationOverwrite Object:
-- properties:
-    - old_expectation_id
-        - type: string
-        - required: true
-        - description: The expectation-id previously assigned to the expectation loaded from the suite.
     - did_overwrite_response:
         - type: boolean
         - required: true
-        - description: Indicates if the response, previously registered with the expectation, is identical to the response loaded from the suite or if it was overwritten.
+        - description: Indicates if the response previously registered with the expectation, is identical to the response loaded from the suite or if it was overwritten or erased.
 
 ##### Expectation Object:
 - properties:
@@ -320,10 +312,9 @@ Reset hit-counts to 0.
         - description: Header parameters to be included in the response's header map. When `null` or not specified it is treated as if an empty map is provided.
 
 ## Planned work
+- Regex matching on expectation matching
 - `/expectation-suite/list` endpoint
 - `/expectation-suite` DELETE endpoint
-- Regex matching on expectation matching.
-- Remove the requirement that an exclusion must have a response.
 
 ## Bug Reports / Feature Requests
 To report a bug, feature request or any other constructive comment, please create a detailed GitHub issue [here](https://github.com/dzegel/DynamockServer/issues/new) with a mention of **@dzegel**. 

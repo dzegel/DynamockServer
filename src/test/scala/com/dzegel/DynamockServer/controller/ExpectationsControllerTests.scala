@@ -119,7 +119,7 @@ class ExpectationsControllerTests extends FeatureTest with MockFactory with Matc
         HeaderParameters(expectationIncludedHeaderParams.getOrElse(Set.empty), expectationExcludedHeaderParams.getOrElse(Set.empty)),
         Content(expectationContent.getOrElse(""))),
       response,
-      Success(Seq(RegisterExpectationsOutput(expectationId, expectationName, didOverwriteResponse = response.map(_ => false)))))
+      Success(Seq(RegisterExpectationsOutput(expectationId, expectationName, didOverwriteResponse = false))))
 
     server.httpPut(
       path = "/test/expectations",
@@ -137,7 +137,8 @@ class ExpectationsControllerTests extends FeatureTest with MockFactory with Matc
            |  "expectations_info" : [
            |    {
            |      "expectation_id" : "$expectationId",
-           |      "expectation_name" : "$expectationName" ${response.map(_ => ""","did_overwrite_response" : false""").getOrElse("")}
+           |      "expectation_name" : "$expectationName",
+           |      "did_overwrite_response": false
            |    }
            |  ]
            |}""".stripMargin)
@@ -323,15 +324,11 @@ class ExpectationsControllerTests extends FeatureTest with MockFactory with Matc
     val suiteName = "SomeName"
     val expectationId1 = "id_1"
     val expectationId2 = "id_2"
-    val expectationId3 = "id_3"
-    val oldExpectationId1 = "old_id_1"
-    val oldExpectationId2 = "old_id_2"
     setup_ExpectationService_LoadExpectations(
       suiteName,
       Success(Seq(
-        LoadExpectationsOutput(expectationId1, Some(true)),
-        LoadExpectationsOutput(expectationId2, Some(false)),
-        LoadExpectationsOutput(expectationId3, None)
+        LoadExpectationsOutput(expectationId1, didOverwriteResponse = true),
+        LoadExpectationsOutput(expectationId2, didOverwriteResponse = false)
       ))
     )
 
@@ -347,8 +344,6 @@ class ExpectationsControllerTests extends FeatureTest with MockFactory with Matc
            |  },{
            |    "expectation_id": "$expectationId2",
            |    "did_overwrite_response": false
-           |  },{
-           |    "expectation_id": "$expectationId3"
            |  }]
            |}""".stripMargin
     )

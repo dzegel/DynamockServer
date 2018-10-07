@@ -28,7 +28,7 @@ object ExpectationsController {
 
   private case class ExpectationsPutRequestItemDto(expectation: ExpectationDto, response: Option[ResponseDto], expectationName: String)
 
-  private case class ExpectationsPutResponseItemDto(expectationId: String, expectationName: String, didOverwriteResponse: Option[Boolean])
+  private case class ExpectationsPutResponseItemDto(expectationId: String, expectationName: String, didOverwriteResponse: Boolean)
 
   private case class ExpectationsPutRequest(expectationResponses: Set[ExpectationsPutRequestItemDto])
 
@@ -42,7 +42,7 @@ object ExpectationsController {
 
   private case class ExpectationsSuiteStorePostRequest(@QueryParam suiteName: String)
 
-  private case class ExpectationsSuiteLoadPostResponseItemDto(expectationId: String, didOverwriteResponse: Option[Boolean])
+  private case class ExpectationsSuiteLoadPostResponseItemDto(expectationId: String, didOverwriteResponse: Boolean)
 
   private case class ExpectationsSuiteLoadPostRequest(@QueryParam suiteName: String)
 
