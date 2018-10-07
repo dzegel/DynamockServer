@@ -250,7 +250,7 @@ Reset hit-counts to 0.
     - expectation_id:
         - type: String
         - required: true
-        - description: The unique expectation-id loaded from the expectation suite.
+        - description: The expectation-id deterministically generated from the expectation loaded from the expectation suite.
     - did_overwrite_response:
         - type: boolean
         - required: true
