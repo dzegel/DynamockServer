@@ -25,33 +25,50 @@ class ExpectationServiceTests extends FunSuite with MockFactory with Matchers {
 
   private val expectationId1 = "id_1"
   private val expectationId2 = "id_2"
+  private val expectationId3 = "id_3"
+  private val expectationId4 = "id_4"
+  private val expectationId5 = "id_5"
   private val expectationIds = Set(expectationId1, expectationId2)
 
   private val clientName1 = "client name 1"
   private val clientName2 = "client name 2"
+  private val clientName3 = "client name 3"
+  private val clientName4 = "client name 4"
 
   test("registerExpectation returns Success when no Exception is thrown") {
-    val expectation2 = expectation.copy(path = "someOtherPath")
+    val expectation2 = expectation.copy(path = "someOtherPath 2")
+    val expectation3 = expectation.copy(path = "someOtherPath 3")
+    val expectation4 = expectation.copy(path = "someOtherPath 4")
     setup_ExpectationStore_RegisterExpectation(expectation, Right(expectationId1))
     setup_ExpectationStore_RegisterExpectation(expectation2, Right(expectationId2))
+    setup_ExpectationStore_RegisterExpectation(expectation3, Right(expectationId3))
+    setup_ExpectationStore_RegisterExpectation(expectation4, Right(expectationId4))
     setup_ResponseStore_RegisterResponse(expectationId1, response, Right(false))
     setup_ResponseStore_RegisterResponse(expectationId2, response, Right(true))
+    setup_ResponseStore_GetResponses(Set(expectationId3), Right(Map()))
+    setup_ResponseStore_GetResponses(Set(expectationId4), Right(Map(expectationId4 -> response)))
+    setup_ResponseStore_DeleteResponses(Set(expectationId3))
+    setup_ResponseStore_DeleteResponses(Set(expectationId4))
 
-    setup_HitCountService_Register(Seq(expectationId1, expectationId2))
+    setup_HitCountService_Register(Seq(expectationId1, expectationId2, expectationId3, expectationId4))
 
     expectationService.registerExpectations(Set(
-      RegisterExpectationsInput(expectation, response, clientName1),
-      RegisterExpectationsInput(expectation2, response, clientName2)
+      RegisterExpectationsInput(expectation, Some(response), clientName1),
+      RegisterExpectationsInput(expectation2, Some(response), clientName2),
+      RegisterExpectationsInput(expectation3, None, clientName3),
+      RegisterExpectationsInput(expectation4, None, clientName4)
     )) shouldBe Success(Seq(
       RegisterExpectationsOutput(expectationId1, clientName1, didOverwriteResponse = false),
-      RegisterExpectationsOutput(expectationId2, clientName2, didOverwriteResponse = true)
+      RegisterExpectationsOutput(expectationId2, clientName2, didOverwriteResponse = true),
+      RegisterExpectationsOutput(expectationId3, clientName3, didOverwriteResponse = false),
+      RegisterExpectationsOutput(expectationId4, clientName4, didOverwriteResponse = true)
     ))
   }
 
   test("registerExpectation returns Failure on Exception from ExpectationStore") {
     setup_ExpectationStore_RegisterExpectation(expectation, Left(exception))
 
-    expectationService.registerExpectations(Set(RegisterExpectationsInput(expectation, response, clientName1))) shouldBe
+    expectationService.registerExpectations(Set(RegisterExpectationsInput(expectation, Some(response), clientName1))) shouldBe
       Failure(exception)
   }
 
@@ -59,7 +76,7 @@ class ExpectationServiceTests extends FunSuite with MockFactory with Matchers {
     setup_ExpectationStore_RegisterExpectation(expectation, Right(expectationId1))
     setup_ResponseStore_RegisterResponse(expectationId1, response, Left(exception))
 
-    expectationService.registerExpectations(Set(RegisterExpectationsInput(expectation, response, clientName1))) shouldBe
+    expectationService.registerExpectations(Set(RegisterExpectationsInput(expectation, Some(response), clientName1))) shouldBe
       Failure(exception)
   }
 
@@ -68,15 +85,15 @@ class ExpectationServiceTests extends FunSuite with MockFactory with Matchers {
     setup_ResponseStore_RegisterResponse(expectationId1, response, Right(false))
     setup_HitCountService_Register(Seq(expectationId1), Some(exception))
 
-    expectationService.registerExpectations(Set(RegisterExpectationsInput(expectation, response, clientName1))) shouldBe
+    expectationService.registerExpectations(Set(RegisterExpectationsInput(expectation, Some(response), clientName1))) shouldBe
       Failure(exception)
   }
 
   test("getResponse returns Success of response") {
     setup_ExpectationStore_GetIdsForMatchingExpectations(request, Right(expectationIds))
     setup_HitCountService_Increment(expectationIds.toSeq)
-    setup_ExpectationStore_GetMostConstrainedExpectationWithId(expectationIds, Right(Some(expectationId1 -> expectation)))
-    setup_ResponseStore_GetResponses(Set(expectationId1), Right(Map(expectationId1 -> response)))
+    setup_ResponseStore_GetResponses(expectationIds, Right(Map(expectationId1 -> response)))
+    setup_ExpectationStore_GetMostConstrainedExpectationWithId(Set(expectationId1), Right(Some(expectationId1 -> expectation)))
 
     expectationService.getResponse(request) shouldBe Success(Some(response))
   }
@@ -84,7 +101,8 @@ class ExpectationServiceTests extends FunSuite with MockFactory with Matchers {
   test("getResponse returns Success of None") {
     setup_ExpectationStore_GetIdsForMatchingExpectations(request, Right(expectationIds))
     setup_HitCountService_Increment(expectationIds.toSeq)
-    setup_ExpectationStore_GetMostConstrainedExpectationWithId(expectationIds, Right(None))
+    setup_ResponseStore_GetResponses(expectationIds, Right(Map(expectationId1 -> response)))
+    setup_ExpectationStore_GetMostConstrainedExpectationWithId(Set(expectationId1), Right(None))
 
     expectationService.getResponse(request) shouldBe Success(None)
   }
@@ -105,7 +123,8 @@ class ExpectationServiceTests extends FunSuite with MockFactory with Matchers {
   test("getResponse returns Failure when ExpectationStore.getMostConstrainedExpectationWithId fails") {
     setup_ExpectationStore_GetIdsForMatchingExpectations(request, Right(expectationIds))
     setup_HitCountService_Increment(expectationIds.toSeq)
-    setup_ExpectationStore_GetMostConstrainedExpectationWithId(expectationIds, Left(exception))
+    setup_ResponseStore_GetResponses(expectationIds, Right(Map(expectationId1 -> response)))
+    setup_ExpectationStore_GetMostConstrainedExpectationWithId(Set(expectationId1), Left(exception))
 
     expectationService.getResponse(request) shouldBe Failure(exception)
   }
@@ -113,8 +132,7 @@ class ExpectationServiceTests extends FunSuite with MockFactory with Matchers {
   test("getResponse returns Failure when ResponseStore.getResponses fails") {
     setup_ExpectationStore_GetIdsForMatchingExpectations(request, Right(expectationIds))
     setup_HitCountService_Increment(expectationIds.toSeq)
-    setup_ExpectationStore_GetMostConstrainedExpectationWithId(expectationIds, Right(Some(expectationId1 -> expectation)))
-    setup_ResponseStore_GetResponses(Set(expectationId1), Left(exception))
+    setup_ResponseStore_GetResponses(expectationIds, Left(exception))
 
     expectationService.getResponse(request) shouldBe Failure(exception)
   }
@@ -178,10 +196,13 @@ class ExpectationServiceTests extends FunSuite with MockFactory with Matchers {
   }
 
   test("getAllExpectations returns Success") {
-    setup_ExpectationStore_GetAllExpectations(Right(Map(expectationId1 -> expectation)))
-    setup_ResponseStore_GetResponses(Set(expectationId1), Right(Map(expectationId1 -> response)))
+    setup_ExpectationStore_GetAllExpectations(Right(Map(expectationId1 -> expectation, expectationId2 -> expectation)))
+    setup_ResponseStore_GetResponses(Set(expectationId1, expectationId2), Right(Map(expectationId1 -> response)))
 
-    expectationService.getAllExpectations shouldBe Success(Set(GetExpectationsOutput(expectationId1, expectation, response)))
+    expectationService.getAllExpectations shouldBe Success(Set(
+      GetExpectationsOutput(expectationId1, expectation, Some(response)),
+      GetExpectationsOutput(expectationId2, expectation, None)
+    ))
   }
 
   test("getAllExpectations returns Failure when ExpectationStore.getAllExpectations fails") {
@@ -227,35 +248,41 @@ class ExpectationServiceTests extends FunSuite with MockFactory with Matchers {
   }
 
   test("loadExpectations returns Success") {
-    val expectationId3 = "id_3"
-    val expectationId4 = "id_4"
     val expectation2 = Expectation("2", "2", Map(), null, null)
     val expectation3 = Expectation("3", "3", Map(), null, null)
     val expectation4 = Expectation("4", "4", Map(), null, null)
+    val expectation5 = Expectation("5", "5", Map(), null, null)
     val response2 = Response(200, "some content", Map())
     val response3 = Response(300, "some content", Map())
     val expectationResponses = Set(
       expectation -> Some(response),
       expectation2 -> Some(response2),
       expectation3 -> Some(response3),
-      expectation4 -> None)
-    val serviceReturnValue1 = LoadExpectationsOutput(expectationId1, None) //register previously unregistered expectation
-    val serviceReturnValue2 = LoadExpectationsOutput(expectationId2, Some(LoadExpectationsOverwriteInfo(expectationId2, didOverwriteResponse = true))) //register previously registered expectation with a new id
-    val serviceReturnValue3 = LoadExpectationsOutput(expectationId3, None) //register previously registered expectation with the old id
-    val serviceReturnValue4 = LoadExpectationsOutput(expectationId4, None)
+      expectation4 -> None,
+      expectation5 -> None)
+    val serviceReturnValue1 = LoadExpectationsOutput(expectationId1, didOverwriteResponse = false) //register previously unregistered expectation
+    val serviceReturnValue2 = LoadExpectationsOutput(expectationId2, didOverwriteResponse = true)
+    val serviceReturnValue3 = LoadExpectationsOutput(expectationId3, didOverwriteResponse = false)
+    val serviceReturnValue4 = LoadExpectationsOutput(expectationId4, didOverwriteResponse = false)
+    val serviceReturnValue5 = LoadExpectationsOutput(expectationId5, didOverwriteResponse = true)
 
     setup_ExpectationsFileService_LoadExpectationsFromJson(expectationSuiteName, Right(expectationResponses))
     setup_ExpectationStore_RegisterExpectation(expectation, Right(expectationId1))
     setup_ExpectationStore_RegisterExpectation(expectation2, Right(expectationId2))
     setup_ExpectationStore_RegisterExpectation(expectation3, Right(expectationId3))
     setup_ExpectationStore_RegisterExpectation(expectation4, Right(expectationId4))
+    setup_ExpectationStore_RegisterExpectation(expectation5, Right(expectationId5))
     setup_ResponseStore_RegisterResponse(expectationId1, response, Right(false))
     setup_ResponseStore_RegisterResponse(expectationId2, response2, Right(true))
     setup_ResponseStore_RegisterResponse(expectationId3, response3, Right(false))
-    setup_HitCountService_Register(Seq(expectationId1, expectationId2, expectationId3, expectationId4))
+    setup_ResponseStore_GetResponses(Set(expectationId4), Right(Map()))
+    setup_ResponseStore_GetResponses(Set(expectationId5), Right(Map(expectationId5 -> response)))
+    setup_ResponseStore_DeleteResponses(Set(expectationId4))
+    setup_ResponseStore_DeleteResponses(Set(expectationId5))
+    setup_HitCountService_Register(Seq(expectationId2, expectationId1, expectationId3, expectationId5, expectationId4))
 
     expectationService.loadExpectations(expectationSuiteName) shouldBe
-      Success(Seq(serviceReturnValue1, serviceReturnValue2, serviceReturnValue3, serviceReturnValue4))
+      Success(Seq(serviceReturnValue2, serviceReturnValue1, serviceReturnValue3, serviceReturnValue5, serviceReturnValue4))
   }
 
   test("loadExpectations returns Failure when ExpectationsFileService.loadExpectationsFromJson fails") {

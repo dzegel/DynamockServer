@@ -1,6 +1,6 @@
 package com.dzegel.DynamockServer.server
 
-import com.dzegel.DynamockServer.types.{Content, Expectation, HeaderParameters, Response}
+import com.dzegel.DynamockServer.types._
 import com.twitter.finagle.http.Status
 import com.twitter.finatra.http.EmbeddedHttpServer
 import com.twitter.inject.server.FeatureTest
@@ -17,37 +17,100 @@ class DynamockServerTests extends FeatureTest with Matchers with BeforeAndAfterE
     args = Seq("-http.port=:1235", "-dynamock.path.base=DynamockTest")
   )
 
-  private val expectation = Expectation("PUT", "/some/path", Map.empty, HeaderParameters(Set.empty, Set.empty), Content("someContent"))
-  private val response = Response(201, "SomeOtherContent", Map("SomeKey" -> "SomeValue"))
+  private val expectation1 = Expectation("PUT", "/some/path/1", Map.empty, HeaderParameters(Set.empty, Set.empty), Content("someContent 1"))
+  private val expectation2 = Expectation("POST", "/some/path/2", Map.empty, HeaderParameters(Set.empty, Set.empty), Content("someContent 2"))
+  private val response1 = Response(201, "SomeOtherContent", Map("SomeKey" -> "SomeValue"))
   private val response2 = Response(203, "SomeOtherContent2", Map("SomeKey2" -> "SomeValue2"))
-  private val expectationName = "expectation name"
+  private val expectationName1 = "expectation name 1"
+  private val expectationName2 = "expectation name 2"
 
-  private def expectationPutRequestJson(response: Response): String =
-    s"""
-{
-  "expectation_responses": [{
-    "expectation_name": "$expectationName",
-    "expectation": {
-      "path": "${expectation.path}",
-      "method": "${expectation.method}",
-      "content": "${expectation.content.stringValue}"
-    },
-    "response": {
-      "status": ${response.status},
-      "content": "${response.content}",
-      "header_map": {
-        "${response.headerMap.head._1}": "${response.headerMap.head._2}"
+  private def expectationJson(expectation: Expectation): String =
+    s""" "expectation": {
+        "path": "${expectation.path}",
+        "method": "${expectation.method}",
+        "content": "${expectation.content.stringValue}",
+        "included_header_parameters": {${paramMapToJson(expectation.headerParameters.included)}},
+        "excluded_header_parameters": {${paramMapToJson(expectation.headerParameters.excluded)}},
+        "query_parameters": {${paramMapToJson(expectation.queryParams.toSet)}}
       }
-    }
-  }]
+    """
+
+  private def responseJson(response: Response): String =
+    s""" "response": {
+        "status": ${response.status},
+        "content": "${response.content}",
+        "header_map": {${paramMapToJson(response.headerMap.toSet)}}
+      }"""
+
+  private def paramMapToJson(params: Set[(String, String)]): String = params.map { case (k, v) => s""" "$k": "$v" """ }.mkString(",")
+
+  private def expectationRequestItemJson(expectationName: String, expectation: Expectation, response: Option[Response]): String =
+    s""" {
+      "expectation_name": "$expectationName",
+      ${expectationJson(expectation)}
+      ${response.map("," + responseJson(_)).getOrElse("")}
 }"""
 
+  private def expectationResponseItemJson(expectationId: ExpectationId, expectation: Expectation, response: Option[Response]): String =
+    s""" {
+      "expectation_id": "$expectationId",
+      ${expectationJson(expectation)}
+      ${response.map("," + responseJson(_)).getOrElse("")}
+}"""
+
+  private def expectationPutRequestJson(expectationResponses: Seq[(String, Expectation, Option[Response])]): String =
+    s""" {
+  "expectation_responses": [
+  ${expectationResponses.map { case (name, exp, res) => expectationRequestItemJson(name, exp, res) }.mkString(",")}
+  ]
+}"""
+
+  private def expectationPutResponseJson(expectationResponses: Seq[(ExpectationId, Expectation, Option[Response])]): String =
+    s""" {
+  "expectation_responses": [
+  ${expectationResponses.map { case (id, exp, res) => expectationResponseItemJson(id, exp, res) }.mkString(",")}
+  ]
+}"""
+
+  private def expectationPutRequestJson(response: Option[Response]): String =
+    expectationPutRequestJson(Seq((expectationName1, expectation1, response)))
+
   override protected def beforeEach: Unit = server.httpDelete("/DynamockTest/expectations")
+
+  test("PUT /DynamockTest/expectations - mocked expectation with no response works") {
+    server.httpPut(
+      path = "/DynamockTest/expectations",
+      putBody = expectationPutRequestJson(Seq(
+        (expectationName1, expectation1, None),
+        (expectationName1 + " constrained", expectation1.copy(headerParameters = HeaderParameters(Set("K" -> "V"), Set.empty)), Some(response1)),
+        (expectationName2, expectation2, Some(response2)))),
+      andExpect = Status.Ok)
+
+    server.httpPut(
+      expectation1.path,
+      putBody = expectation1.content.stringValue,
+      andExpect = Status(551))
+
+    val result1 = server.httpPut(
+      expectation1.path,
+      headers = Map("K" -> "V"),
+      putBody = expectation1.content.stringValue,
+      andExpect = Status(response1.status),
+      withBody = response1.content)
+    response1.headerMap.foreach { case (k, v) => result1.headerMap(k) shouldBe v }
+
+    val result2 = server.httpPost(
+      expectation2.path,
+      postBody = expectation2.content.stringValue,
+      andExpect = Status(response2.status),
+      withBody = response2.content)
+    response2.headerMap.foreach { case (k, v) => result2.headerMap(k) shouldBe v }
+  }
 
   test("PUT /DynamockTest/expectations - mocked expectation - DELETE /DynamockTest/expectations - mocked expectation returns the expected response") {
     val putExpectationsResponse = server.httpPut(
       path = "/DynamockTest/expectations",
-      putBody = expectationPutRequestJson(response),
+      putBody = expectationPutRequestJson(Some(response1)),
       andExpect = Status.Ok)
 
     val responseMap = parse(putExpectationsResponse.contentString).filterField(_ => true).toMap
@@ -56,43 +119,43 @@ class DynamockServerTests extends FeatureTest with Matchers with BeforeAndAfterE
     val expectationInfoSeq = expectationInfoJArray.values.asInstanceOf[::[Map[String, Any]]]
     expectationInfoSeq.size shouldBe 1
     val expectationInfoMap = expectationInfoSeq.head
-    expectationInfoMap("expectation_name") shouldBe expectationName
+    expectationInfoMap("expectation_name") shouldBe expectationName1
     expectationInfoMap("did_overwrite_response") shouldBe false
     expectationInfoMap("expectation_id") shouldBe a[String]
     expectationInfoMap("expectation_id").asInstanceOf[String] should not be empty
 
     val mockResponse = server.httpPut(
-      expectation.path,
-      putBody = expectation.content.stringValue,
-      andExpect = Status(response.status),
-      withBody = response.content)
+      expectation1.path,
+      putBody = expectation1.content.stringValue,
+      andExpect = Status(response1.status),
+      withBody = response1.content)
 
-    mockResponse.headerMap should contain allElementsOf response.headerMap
+    mockResponse.headerMap should contain allElementsOf response1.headerMap
 
     server.httpDelete(
       "/DynamockTest/expectations",
       andExpect = Status.NoContent)
 
     val mockResponse2 = server.httpPut(
-      expectation.path,
-      putBody = expectation.content.stringValue,
+      expectation1.path,
+      putBody = expectation1.content.stringValue,
       andExpect = Status(551))
 
     val mockResponseMap = parse(mockResponse2.contentString).filterField(_ => true).toMap
     val jMessage = mockResponseMap("message")
-    jMessage shouldBe JString("Dynamock Error: The request did not match any registered expectations.")
+    jMessage shouldBe JString("Dynamock Error: The request did not match any expectation registered with a response.")
     val mockRequestMap = mockResponseMap("request").values.asInstanceOf[Map[String, Any]]
     mockRequestMap.keySet shouldBe Set("path", "method", "content", "headers", "query_params")
-    mockRequestMap("path") shouldBe expectation.path
+    mockRequestMap("path") shouldBe expectation1.path
     mockRequestMap("method") shouldBe "PUT"
-    mockRequestMap("content") shouldBe expectation.content.stringValue
+    mockRequestMap("content") shouldBe expectation1.content.stringValue
     mockRequestMap("query_params").asInstanceOf[Map[String, Any]] shouldBe empty
   }
 
   test("PUT /DynamockTest/expectations - mocked expectation - PUT /DynamockTest/expectations with new response - mocked expectation returns the expected response") {
     val putExpectationsResponse = server.httpPut(
       path = "/DynamockTest/expectations",
-      putBody = expectationPutRequestJson(response),
+      putBody = expectationPutRequestJson(Some(response1)),
       andExpect = Status.Ok)
 
     val responseMap = parse(putExpectationsResponse.contentString).filterField(_ => true).toMap
@@ -101,36 +164,36 @@ class DynamockServerTests extends FeatureTest with Matchers with BeforeAndAfterE
     val expectationInfoSeq = expectationInfoJArray.values.asInstanceOf[::[Map[String, Any]]]
     expectationInfoSeq.size shouldBe 1
     val expectationInfoMap = expectationInfoSeq.head
-    expectationInfoMap("expectation_name") shouldBe expectationName
+    expectationInfoMap("expectation_name") shouldBe expectationName1
     expectationInfoMap("did_overwrite_response") shouldBe false
     expectationInfoMap("expectation_id") shouldBe a[String]
     val expectationId = expectationInfoMap("expectation_id").asInstanceOf[String]
     expectationId should not be empty
 
     val mockResponse = server.httpPut(
-      expectation.path,
-      putBody = expectation.content.stringValue,
-      andExpect = Status(response.status),
-      withBody = response.content)
+      expectation1.path,
+      putBody = expectation1.content.stringValue,
+      andExpect = Status(response1.status),
+      withBody = response1.content)
 
-    mockResponse.headerMap should contain allElementsOf response.headerMap
+    mockResponse.headerMap should contain allElementsOf response1.headerMap
 
     server.httpPut(
       path = "/DynamockTest/expectations",
-      putBody = expectationPutRequestJson(response2),
+      putBody = expectationPutRequestJson(Some(response2)),
       andExpect = Status.Ok,
       withJsonBody =
         s"""{
            |  "expectations_info": [{
-           |    "expectation_name": "$expectationName",
+           |    "expectation_name": "$expectationName1",
            |    "expectation_id": "$expectationId",
            |    "did_overwrite_response": true
            |  }]
            |}""".stripMargin)
 
     val mockResponse2 = server.httpPut(
-      expectation.path,
-      putBody = expectation.content.stringValue,
+      expectation1.path,
+      putBody = expectation1.content.stringValue,
       andExpect = Status(response2.status),
       withBody = response2.content)
 
@@ -140,7 +203,7 @@ class DynamockServerTests extends FeatureTest with Matchers with BeforeAndAfterE
   test("PUT - GET - DELETE - GET /DynamockTest/expectations returns the expected output") {
     val putExpectationsResponse = server.httpPut(
       path = "/DynamockTest/expectations",
-      putBody = expectationPutRequestJson(response),
+      putBody = expectationPutRequestJson(Some(response1)),
       andExpect = Status.Ok)
 
     val responseMap = parse(putExpectationsResponse.contentString).filterField(_ => true).toMap
@@ -149,7 +212,7 @@ class DynamockServerTests extends FeatureTest with Matchers with BeforeAndAfterE
     val expectationInfoSeq = expectationInfoJArray.values.asInstanceOf[::[Map[String, Any]]]
     expectationInfoSeq.size shouldBe 1
     val expectationInfoMap = expectationInfoSeq.head
-    expectationInfoMap("expectation_name") shouldBe expectationName
+    expectationInfoMap("expectation_name") shouldBe expectationName1
     expectationInfoMap("did_overwrite_response") shouldBe false
     expectationInfoMap("expectation_id") shouldBe a[String]
     val expectationId = expectationInfoMap("expectation_id").asInstanceOf[String]
@@ -158,28 +221,7 @@ class DynamockServerTests extends FeatureTest with Matchers with BeforeAndAfterE
     server.httpGet(
       "/DynamockTest/expectations",
       andExpect = Status.Ok,
-      withJsonBody =
-        s"""
-{
-  "expectation_responses": [{
-    "expectation_id": "$expectationId",
-    "expectation": {
-      "path": "${expectation.path}",
-      "method": "${expectation.method}",
-      "content": "${expectation.content.stringValue}",
-      "included_header_parameters": {},
-      "excluded_header_parameters": {},
-      "query_parameters": {}
-    },
-    "response": {
-      "status": ${response.status},
-      "content": "${response.content}",
-      "header_map": {
-        "${response.headerMap.head._1}": "${response.headerMap.head._2}"
-      }
-    }
-  }]
-}""")
+      withJsonBody = expectationPutResponseJson(Seq((expectationId, expectation1, Some(response1)))))
 
     server.httpDelete(
       "/DynamockTest/expectations",
@@ -194,7 +236,7 @@ class DynamockServerTests extends FeatureTest with Matchers with BeforeAndAfterE
   test("Expectations suite works") {
     val putExpectationsResponse = server.httpPut(
       path = "/DynamockTest/expectations",
-      putBody = expectationPutRequestJson(response),
+      putBody = expectationPutRequestJson(Some(response1)),
       andExpect = Status.Ok)
 
     val responseMap = parse(putExpectationsResponse.contentString).filterField(_ => true).toMap
@@ -206,28 +248,7 @@ class DynamockServerTests extends FeatureTest with Matchers with BeforeAndAfterE
     server.httpGet(
       "/DynamockTest/expectations",
       andExpect = Status.Ok,
-      withJsonBody =
-        s"""
-{
-  "expectation_responses": [{
-    "expectation_id": "$expectationId",
-    "expectation": {
-      "path": "${expectation.path}",
-      "method": "${expectation.method}",
-      "content": "${expectation.content.stringValue}",
-      "included_header_parameters": {},
-      "excluded_header_parameters": {},
-      "query_parameters": {}
-    },
-    "response": {
-      "status": ${response.status},
-      "content": "${response.content}",
-      "header_map": {
-        "${response.headerMap.head._1}": "${response.headerMap.head._2}"
-      }
-    }
-  }]
-}""")
+      withJsonBody = expectationPutResponseJson(Seq((expectationId, expectation1, Some(response1)))))
 
     val suiteName = "my%20suite"
 
@@ -252,40 +273,21 @@ class DynamockServerTests extends FeatureTest with Matchers with BeforeAndAfterE
       withJsonBody =
         s"""{
            |  "suite_load_info": [{
-           |    "expectation_id": "$expectationId"
+           |    "expectation_id": "$expectationId",
+           |    "did_overwrite_response": false
            |  }]
            |}""".stripMargin)
 
     server.httpGet(
       "/DynamockTest/expectations",
       andExpect = Status.Ok,
-      withJsonBody =
-        s"""{
-  "expectation_responses": [{
-    "expectation_id": "$expectationId",
-    "expectation": {
-      "path": "${expectation.path}",
-      "method": "${expectation.method}",
-      "content": "${expectation.content.stringValue}",
-      "included_header_parameters": {},
-      "excluded_header_parameters": {},
-      "query_parameters": {}
-    },
-    "response": {
-      "status": ${response.status},
-      "content": "${response.content}",
-      "header_map": {
-        "${response.headerMap.head._1}": "${response.headerMap.head._2}"
-      }
-    }
-  }]
-}""")
+      withJsonBody = expectationPutResponseJson(Seq((expectationId, expectation1, Some(response1)))))
   }
 
   test("Hit-count works") {
     val putExpectationsResponse = server.httpPut(
       path = "/DynamockTest/expectations",
-      putBody = expectationPutRequestJson(response),
+      putBody = expectationPutRequestJson(Some(response1)),
       andExpect = Status.Ok)
 
     val responseMap = parse(putExpectationsResponse.contentString).filterField(_ => true).toMap
@@ -297,18 +299,18 @@ class DynamockServerTests extends FeatureTest with Matchers with BeforeAndAfterE
     getAndVerifyHitCount(expectationId, 0)
 
     server.httpPut(
-      expectation.path,
-      putBody = expectation.content.stringValue,
-      andExpect = Status(response.status),
-      withBody = response.content)
+      expectation1.path,
+      putBody = expectation1.content.stringValue,
+      andExpect = Status(response1.status),
+      withBody = response1.content)
 
     getAndVerifyHitCount(expectationId, 1)
 
     server.httpPut(
-      expectation.path,
-      putBody = expectation.content.stringValue,
-      andExpect = Status(response.status),
-      withBody = response.content)
+      expectation1.path,
+      putBody = expectation1.content.stringValue,
+      andExpect = Status(response1.status),
+      withBody = response1.content)
 
     getAndVerifyHitCount(expectationId, 2)
   }
@@ -316,7 +318,7 @@ class DynamockServerTests extends FeatureTest with Matchers with BeforeAndAfterE
   test("Hit-count reset works") {
     val putExpectationsResponse = server.httpPut(
       path = "/DynamockTest/expectations",
-      putBody = expectationPutRequestJson(response),
+      putBody = expectationPutRequestJson(Some(response1)),
       andExpect = Status.Ok)
 
     val responseMap = parse(putExpectationsResponse.contentString).filterField(_ => true).toMap
@@ -328,10 +330,10 @@ class DynamockServerTests extends FeatureTest with Matchers with BeforeAndAfterE
     getAndVerifyHitCount(expectationId, 0)
 
     server.httpPut(
-      expectation.path,
-      putBody = expectation.content.stringValue,
-      andExpect = Status(response.status),
-      withBody = response.content)
+      expectation1.path,
+      putBody = expectation1.content.stringValue,
+      andExpect = Status(response1.status),
+      withBody = response1.content)
 
     getAndVerifyHitCount(expectationId, 1)
 
@@ -343,10 +345,10 @@ class DynamockServerTests extends FeatureTest with Matchers with BeforeAndAfterE
     getAndVerifyHitCount(expectationId, 0)
 
     server.httpPut(
-      expectation.path,
-      putBody = expectation.content.stringValue,
-      andExpect = Status(response.status),
-      withBody = response.content)
+      expectation1.path,
+      putBody = expectation1.content.stringValue,
+      andExpect = Status(response1.status),
+      withBody = response1.content)
 
     getAndVerifyHitCount(expectationId, 1)
   }
@@ -354,7 +356,7 @@ class DynamockServerTests extends FeatureTest with Matchers with BeforeAndAfterE
   test("Hit-count does not reset for new response") {
     val putExpectationsResponse = server.httpPut(
       path = "/DynamockTest/expectations",
-      putBody = expectationPutRequestJson(response),
+      putBody = expectationPutRequestJson(Some(response1)),
       andExpect = Status.Ok)
 
     val responseMap = parse(putExpectationsResponse.contentString).filterField(_ => true).toMap
@@ -366,23 +368,23 @@ class DynamockServerTests extends FeatureTest with Matchers with BeforeAndAfterE
     getAndVerifyHitCount(expectationId, 0)
 
     server.httpPut(
-      expectation.path,
-      putBody = expectation.content.stringValue,
-      andExpect = Status(response.status),
-      withBody = response.content)
+      expectation1.path,
+      putBody = expectation1.content.stringValue,
+      andExpect = Status(response1.status),
+      withBody = response1.content)
 
     getAndVerifyHitCount(expectationId, 1)
 
     server.httpPut(
       path = "/DynamockTest/expectations",
-      putBody = expectationPutRequestJson(response2),
+      putBody = expectationPutRequestJson(Some(response2)),
       andExpect = Status.Ok)
 
     getAndVerifyHitCount(expectationId, 1)
 
     server.httpPut(
-      expectation.path,
-      putBody = expectation.content.stringValue,
+      expectation1.path,
+      putBody = expectation1.content.stringValue,
       andExpect = Status(response2.status),
       withBody = response2.content)
 

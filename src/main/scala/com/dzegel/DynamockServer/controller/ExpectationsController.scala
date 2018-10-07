@@ -26,7 +26,7 @@ object ExpectationsController {
 
   private case class ResponseDto(status: Int, content: Option[String], headerMap: Option[Map[String, String]])
 
-  private case class ExpectationsPutRequestItemDto(expectation: ExpectationDto, response: ResponseDto, expectationName: String)
+  private case class ExpectationsPutRequestItemDto(expectation: ExpectationDto, response: Option[ResponseDto], expectationName: String)
 
   private case class ExpectationsPutResponseItemDto(expectationId: String, expectationName: String, didOverwriteResponse: Boolean)
 
@@ -34,7 +34,7 @@ object ExpectationsController {
 
   private case class ExpectationsPutResponse(expectationsInfo: Seq[ExpectationsPutResponseItemDto])
 
-  private case class ExpectationsGetResponseItemDto(expectation: ExpectationDto, response: ResponseDto, expectationId: String)
+  private case class ExpectationsGetResponseItemDto(expectation: ExpectationDto, response: Option[ResponseDto], expectationId: String)
 
   private case class ExpectationsGetResponse(expectationResponses: Set[ExpectationsGetResponseItemDto])
 
@@ -42,9 +42,7 @@ object ExpectationsController {
 
   private case class ExpectationsSuiteStorePostRequest(@QueryParam suiteName: String)
 
-  private case class ExpectationsSuiteLoadPostResponseOverwriteInfo(oldExpectationId: String, didOverwriteResponse: Boolean)
-
-  private case class ExpectationsSuiteLoadPostResponseItemDto(expectationId: String, overwriteInfo: Option[ExpectationsSuiteLoadPostResponseOverwriteInfo])
+  private case class ExpectationsSuiteLoadPostResponseItemDto(expectationId: String, didOverwriteResponse: Boolean)
 
   private case class ExpectationsSuiteLoadPostRequest(@QueryParam suiteName: String)
 
@@ -65,11 +63,8 @@ object ExpectationsController {
     Some(expectation.content.stringValue)
   )
 
-  private implicit def dtoFromResponse(response: Response): ResponseDto = ResponseDto(
-    response.status,
-    Some(response.content),
-    Some(response.headerMap)
-  )
+  private implicit def dtoFromResponse(optionResponse: Option[Response]): Option[ResponseDto] =
+    optionResponse.map(response => ResponseDto(response.status, Some(response.content), Some(response.headerMap)))
 
   private implicit def dtoToExpectation(dto: ExpectationDto): Expectation =
     Expectation(
@@ -81,8 +76,8 @@ object ExpectationsController {
         dto.excludedHeaderParameters.getOrElse(Map.empty).toSet),
       Content(dto.content.getOrElse("")))
 
-  private implicit def dtoToResponse(dto: ResponseDto): Response =
-    Response(dto.status, dto.content.getOrElse(""), dto.headerMap.getOrElse(Map.empty))
+  private implicit def dtoToResponse(optionDto: Option[ResponseDto]): Option[Response] =
+    optionDto.map(dto => Response(dto.status, dto.content.getOrElse(""), dto.headerMap.getOrElse(Map.empty)))
 }
 
 class ExpectationsController @Inject()(
@@ -96,7 +91,7 @@ class ExpectationsController @Inject()(
 
   put(expectationsPathBase) { request: ExpectationsPutRequest =>
     expectationService.registerExpectations(
-      request.expectationResponses.map(x => RegisterExpectationsInput(x.expectation: Expectation, x.response: Response, x.expectationName))
+      request.expectationResponses.map(x => RegisterExpectationsInput(x.expectation, x.response, x.expectationName))
     ).mapToOkResponse(registerExpectationsOutputs =>
       ExpectationsPutResponse(
         registerExpectationsOutputs.map(x => ExpectationsPutResponseItemDto(x.expectationId, x.clientName, x.didOverwriteResponse))
@@ -121,9 +116,7 @@ class ExpectationsController @Inject()(
   post(s"$expectationsSuitePathBase/load") { request: ExpectationsSuiteLoadPostRequest =>
     expectationService.loadExpectations(request.suiteName).mapToOkResponse(registerExpectationsOutputs =>
       ExpectationsSuiteLoadPostResponse(registerExpectationsOutputs.map { x =>
-        ExpectationsSuiteLoadPostResponseItemDto(
-          x.expectationId,
-          x.overwriteInfo.map(y => ExpectationsSuiteLoadPostResponseOverwriteInfo(y.oldExpectationId, y.didOverwriteResponse)))
+        ExpectationsSuiteLoadPostResponseItemDto(x.expectationId, x.didOverwriteResponse)
       }))
   }
 

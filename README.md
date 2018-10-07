@@ -3,6 +3,9 @@
 - [Overview](#overview)
 - [Deployment](#deployment)
 - [Mocked API](#mocked-api)
+  - [Matched Expectations and Mocked Responses](#matched-expectations-and-mocked-responses)
+  - [NonMocked Responses](#nonmocked-responses)
+  - [Internal Errors](#internal-errors)
 - [Dynamock API](#dynamock-api)
   - [PUT `/expectations`](#put-dynamock-path-baseexpectations)
   - [DELETE `/expectations`](#delete-dynamock-path-baseexpectations)
@@ -30,49 +33,54 @@ Simply setup an API expectation and response and then when an API call matching 
 
 ###### Use Cases
 
-- Testing: Integration test, an application that relies on web APIs, with a classic unit-test mocking experience.
+- Testing: Integration test an application that relies on web APIs, with a classic unit-test mocking experience.
 - Development: Develop an application that relies on web APIs that are themselves in development or currently inaccessible. 
 
 ###### Basic Usage
 When designing automated tests for a service with external web dependencies simply:
 1. [Spin-up](#deployment) a Dynamock Server instance.
-1. Configure the hosts and ports for the dependent services on the service under test, to point to the Dynamock Server.
+1. Configure the url base (i.e. host and port) of the dependent services on the service under test to point to the Dynamock Server.
 1. Setup the expected API calls with desired responses. (see [PUT /expectations](#put-dynamock-path-baseexpectations) or [POST /expectations-suite/load](#post-dynamock-path-baseexpectations-suiteload))
-1. Run your tests, i.e. make http requests to Dynamock Server as if it were the dependent service of interest. When a request matches an expectation that is setup, Dynamock Server will respond with the registered response. 
+1. Run your tests making http requests to Dynamock Server as if it were the dependent service of interest. When a request matches an expectation that is setup, Dynamock Server will respond with the registered response. 
 
 ## Deployment
-- Ensure Java 8 or higher is installed.
+- Ensure Java 8 (or higher) is installed.
 - Download the JAR file of the latest [release](releases/README.md).
-- Run `java -jar DynamockServer-x.y.z.jar [-http.port=:<port-number>] [-dynamock.path.base=<dynamock-path-base>]`, where `x.y.z` is the version number.
+- Run `java -jar DynamockServer-x.y.z.jar [-http.port=:<port-number>] [-dynamock.path.base=<dynamock-path-base>]`, where `x.y.z` is the release version number.
 The arguments are as follows:
     - **http.port**: An integer in the range [2, 65534], prefixed with `:`, specifying the http port the server runs on.
     For example, providing `-http.port=:1234` deploys a Dynamock instance listening on port `1234`.
-    If not provided this value defaults to `:8888`. This feature can be used to deploy multiple Dynamock Server instances for different consumers, to avoid collisions. 
+    If not provided this value defaults to `:8888`.
+    This feature can be used to deploy multiple Dynamock Server instances on the same computer for different consumers, to avoid collisions. 
     - **dynamock.path.base**: This value prefixes Dynamock API url-paths.
     For example, `-dynamock.path.base=my/test` or `-dynamock.path.base=/my/test` both result in a net url path `/my/test/expectations` for the Dynamock API url-path `<dynamock-path-base>/expectations`.
     If not provided `dynamock.path.base` defaults to the value `dynamock`, resulting in the net url-path being `/dynamock/expectations`.
-    You should only need to use this feature, in the unlikely case that the API being mocked has `dynamock` in its url paths, to avoid collisions on mocked http requests and the dynamock API.
+    You should only need to use this feature to avoid collisions on mocked http requests and the dynamock API, in the unlikely case that the API being mocked has `dynamock` in its url paths.
 
 ## Mocked API
 Any API call made to Dynamock Server is included in the Mocked API, except for API calls that would collide with the [Dynamock API](#dynamock-api).
 
-Given an API request that positively matches a registered expectation, the Mocked API will respond with the response registered with the expectation.
-See [PUT /expectations](#put-dynamock-path-baseexpectations) or [POST /expectations-suite/load](#post-dynamock-path-baseexpectations-suiteload) for registering expectations.
+### Matched Expectations and Mocked Responses
+When an API request is made, all expectations that positively match the request and that are registered with a response are considered (see [PUT /expectations](#put-dynamock-path-baseexpectations) for registering expectations).
+Of those considered, the response of the most constrained expectation is selected to be used for the mocked response.
+The most constrained expectation is defined as, the expectation with the greatest number of included and excluded header parameters specified.
+In the event that there are multiple equally constrained expectations that positively match the API request, one of those expectations is selected arbitrarily but deterministically.
+Additionally, all registered expectations (including ones not registered with a response) that positively match the request have their hit-counts incremented (see [POST /hit-counts/get](#post-dynamock-path-basehit-countsget)).
 
-It is possible for an API request to positively match multiple registered expectations. This would occur when there are multiple expectations registered which are identical except for the included and excluded header parameters. In this scenario the most constrained expectation is selected; that is, the expectation with the greatest number of included and excluded header parameters specified. In the event that there are multiple equally constrained expectations that positively match the API request, one of those expectations is selected arbitrarily but deterministically.
+### NonMocked Responses
+Given an API request that does not positively match an expectation registered with a response, the Mocked API responds with a `551` status code along with details of the specific request made to the Mocked API.
 
-Given an API request that does not positively match a registered expectation, the Mocked API responds with a `551` status code along with details of the specific request made to the Mocked API.
-
-The Mocked API responds with a `550` error code for internal server errors, in order not to collide with more common `500` errors.
-
-To avoid collisions between the Mocked API and the [Dynamock API](#dynamock-api), set the `dynamock.path.base` argument to a unique value that will not collide on any APIs being mocked.
+### Internal Errors
+The Mocked API responds with a `550` error code for internal server errors, in order not to collide with more common `5xx` errors that may be intentionally set in a registered mock response.
+If you experience a `550` error we would greatly appreciate it if you would submit a thorough bug report, see [below](#bug-reports--feature-requests) for submission instructions.
 
 ## Dynamock API
 
 ### PUT `<dynamock-path-base>/expectations`
-Setup a mocked response by registering an expectation and the response to return when the expectation is positively matched.
+Setup an expectation with an optional mocked response to return when the expectation is positively matched.
+If no response is registered the expectation is used solely for hit-count validation.
 An expectation name is provided to be used by the client to associate the returned expectation-ids to their respective registered expectations.
-Previously registered expectations which are identical to expectations provided will have their respective responses overridden with the responses provided and will keep the ids the expectations were originally registered with.
+Previously registered expectations which are identical to expectations provided will have their respective responses overwritten if one is now provided or erased if one is not provided.
 
 **Content-Type:** application/json
 
@@ -137,7 +145,7 @@ List all registered mock setups.
 
 ### POST `<dynamock-path-base>/expectations-suite/store`
 Save the state of registered expectations into an expectations-suite that can be restored at a later point in time.
-The saved state includes the expectation-id, expectation and response but not the hit-count.
+The saved state includes the expectation and response but not the hit-count.
 
 **Query Parameters:**
 - suite_name:
@@ -146,9 +154,10 @@ The saved state includes the expectation-id, expectation and response but not th
     - description: Name of the expectations-suite.
 
 ### POST `<dynamock-path-base>/expectations-suite/load`
-Register expectations stored in an expectations-suite with their original expectation-ids.
-Registered expectations which are identical to expectations in the loaded suite will have their ids and responses overridden with the respective values in the suite.
-In the event that an expectation-id loaded from the suite is identical to a pre-registered expectation id, the hit-count will retain its value and not be reset.
+Register expectations stored in an expectations-suite.
+Being that expectation-ids are deterministically generated from an expectation, the expectation-ids will be the same as those originally assigned.
+Registered expectations which are identical to expectations in the loaded suite will have their responses overwritten with the responses stored in the suite.
+In the event that an expectation loaded from the suite is identical to a pre-registered expectation, the hit-count will retain its value and not be reset.
 
 **Query Parameters:**
 - suite_name:
@@ -162,7 +171,8 @@ In the event that an expectation-id loaded from the suite is identical to a pre-
     - required: true
 
 ### POST `<dynamock-path-base>/hit-counts/get`
-Get the hit-counts of the specified expectation-ids; where an expectation-id's hit-count is the number of times a request was made that matched the expectation associated with the expectation-id.
+Get the hit-counts of the specified expectation-ids.
+Where an expectation-id's hit-count is the number of times a request was made that matched the corresponding expectation.
 If a request matches multiple registered expectations, though only one of their responses' is used for the API response, all of their hit-counts are incremented.
 
 **Content-Type:** application/json
@@ -205,7 +215,7 @@ Reset hit-counts to 0.
         - required: true
     - response:
         - type: [Response](#response-object) Object
-        - required: true
+        - required: false
         
 ##### ExpectationInfo Object:
 - properties:
@@ -216,11 +226,11 @@ Reset hit-counts to 0.
     - expectation_id:
         - type: String
         - required: true
-        - description: The unique id assigned to the expectation provided in the request.
+        - description: The unique id deterministically generated from the expectation provided in the request.
     - did_overwrite_response:
         - type: boolean
         - required: true
-        - description: Indicates if the response provided overwrites a response previously registered with the expectation provided.
+        - description: Indicates if the response provided (or excluded) overwrote (or erased) a response previously registered with the expectation.
 
 ##### ExpectationResponse Object:
 - properties:  
@@ -233,29 +243,18 @@ Reset hit-counts to 0.
         - required: true
     - response:
         - type: [Response](#response-object) Object
-        - required: true
+        - required: false
         
 ##### LoadInfo Object:
 - properties:
     - expectation_id:
         - type: String
         - required: true
-        - description: The unique expectation-id loaded from the expectation suite.
-    - overwrite_info:
-        - type: [LoadInfoExpectationOverwrite](#loadinfoexpectationoverwrite-object) Object
-        - required: false
-        - description: When the expectation loaded from the suite matches an expectation previously registered, this object indicates exactly how that expectation was overwritten.
-
-##### LoadInfoExpectationOverwrite Object:
-- properties:
-    - old_expectation_id
-        - type: string
-        - required: true
-        - description: The expectation-id previously assigned to the expectation loaded from the suite.
+        - description: The expectation-id deterministically generated from the expectation loaded from the expectation suite.
     - did_overwrite_response:
         - type: boolean
         - required: true
-        - description: Indicates if the response, previously registered with the expectation, is identical to the response loaded from the suite or if it was overwritten.
+        - description: Indicates if the response previously registered with the expectation, is identical to the response loaded from the suite or if it was overwritten or erased.
 
 ##### Expectation Object:
 - properties:
@@ -313,10 +312,9 @@ Reset hit-counts to 0.
         - description: Header parameters to be included in the response's header map. When `null` or not specified it is treated as if an empty map is provided.
 
 ## Planned work
+- Regex matching on expectation matching
 - `/expectation-suite/list` endpoint
 - `/expectation-suite` DELETE endpoint
-- Regex matching on expectation matching.
-- Remove the requirement that an exclusion must have a response.
 
 ## Bug Reports / Feature Requests
-To report a bug, feature request or any other constructive comment, please create a detailed GitHub issue with a mention of **@dzegel**. 
+To report a bug, feature request or any other constructive comment, please create a detailed GitHub issue [here](https://github.com/dzegel/DynamockServer/issues/new) with a mention of **@dzegel**. 
