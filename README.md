@@ -1,6 +1,8 @@
 # Dynamock Server
 
 - [Overview](#overview)
+  - [Use Cases](#use-cases)
+  - [Basic Usage](#basic-usage)
 - [Deployment](#deployment)
 - [Mocked API](#mocked-api)
   - [Matched Expectations and Mocked Responses](#matched-expectations-and-mocked-responses)
@@ -31,12 +33,12 @@
 A mock-server designed to mimic any API. 
 Simply setup an API expectation and response and then when an API call matching the registered expectation is made, Dynamock Server responds with the registered response.
 
-###### Use Cases
+#### Use Cases
 
 - Testing: Integration test an application that relies on web APIs, with a classic unit-test mocking experience.
 - Development: Develop an application that relies on web APIs that are themselves in development or currently inaccessible. 
 
-###### Basic Usage
+#### Basic Usage
 When designing automated tests for a service with external web dependencies simply:
 1. [Spin-up](#deployment) a Dynamock Server instance.
 1. Configure the url base (i.e. host and port) of the dependent services on the service under test to point to the Dynamock Server.
@@ -60,14 +62,14 @@ The arguments are as follows:
 ## Mocked API
 Any API call made to Dynamock Server is included in the Mocked API, except for API calls that would collide with the [Dynamock API](#dynamock-api).
 
-###### Matched Expectations and Mocked Responses
+#### Matched Expectations and Mocked Responses
 When an API request is made, all expectations that positively match the request and that are registered with a response are considered (see [PUT /expectations](#put-dynamock-path-baseexpectations) for registering expectations).
 Of those considered, the response of the most constrained expectation is selected to be used for the mocked response.
 The most constrained expectation is defined as, the expectation with the greatest number of included and excluded header parameters specified.
 In the event that there are multiple equally constrained expectations that positively match the API request, one of those expectations is selected arbitrarily but deterministically.
 Additionally, all registered expectations (including ones not registered with a response) that positively match the request have their hit-counts incremented (see [POST /hit-counts/get](#post-dynamock-path-basehit-countsget)).
 
-##### NonMocked Responses
+#### NonMocked Responses
 Given an API request that does not positively match an expectation registered with a response, the Mocked API responds with a `551` status code along with details of the specific request made to the Mocked API.
 
 #### Internal Errors
