@@ -60,17 +60,17 @@ The arguments are as follows:
 ## Mocked API
 Any API call made to Dynamock Server is included in the Mocked API, except for API calls that would collide with the [Dynamock API](#dynamock-api).
 
-### Matched Expectations and Mocked Responses
+###### Matched Expectations and Mocked Responses
 When an API request is made, all expectations that positively match the request and that are registered with a response are considered (see [PUT /expectations](#put-dynamock-path-baseexpectations) for registering expectations).
 Of those considered, the response of the most constrained expectation is selected to be used for the mocked response.
 The most constrained expectation is defined as, the expectation with the greatest number of included and excluded header parameters specified.
 In the event that there are multiple equally constrained expectations that positively match the API request, one of those expectations is selected arbitrarily but deterministically.
 Additionally, all registered expectations (including ones not registered with a response) that positively match the request have their hit-counts incremented (see [POST /hit-counts/get](#post-dynamock-path-basehit-countsget)).
 
-### NonMocked Responses
+###### NonMocked Responses
 Given an API request that does not positively match an expectation registered with a response, the Mocked API responds with a `551` status code along with details of the specific request made to the Mocked API.
 
-### Internal Errors
+###### Internal Errors
 The Mocked API responds with a `550` error code for internal server errors, in order not to collide with more common `5xx` errors that may be intentionally set in a registered mock response.
 If you experience a `550` error we would greatly appreciate it if you would submit a thorough bug report, see [below](#bug-reports--feature-requests) for submission instructions.
 
