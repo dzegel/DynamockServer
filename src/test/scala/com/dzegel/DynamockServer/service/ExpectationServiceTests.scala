@@ -16,7 +16,7 @@ class ExpectationServiceTests extends FunSuite with MockFactory with Matchers {
   private val mockResponseStore = mock[ResponseStore]
   private val expectationService = new DefaultExpectationService(mockExpectationStore, mockExpectationsFileService, mockHitCountService, mockResponseStore)
 
-  private val expectation = Expectation("POST", "somePath", Map.empty, HeaderParameters(Set.empty, Set.empty), Content(""))
+  private val expectation = Expectation("POST", "somePath", Set.empty, HeaderParameters(Set.empty, Set.empty), Content(""))
   private val request = Request(expectation.method, expectation.path, expectation.queryParams, expectation.headerParameters.included, expectation.content)
   private val response = Response(200, "", Map.empty)
 
@@ -248,10 +248,10 @@ class ExpectationServiceTests extends FunSuite with MockFactory with Matchers {
   }
 
   test("loadExpectations returns Success") {
-    val expectation2 = Expectation("2", "2", Map(), null, null)
-    val expectation3 = Expectation("3", "3", Map(), null, null)
-    val expectation4 = Expectation("4", "4", Map(), null, null)
-    val expectation5 = Expectation("5", "5", Map(), null, null)
+    val expectation2 = Expectation("2", "2", Set(), null, null)
+    val expectation3 = Expectation("3", "3", Set(), null, null)
+    val expectation4 = Expectation("4", "4", Set(), null, null)
+    val expectation5 = Expectation("5", "5", Set(), null, null)
     val response2 = Response(200, "some content", Map())
     val response3 = Response(300, "some content", Map())
     val expectationResponses = Set(
@@ -279,10 +279,10 @@ class ExpectationServiceTests extends FunSuite with MockFactory with Matchers {
     setup_ResponseStore_GetResponses(Set(expectationId5), Right(Map(expectationId5 -> response)))
     setup_ResponseStore_DeleteResponses(Set(expectationId4))
     setup_ResponseStore_DeleteResponses(Set(expectationId5))
-    setup_HitCountService_Register(Seq(expectationId2, expectationId1, expectationId3, expectationId5, expectationId4))
+    setup_HitCountService_Register(Seq(expectationId3, expectationId1, expectationId4, expectationId5, expectationId2))
 
     expectationService.loadExpectations(expectationSuiteName) shouldBe
-      Success(Seq(serviceReturnValue2, serviceReturnValue1, serviceReturnValue3, serviceReturnValue5, serviceReturnValue4))
+      Success(Seq(serviceReturnValue3, serviceReturnValue1, serviceReturnValue4, serviceReturnValue5, serviceReturnValue2))
   }
 
   test("loadExpectations returns Failure when ExpectationsFileService.loadExpectationsFromJson fails") {
@@ -292,7 +292,7 @@ class ExpectationServiceTests extends FunSuite with MockFactory with Matchers {
   }
 
   test("loadExpectations returns Failure when ExpectationStore.registerExpectation fails") {
-    val expectation2 = Expectation("2", "2", Map(), null, null)
+    val expectation2 = Expectation("2", "2", Set(), null, null)
     val response2 = Response(200, "some content", Map())
     val expectationResponses = Set(expectation -> Option(response), expectation2 -> Option(response2))
 

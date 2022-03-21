@@ -23,6 +23,7 @@
      - [LoadInfo Object](#loadinfo-object)
      - [LoadInfoExpectationOverwrite](#loadinfoexpectationoverwrite-object) Object
      - [Expectation Object](#expectation-object)
+     - [KeyValue Object](#keyvalue-object)
      - [Response Object](#response-object)
 - [Planned work](#planned-work)
 - [Bug Reports / Feature Requests](#bug-reports--feature-requests)
@@ -104,9 +105,12 @@ Previously registered expectations which are identical to expectations provided 
             "expectation": {
                 "method": "POST",
                 "path": "/some/url/path",
-                "query_parameters": {
-                    "some_query_parm": "SomeValue"
-                },
+                "query_parameters": [
+                    {
+                        "key": "some_query_parm",
+                        "value": "SomeValue"
+                    }
+                ]
                 "included_header_parameters": {
                     "some_included_header_param": "SomeValue"
                 },
@@ -271,7 +275,7 @@ Reset hit-counts to 0.
         - required: true
         - matching rule: Exact case-sensitive match.
     - queryParameters:
-        - type: map of string to string
+        - type: array of [KeyValue](#keyvalue-object) Objects
         - required: false
         - description: The url/query parameters of the expected request.
         When `null` or not specified it is treated as if an empty map is provided.
@@ -297,6 +301,15 @@ Reset hit-counts to 0.
         When `null` or not specified it is treated as if an empty string is provided.
         - matching rule: If the string is valid Json then a positive match occurs on a request with equivalent Json, Json property names are matched case-sensitive.
         When the specified content is not valid Json then a positive match occurs on exact case-sensitive match.
+
+##### KeyValue Object:
+- properties:
+    - key:
+        - type: string
+        - required: true
+    - value:
+        - type: string
+        - required: true
         
 ##### Response Object:
 - properties:

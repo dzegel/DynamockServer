@@ -6,6 +6,7 @@ import com.twitter.finagle.http.Status
 import com.twitter.finatra.http.routing.HttpRouter
 import com.twitter.finatra.http.{EmbeddedHttpServer, HttpServer}
 import com.twitter.inject.server.FeatureTest
+import org.json4s.JArray
 import org.json4s.JsonAST.JString
 import org.json4s.native.JsonParser.parse
 import org.scalamock.function.FunctionAdapter1
@@ -28,7 +29,7 @@ class MockControllerTests extends FeatureTest with MockFactory with Matchers {
   val response = Response(300, "SomeContent", Map("SomeKey" -> "SomeValue"))
 
   test("GET /somePath should call getResponse and return the response") {
-    val expectation = Expectation("GET", "/somePath", Map(), HeaderParameters(Set(), Set()), Content(""))
+    val expectation = Expectation("GET", "/somePath", Set(), HeaderParameters(Set(), Set()), Content(""))
     setup_ExpectationService_GetResponse(expectation, Success(Some(response)))
 
     val result = server.httpGet(
@@ -39,11 +40,23 @@ class MockControllerTests extends FeatureTest with MockFactory with Matchers {
     result.headerMap should contain allElementsOf response.headerMap
   }
 
+  test("GET /somePath should call getResponse with duplicate query params and return the response") {
+    val expectation = Expectation("GET", "/somePath", Set("query" -> "param", "query" -> "param2"), HeaderParameters(Set(), Set()), Content(""))
+    setup_ExpectationService_GetResponse(expectation, Success(Some(response)))
+
+    val result = server.httpGet(
+      path = "/somePath?query=param&query=param2",
+      andExpect = Status(response.status),
+      withBody = response.content)
+
+    result.headerMap should contain allElementsOf response.headerMap
+  }
+
   test("POST / should call getResponse and return the response") {
     val includedHeaders = Set("IncludedHeader" -> "IncludedHeader")
     val excludedHeaders = Set("ExcludedHeader" -> "ExcludedValue")
     val headers = includedHeaders.toMap + ("SomeOtherHeader" -> "SomeOtherValue")
-    val queryParams = Map("QueryParam" -> "Value", "OtherQueryParam" -> "OtherValue")
+    val queryParams = Set("QueryParam" -> "Value", "OtherQueryParam" -> "OtherValue")
     val expectation = Expectation("POST", "/", queryParams, HeaderParameters(includedHeaders, excludedHeaders), Content("Some Stuff"))
     setup_ExpectationService_GetResponse(expectation, Success(Some(response)))
 
@@ -65,7 +78,7 @@ class MockControllerTests extends FeatureTest with MockFactory with Matchers {
     val headerValue = "headerValue"
     val content = "Some Stuff"
     val method = "POST"
-    val expectation = Expectation(method, s"/$urlResource", Map(queryParam -> queryValue), HeaderParameters(Set.empty, Set.empty), Content(content))
+    val expectation = Expectation(method, s"/$urlResource", Set(queryParam -> queryValue), HeaderParameters(Set.empty, Set.empty), Content(content))
     setup_ExpectationService_GetResponse(expectation, Success(None))
 
     val response = server.httpPost(
@@ -80,14 +93,17 @@ class MockControllerTests extends FeatureTest with MockFactory with Matchers {
     requestMap("method") shouldBe JString(method)
     requestMap("path") shouldBe JString(s"/$urlResource")
     requestMap("content") shouldBe JString(content)
-    val queryParamsMap = requestMap("query_params").filterField(x => true).toMap
-    queryParamsMap(queryParam) shouldBe JString(queryValue)
+    val queryParamsArray = requestMap("query_params").asInstanceOf[JArray].arr
+    queryParamsArray should have size 1
+    val queryParamsMap = queryParamsArray.head.filterField(x => true).toMap
+    queryParamsMap("key") shouldBe JString(queryParam)
+    queryParamsMap("value") shouldBe JString(queryValue)
     val headerParamsMap = requestMap("headers").filterField(x => true).toMap
     headerParamsMap(headerKey) shouldBe JString(headerValue)
   }
 
   test("PUT / should return 500 when there is an internal error") {
-    val expectation = Expectation("PUT", "/", Map.empty, HeaderParameters(Set.empty, Set.empty), Content("Some Stuff"))
+    val expectation = Expectation("PUT", "/", Set.empty, HeaderParameters(Set.empty, Set.empty), Content("Some Stuff"))
     val errorMessage = "Some Error Message"
     setup_ExpectationService_GetResponse(expectation, Failure(new Exception(errorMessage)))
 

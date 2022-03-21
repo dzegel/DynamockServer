@@ -17,8 +17,8 @@ class DynamockServerTests extends FeatureTest with Matchers with BeforeAndAfterE
     args = Seq("-http.port=:1235", "-dynamock.path.base=DynamockTest")
   )
 
-  private val expectation1 = Expectation("PUT", "/some/path/1", Map.empty, HeaderParameters(Set.empty, Set.empty), Content("someContent 1"))
-  private val expectation2 = Expectation("POST", "/some/path/2", Map.empty, HeaderParameters(Set.empty, Set.empty), Content("someContent 2"))
+  private val expectation1 = Expectation("PUT", "/some/path/1", Set.empty, HeaderParameters(Set.empty, Set.empty), Content("someContent 1"))
+  private val expectation2 = Expectation("POST", "/some/path/2", Set.empty, HeaderParameters(Set.empty, Set.empty), Content("someContent 2"))
   private val response1 = Response(201, "SomeOtherContent", Map("SomeKey" -> "SomeValue"))
   private val response2 = Response(203, "SomeOtherContent2", Map("SomeKey2" -> "SomeValue2"))
   private val expectationName1 = "expectation name 1"
@@ -29,9 +29,9 @@ class DynamockServerTests extends FeatureTest with Matchers with BeforeAndAfterE
         "path": "${expectation.path}",
         "method": "${expectation.method}",
         "content": "${expectation.content.stringValue}",
-        "included_header_parameters": {${paramMapToJson(expectation.headerParameters.included)}},
-        "excluded_header_parameters": {${paramMapToJson(expectation.headerParameters.excluded)}},
-        "query_parameters": {${paramMapToJson(expectation.queryParams.toSet)}}
+        "included_header_parameters": {${paramMapToJsonProps(expectation.headerParameters.included)}},
+        "excluded_header_parameters": {${paramMapToJsonProps(expectation.headerParameters.excluded)}},
+        "query_parameters": [${expectation.queryParams.map { case (k, v) => s"""{ "key": "$k", "value": "$v" }""" }.mkString(",")}]
       }
     """
 
@@ -39,10 +39,10 @@ class DynamockServerTests extends FeatureTest with Matchers with BeforeAndAfterE
     s""" "response": {
         "status": ${response.status},
         "content": "${response.content}",
-        "header_map": {${paramMapToJson(response.headerMap.toSet)}}
+        "header_map": {${paramMapToJsonProps(response.headerMap.toSet)}}
       }"""
 
-  private def paramMapToJson(params: Set[(String, String)]): String = params.map { case (k, v) => s""" "$k": "$v" """ }.mkString(",")
+  private def paramMapToJsonProps(params: Set[(String, String)]): String = params.map { case (k, v) => s""" "$k": "$v" """ }.mkString(",")
 
   private def expectationRequestItemJson(expectationName: String, expectation: Expectation, response: Option[Response]): String =
     s""" {
@@ -107,6 +107,32 @@ class DynamockServerTests extends FeatureTest with Matchers with BeforeAndAfterE
     response2.headerMap.foreach { case (k, v) => result2.headerMap(k) shouldBe v }
   }
 
+  test("PUT /DynamockTest/expectations - mocked expectation with duplicated query params works") {
+    val expectationA = expectation1.copy(queryParams =  Set("query"->"param","query"->"param2"))
+    val expectationB = expectation1.copy(queryParams =  Set("query"->"param","other"->"value" ,"query"->"param2"))
+
+    server.httpPut(
+      path = "/DynamockTest/expectations",
+      putBody = expectationPutRequestJson(Seq(
+        (expectationName1, expectationA, Some(response1)),
+        (expectationName2, expectationB, Some(response2)))),
+      andExpect = Status.Ok)
+
+    val result1 = server.httpPut(
+      s"${expectationA.path}?${expectationA.queryParams.map(x=>s"${x._1}=${x._2}").mkString("&")}",
+      putBody = expectationA.content.stringValue,
+      andExpect = Status(response1.status),
+      withBody = response1.content)
+    response1.headerMap.foreach { case (k, v) => result1.headerMap(k) shouldBe v }
+
+    val result2 = server.httpPut(
+      s"${expectationB.path}?${expectationB.queryParams.map(x=>s"${x._1}=${x._2}").mkString("&")}",
+      putBody = expectationB.content.stringValue,
+      andExpect = Status(response2.status),
+      withBody = response2.content)
+    response2.headerMap.foreach { case (k, v) => result2.headerMap(k) shouldBe v }
+  }
+
   test("PUT /DynamockTest/expectations - mocked expectation - DELETE /DynamockTest/expectations - mocked expectation returns the expected response") {
     val putExpectationsResponse = server.httpPut(
       path = "/DynamockTest/expectations",
@@ -149,7 +175,7 @@ class DynamockServerTests extends FeatureTest with Matchers with BeforeAndAfterE
     mockRequestMap("path") shouldBe expectation1.path
     mockRequestMap("method") shouldBe "PUT"
     mockRequestMap("content") shouldBe expectation1.content.stringValue
-    mockRequestMap("query_params").asInstanceOf[Map[String, Any]] shouldBe empty
+    mockRequestMap("query_params").asInstanceOf[Seq[Object]] shouldBe empty
   }
 
   test("PUT /DynamockTest/expectations - mocked expectation - PUT /DynamockTest/expectations with new response - mocked expectation returns the expected response") {
