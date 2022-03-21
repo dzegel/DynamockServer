@@ -80,26 +80,26 @@ class ExpectationsControllerTests extends FeatureTest with MockFactory with Matc
   val response = Response(200, "", Map.empty)
 
   test("PUT /test/expectations should call register expectations with ExpectationService and return 204 on success") {
-    expectationSetupShouldSucceed("some-path", "POST", Some(Map("query" -> "param")), Some(Set("included" -> "includedValue")), Some(Set("excluded" -> "excludedValue")), Some("Content"), Some(response))
-    expectationSetupShouldSucceed("some-path", "POST", Some(Map("query" -> "param")), Some(Set("included" -> "includedValue")), None, Some("Content"), Some(response))
-    expectationSetupShouldSucceed("some-path", "POST", Some(Map("query" -> "param")), Some(Set("included" -> "includedValue")), Some(Set("excluded" -> "excludedValue")), None, Some(response))
-    expectationSetupShouldSucceed("some-path", "POST", Some(Map("query" -> "param")), Some(Set("included" -> "includedValue")), None, None, Some(response))
-    expectationSetupShouldSucceed("some-path", "POST", Some(Map("query" -> "param")), None, Some(Set("excluded" -> "excludedValue")), Some("Content"), Some(response))
-    expectationSetupShouldSucceed("some-path", "POST", Some(Map("query" -> "param")), None, None, Some("Content"), Some(response))
-    expectationSetupShouldSucceed("some-path", "POST", None, Some(Set("included" -> "includedValue")), Some(Set("excluded" -> "excludedValue")), Some("Content"), Some(response))
-    expectationSetupShouldSucceed("some-path", "POST", None, Some(Set("included" -> "includedValue")), None, Some("Content"), Some(response))
-    expectationSetupShouldSucceed("some-path", "POST", None, None, Some(Set("excluded" -> "excludedValue")), None, Some(response))
-    expectationSetupShouldSucceed("some-path", "POST", None, None, None, None, Some(response))
-    expectationSetupShouldSucceed("some-path", "POST", Some(Map("query" -> "param")), Some(Set("included" -> "includedValue")), Some(Set("excluded" -> "excludedValue")), Some("Content"), None)
-    expectationSetupShouldSucceed("some-path", "POST", Some(Map("query" -> "param")), Some(Set("included" -> "includedValue")), None, Some("Content"), None)
-    expectationSetupShouldSucceed("some-path", "POST", Some(Map("query" -> "param")), Some(Set("included" -> "includedValue")), Some(Set("excluded" -> "excludedValue")), None, None)
-    expectationSetupShouldSucceed("some-path", "POST", Some(Map("query" -> "param")), Some(Set("included" -> "includedValue")), None, None, None)
-    expectationSetupShouldSucceed("some-path", "POST", Some(Map("query" -> "param")), None, Some(Set("excluded" -> "excludedValue")), Some("Content"), None)
-    expectationSetupShouldSucceed("some-path", "POST", Some(Map("query" -> "param")), None, None, Some("Content"), None)
-    expectationSetupShouldSucceed("some-path", "POST", None, Some(Set("included" -> "includedValue")), Some(Set("excluded" -> "excludedValue")), Some("Content"), None)
-    expectationSetupShouldSucceed("some-path", "POST", None, Some(Set("included" -> "includedValue")), None, Some("Content"), None)
-    expectationSetupShouldSucceed("some-path", "POST", None, None, Some(Set("excluded" -> "excludedValue")), None, None)
-    expectationSetupShouldSucceed("some-path", "POST", None, None, None, None, None)
+    expectationSetupShouldSucceed("/some-path", "POST", Some(Map("query" -> "param")), Some(Set("included" -> "includedValue")), Some(Set("excluded" -> "excludedValue")), Some("Content"), Some(response))
+    expectationSetupShouldSucceed("/some-path", "POST", Some(Map("query" -> "param")), Some(Set("included" -> "includedValue")), None, Some("Content"), Some(response))
+    expectationSetupShouldSucceed("/some-path", "POST", Some(Map("query" -> "param")), Some(Set("included" -> "includedValue")), Some(Set("excluded" -> "excludedValue")), None, Some(response))
+    expectationSetupShouldSucceed("/some-path", "POST", Some(Map("query" -> "param")), Some(Set("included" -> "includedValue")), None, None, Some(response))
+    expectationSetupShouldSucceed("/some-path", "POST", Some(Map("query" -> "param")), None, Some(Set("excluded" -> "excludedValue")), Some("Content"), Some(response))
+    expectationSetupShouldSucceed("/some-path", "POST", Some(Map("query" -> "param")), None, None, Some("Content"), Some(response))
+    expectationSetupShouldSucceed("/some-path", "POST", None, Some(Set("included" -> "includedValue")), Some(Set("excluded" -> "excludedValue")), Some("Content"), Some(response))
+    expectationSetupShouldSucceed("/some-path", "POST", None, Some(Set("included" -> "includedValue")), None, Some("Content"), Some(response))
+    expectationSetupShouldSucceed("/some-path", "POST", None, None, Some(Set("excluded" -> "excludedValue")), None, Some(response))
+    expectationSetupShouldSucceed("/some-path", "POST", None, None, None, None, Some(response))
+    expectationSetupShouldSucceed("/some-path", "POST", Some(Map("query" -> "param")), Some(Set("included" -> "includedValue")), Some(Set("excluded" -> "excludedValue")), Some("Content"), None)
+    expectationSetupShouldSucceed("/some-path", "POST", Some(Map("query" -> "param")), Some(Set("included" -> "includedValue")), None, Some("Content"), None)
+    expectationSetupShouldSucceed("/some-path", "POST", Some(Map("query" -> "param")), Some(Set("included" -> "includedValue")), Some(Set("excluded" -> "excludedValue")), None, None)
+    expectationSetupShouldSucceed("/some-path", "POST", Some(Map("query" -> "param")), Some(Set("included" -> "includedValue")), None, None, None)
+    expectationSetupShouldSucceed("/some-path", "POST", Some(Map("query" -> "param")), None, Some(Set("excluded" -> "excludedValue")), Some("Content"), None)
+    expectationSetupShouldSucceed("/some-path", "POST", Some(Map("query" -> "param")), None, None, Some("Content"), None)
+    expectationSetupShouldSucceed("/some-path", "POST", None, Some(Set("included" -> "includedValue")), Some(Set("excluded" -> "excludedValue")), Some("Content"), None)
+    expectationSetupShouldSucceed("/some-path", "POST", None, Some(Set("included" -> "includedValue")), None, Some("Content"), None)
+    expectationSetupShouldSucceed("/some-path", "POST", None, None, Some(Set("excluded" -> "excludedValue")), None, None)
+    expectationSetupShouldSucceed("/some-path", "POST", None, None, None, None, None)
   }
 
   private def expectationSetupShouldSucceed(
@@ -145,7 +145,7 @@ class ExpectationsControllerTests extends FeatureTest with MockFactory with Matc
   }
 
   test("PUT /test/expectations should call register expectation with ExpectationService and return 500 on failure") {
-    val expectation = Expectation("POST", "some-path", Map("query" -> "param"), HeaderParameters(Set("included" -> "includedValue"), Set("excluded" -> "excludedValue")), Content(""))
+    val expectation = Expectation("POST", "/some-path", Map("query" -> "param"), HeaderParameters(Set("included" -> "includedValue"), Set("excluded" -> "excludedValue")), Content(""))
     setup_ExpectationService_RegisterExpectations(expectation, Some(response), Failure(new Exception(errorMessage)))
 
     server.httpPut(
@@ -160,6 +160,23 @@ class ExpectationsControllerTests extends FeatureTest with MockFactory with Matc
         Some(response)),
       andExpect = Status.InternalServerError,
       withBody = errorMessage)
+  }
+
+  test("PUT /test/expectations with validation issue should not call register expectation and return 400") {
+    val expectation = Expectation("POST", "some-path-without-leading-slash", Map("query" -> "param"), HeaderParameters(Set("included" -> "includedValue"), Set("excluded" -> "excludedValue")), Content(""))
+
+    server.httpPut(
+      path = "/test/expectations",
+      putBody = expectationPutRequestJson(
+        expectation.path,
+        expectation.method,
+        Some(expectation.content.stringValue),
+        Some(expectation.queryParams),
+        Some(expectation.headerParameters.included),
+        Some(expectation.headerParameters.excluded),
+        Some(response)),
+      andExpect = Status.BadRequest,
+      withBody = "all expectation paths must start with '/'")
   }
 
   test("DELETE /test/expectations with empty body should clear all expectations with ExpectationService and return 204 on success") {
