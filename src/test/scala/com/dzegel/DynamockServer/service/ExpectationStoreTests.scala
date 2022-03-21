@@ -30,9 +30,9 @@ class ExpectationStoreTests extends FunSuite with MockFactory with Matchers with
   }
 
   test("registerExpectation works for query params") {
-    val expectation1 = getExpectation(queryParams = Map("key1" -> "value1"))
+    val expectation1 = getExpectation(queryParams = Set("key1" -> "value1"))
     val request1 = getRequest(queryParams = expectation1.queryParams)
-    val expectation2 = getExpectation(queryParams = Map("key2" -> "value2", "key3" -> "value3"))
+    val expectation2 = getExpectation(queryParams = Set("key2" -> "value2", "key3" -> "value3"))
     val request2 = getRequest(queryParams = expectation2.queryParams)
 
     testMultipleRegistrationsWork(expectation1, request1, expectation2, request2)
@@ -40,9 +40,9 @@ class ExpectationStoreTests extends FunSuite with MockFactory with Matchers with
 
   test("registerExpectation works for overlapping query params") {
     val keyValue1 = "key1" -> "value1"
-    val expectation1 = getExpectation(queryParams = Map(keyValue1))
+    val expectation1 = getExpectation(queryParams = Set(keyValue1))
     val request1 = getRequest(queryParams = expectation1.queryParams)
-    val expectation2 = getExpectation(queryParams = Map(keyValue1, "key2" -> "value2"))
+    val expectation2 = getExpectation(queryParams = Set(keyValue1, "key2" -> "value2"))
     val request2 = getRequest(queryParams = expectation2.queryParams)
 
     testMultipleRegistrationsWork(expectation1, request1, expectation2, request2)
@@ -135,7 +135,7 @@ class ExpectationStoreTests extends FunSuite with MockFactory with Matchers with
     val expectation = Expectation(
       "GET",
       "/some/path",
-      Map("QueryParam" -> "QueryValue"),
+      Set("QueryParam" -> "QueryValue"),
       HeaderParameters(Set("IncludedHeader" -> "IncludedValue"), Set("ExcludedHeader" -> "ExcludedValue")),
       Content("Some Content"))
     val id = expectation.hashCode.toString
@@ -223,7 +223,7 @@ class ExpectationStoreTests extends FunSuite with MockFactory with Matchers with
   private def getExpectation(
     path: Path = "",
     method: Method = "",
-    queryParams: QueryParams = Map.empty,
+    queryParams: QueryParams = Set.empty,
     includedHeaders: HeaderSet = Set.empty,
     excludedHeaders: HeaderSet = Set.empty,
     content: Content = Content("")): Expectation = {
@@ -233,7 +233,7 @@ class ExpectationStoreTests extends FunSuite with MockFactory with Matchers with
   private def getRequest(
     path: Path = "",
     method: Method = "",
-    queryParams: QueryParams = Map.empty,
+    queryParams: QueryParams = Set.empty,
     headers: HeaderSet = Set.empty,
     content: Content = Content("")): Request = {
     Request(method, path, queryParams, headers, content)

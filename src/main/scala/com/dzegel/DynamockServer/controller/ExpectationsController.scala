@@ -16,10 +16,12 @@ import scala.util.{Failure, Success, Try}
 
 object ExpectationsController {
 
+  private case class KeyValuePairDto(key: String, value: String)
+
   private case class ExpectationDto(
     method: String,
     path: String,
-    queryParameters: Option[Map[String, String]],
+    queryParameters: Option[Set[KeyValuePairDto]],
     includedHeaderParameters: Option[Map[String, String]],
     excludedHeaderParameters: Option[Map[String, String]],
     content: Option[String])
@@ -57,7 +59,7 @@ object ExpectationsController {
   private implicit def dtoFromExpectation(expectation: Expectation): ExpectationDto = ExpectationDto(
     expectation.method,
     expectation.path,
-    Some(expectation.queryParams),
+    Some(expectation.queryParams.map(x => KeyValuePairDto(x._1, x._2))),
     Some(expectation.headerParameters.included.toMap),
     Some(expectation.headerParameters.excluded.toMap),
     Some(expectation.content.stringValue)
@@ -70,7 +72,7 @@ object ExpectationsController {
     Expectation(
       dto.method.toUpperCase(),
       dto.path,
-      dto.queryParameters.getOrElse(Map.empty),
+      dto.queryParameters.getOrElse(Set.empty).map(kvp => kvp.key -> kvp.value),
       HeaderParameters(
         dto.includedHeaderParameters.getOrElse(Map.empty).toSet,
         dto.excludedHeaderParameters.getOrElse(Map.empty).toSet),
@@ -91,7 +93,7 @@ class ExpectationsController @Inject()(
 
   put(expectationsPathBase) { request: ExpectationsPutRequest =>
     if (request.expectationResponses.count(x => !x.expectation.path.startsWith("/")) > 0) {
-      response.badRequest("all expectation paths must start with '/'");
+      response.badRequest("all expectation paths must start with '/'")
     } else {
       expectationService.registerExpectations(
         request.expectationResponses.map(x => RegisterExpectationsInput(x.expectation, x.response, x.expectationName))
