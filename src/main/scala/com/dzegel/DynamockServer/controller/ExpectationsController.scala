@@ -90,12 +90,16 @@ class ExpectationsController @Inject()(
   private val hitCountsPathBase = s"$pathBase/hit-counts"
 
   put(expectationsPathBase) { request: ExpectationsPutRequest =>
-    expectationService.registerExpectations(
-      request.expectationResponses.map(x => RegisterExpectationsInput(x.expectation, x.response, x.expectationName))
-    ).mapToOkResponse(registerExpectationsOutputs =>
-      ExpectationsPutResponse(
-        registerExpectationsOutputs.map(x => ExpectationsPutResponseItemDto(x.expectationId, x.clientName, x.didOverwriteResponse))
-      ))
+    if (request.expectationResponses.count(x => !x.expectation.path.startsWith("/")) > 0) {
+      response.badRequest("all expectation paths must start with '/'");
+    } else {
+      expectationService.registerExpectations(
+        request.expectationResponses.map(x => RegisterExpectationsInput(x.expectation, x.response, x.expectationName))
+      ).mapToOkResponse(registerExpectationsOutputs =>
+        ExpectationsPutResponse(
+          registerExpectationsOutputs.map(x => ExpectationsPutResponseItemDto(x.expectationId, x.clientName, x.didOverwriteResponse))
+        ))
+    }
   }
 
   delete(expectationsPathBase) { request: ExpectationsDeleteRequest =>
