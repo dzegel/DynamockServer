@@ -171,11 +171,11 @@ class DynamockServerTests extends FeatureTest with Matchers with BeforeAndAfterE
     val jMessage = mockResponseMap("message")
     jMessage shouldBe JString("Dynamock Error: The request did not match any expectation registered with a response.")
     val mockRequestMap = mockResponseMap("request").values.asInstanceOf[Map[String, Any]]
-    mockRequestMap.keySet shouldBe Set("path", "method", "content", "headers", "query_params")
+    mockRequestMap.keySet shouldBe Set("path", "method", "content", "header_parameters", "query_parameters")
     mockRequestMap("path") shouldBe expectation1.path
     mockRequestMap("method") shouldBe "PUT"
     mockRequestMap("content") shouldBe expectation1.content.stringValue
-    mockRequestMap("query_params").asInstanceOf[Seq[Object]] shouldBe empty
+    mockRequestMap("query_parameters").asInstanceOf[Seq[Object]] shouldBe empty
   }
 
   test("PUT /DynamockTest/expectations - mocked expectation - PUT /DynamockTest/expectations with new response - mocked expectation returns the expected response") {

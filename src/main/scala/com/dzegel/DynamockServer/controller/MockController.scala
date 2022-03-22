@@ -14,7 +14,7 @@ object MockController {
 
   private case class KeyValuePairDto(key: String, value: String)
 
-  private case class RequestDto(method: String, path: String, queryParams: Set[KeyValuePairDto], headers: Map[String, String], content: String)
+  private case class RequestDto(method: String, path: String, queryParameters: Set[KeyValuePairDto], headerParameters: Map[String, String], content: String)
 
   private case class UnmatchedMockResponse(message: String, request: RequestDto)
 
