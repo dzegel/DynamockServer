@@ -2,6 +2,7 @@ target/
 project/project/
 *.sc
 /TODO
+.DS_Store
 
 # Scala-IDE specific
 .scala_dependencies

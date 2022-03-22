@@ -26,7 +26,7 @@ class MockControllerTests extends FeatureTest with MockFactory with Matchers {
     }
   )
 
-  val response = Response(300, "SomeContent", Map("SomeKey" -> "SomeValue"))
+  private val response = Response(300, "SomeContent", Map("SomeKey" -> "SomeValue"))
 
   test("GET /somePath should call getResponse and return the response") {
     val expectation = Expectation("GET", "/somePath", Set(), HeaderParameters(Set(), Set()), Content(""))
@@ -43,13 +43,22 @@ class MockControllerTests extends FeatureTest with MockFactory with Matchers {
   test("GET /somePath should call getResponse with duplicate query params and return the response") {
     val expectation = Expectation("GET", "/somePath", Set("query" -> "param", "query" -> "param2"), HeaderParameters(Set(), Set()), Content(""))
     setup_ExpectationService_GetResponse(expectation, Success(Some(response)))
+    setup_ExpectationService_GetResponse(expectation, Success(Some(response)))
 
-    val result = server.httpGet(
+    val result1 = server.httpGet(
       path = "/somePath?query=param&query=param2",
       andExpect = Status(response.status),
       withBody = response.content)
 
-    result.headerMap should contain allElementsOf response.headerMap
+    result1.headerMap should contain allElementsOf response.headerMap
+
+    // param order should not matter
+    val result2 = server.httpGet(
+      path = "/somePath?query=param2&query=param",
+      andExpect = Status(response.status),
+      withBody = response.content)
+
+    result2.headerMap should contain allElementsOf response.headerMap
   }
 
   test("POST / should call getResponse and return the response") {
@@ -87,18 +96,18 @@ class MockControllerTests extends FeatureTest with MockFactory with Matchers {
       postBody = expectation.content.stringValue,
       andExpect = Status(551))
 
-    val responseMap = parse(response.contentString).filterField(x => true).toMap
+    val responseMap = parse(response.contentString).filterField(_ => true).toMap
     responseMap("message") shouldBe JString("Dynamock Error: The request did not match any expectation registered with a response.")
-    val requestMap = responseMap("request").filterField(x => true).toMap
+    val requestMap = responseMap("request").filterField(_ => true).toMap
     requestMap("method") shouldBe JString(method)
     requestMap("path") shouldBe JString(s"/$urlResource")
     requestMap("content") shouldBe JString(content)
-    val queryParamsArray = requestMap("query_params").asInstanceOf[JArray].arr
+    val queryParamsArray = requestMap("query_parameters").asInstanceOf[JArray].arr
     queryParamsArray should have size 1
-    val queryParamsMap = queryParamsArray.head.filterField(x => true).toMap
+    val queryParamsMap = queryParamsArray.head.filterField(_ => true).toMap
     queryParamsMap("key") shouldBe JString(queryParam)
     queryParamsMap("value") shouldBe JString(queryValue)
-    val headerParamsMap = requestMap("headers").filterField(x => true).toMap
+    val headerParamsMap = requestMap("header_parameters").filterField(_ => true).toMap
     headerParamsMap(headerKey) shouldBe JString(headerValue)
   }
 
